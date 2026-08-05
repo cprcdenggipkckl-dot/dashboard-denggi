@@ -66,12 +66,12 @@ if 'episode_filter' not in st.session_state:
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = f"Wabak No: {wabak_no}"
-    st.session_state.episode_filter = "Semua" # Reset filter supaya senarai lokaliti penuh terpapar
+    st.session_state.episode_filter = "Semua" 
 
 def set_lokaliti_sahaja(lokaliti):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = None
-    st.session_state.episode_filter = "Semua" # Reset filter supaya senarai lokaliti penuh terpapar
+    st.session_state.episode_filter = "Semua" 
 
 # --- ANTARA MUKA UTAMA ---
 st.title("🦟 Dashboard Analisis Kes Denggi (Spesifik Wabak)")
@@ -89,7 +89,6 @@ if uploaded_file is not None:
         df['Tarikh Onset'] = pd.to_datetime(df['Tarikh Onset'], errors='coerce')
         
         # --- PENGIRAAN KEKERAPAN EPISODE WABAK KESELURUHAN ---
-        # Hanya ambil kira 'Jenis Kes == Wabak' (abaikan Satu Kes), dan kira keunikan 'Wabak No'
         df_wabak_sahaja = df[df['Jenis Kes'] == 'Wabak'].dropna(subset=['Wabak No'])
         kekerapan_wabak = df_wabak_sahaja.groupby('Lokaliti (Alamat Semasa)')['Wabak No'].nunique()
         semua_lokaliti_list = sorted(df['Lokaliti (Alamat Semasa)'].dropna().unique())
@@ -100,7 +99,6 @@ if uploaded_file is not None:
         # ---------------------------------------------------------
         st.sidebar.header("Tetapan Analisis")
         
-        # 1. Tapis ikut Kekerapan Episode
         episodes_ada = sorted(list(set(episode_map.values())))
         pilihan_tapis_ep = ["Semua"] + [f"{int(e)} Episode" for e in episodes_ada if e > 0]
         
@@ -112,7 +110,6 @@ if uploaded_file is not None:
         pilihan_filter_episode = st.sidebar.selectbox("1. Tapis Kekerapan (Episode):", pilihan_tapis_ep, index=ep_idx)
         st.session_state.episode_filter = pilihan_filter_episode
         
-        # Tapis senarai lokaliti mengikut kekerapan yang dipilih
         if pilihan_filter_episode == "Semua":
             senarai_lokaliti_tapis = semua_lokaliti_list
         else:
@@ -244,23 +241,39 @@ if uploaded_file is not None:
             st.success("Tiada wabak aktif (semasa) direkodkan buat masa ini.")
             
         # ---------------------------------------------------------
-        # HIGHLIGHT 2: EPISODE WABAK TERTINGGI (TOP 5)
+        # HIGHLIGHT 2: EPISODE WABAK TERTINGGI (TOP 10)
         # ---------------------------------------------------------
         st.markdown("---")
-        st.header("🔁 Highlight: Kekerapan Episode Wabak Tertinggi (Top 5)")
+        st.header("🔁 Highlight: Kekerapan Episode Wabak Tertinggi (Top 10)")
         
-        top5_kekerapan = kekerapan_wabak.nlargest(5)
+        top10_kekerapan = kekerapan_wabak.nlargest(10)
         
-        if not top5_kekerapan.empty and top5_kekerapan.max() > 0:
-            top5_kekerapan = top5_kekerapan[top5_kekerapan > 0]
-            cols = st.columns(len(top5_kekerapan))
-            for i, (lokaliti, count) in enumerate(top5_kekerapan.items()):
-                with cols[i]:
+        if not top10_kekerapan.empty and top10_kekerapan.max() > 0:
+            top10_kekerapan = top10_kekerapan[top10_kekerapan > 0]
+            items = list(top10_kekerapan.items())
+            
+            # Baris Pertama (sehingga 5)
+            cols1 = st.columns(min(len(items), 5))
+            for i in range(min(len(items), 5)):
+                lokaliti, count = items[i]
+                with cols1[i]:
                     st.button(f"**{count} Episode**\n\n{lokaliti}", 
-                              key=f"kekerapan_{lokaliti}", 
+                              key=f"kekerapan1_{lokaliti}", 
                               on_click=set_lokaliti_sahaja, 
                               args=(lokaliti,), 
                               use_container_width=True)
+            
+            # Baris Kedua (jika lebih dari 5)
+            if len(items) > 5:
+                cols2 = st.columns(len(items) - 5)
+                for i in range(5, len(items)):
+                    lokaliti, count = items[i]
+                    with cols2[i - 5]:
+                        st.button(f"**{count} Episode**\n\n{lokaliti}", 
+                                  key=f"kekerapan2_{lokaliti}", 
+                                  on_click=set_lokaliti_sahaja, 
+                                  args=(lokaliti,), 
+                                  use_container_width=True)
         else:
             st.info("Tiada rekod episode wabak dikesan buat masa ini.")
             
@@ -304,8 +317,28 @@ if uploaded_file is not None:
             
             st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
             st.subheader(f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}")
+            
+            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND ---
             st.markdown(f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*")
             
+            if rekod_episode_lokaliti > 0:
+                df_wabak_lok = df_lok[df_lok['Jenis Kes'] == 'Wabak'].copy()
+                if not df_wabak_lok.empty:
+                    # Hasilkan Cross-Tabulation: Paksi X (Minggu Epid), Data (Wabak No)
+                    pivot_epid = pd.crosstab(df_wabak_lok['Epid Minggu (Tkh Daftar)'], df_wabak_lok['Wabak No'])
+                    
+                    fig_sejarah, ax_sejarah = plt.subplots(figsize=(12, 4))
+                    pivot_epid.plot(kind='bar', stacked=True, ax=ax_sejarah, colormap='tab20', edgecolor='black')
+                    
+                    ax_sejarah.set_xlabel("Minggu Epid")
+                    ax_sejarah.set_ylabel("Jumlah Kes")
+                    ax_sejarah.set_title(f"Sejarah Trend & Kekerapan Episode Wabak di {pilihan_lokaliti}")
+                    ax_sejarah.legend(title="No. Wabak", bbox_to_anchor=(1.01, 1), loc='upper left')
+                    plt.tight_layout()
+                    
+                    st.pyplot(fig_sejarah)
+            # -----------------------------------------------
+
             col1, col2, col3, col4 = st.columns(4)
             kadar_velocity = jumlah_kes / tempoh_wabak_hari
             peratus_increment = (kadar_velocity / jumlah_kes) * 100 if jumlah_kes > 0 else 0
@@ -328,9 +361,9 @@ if uploaded_file is not None:
             tingkat_masalah_txt = "Tidak Dinyatakan"
             
             # ---------------------------------------------------------
-            # TABURAN KES MINGGU EPID
+            # TABURAN KES MINGGU EPID (Khusus Wabak Terpilih Sahaja)
             # ---------------------------------------------------------
-            st.subheader("📈 Taburan Kes Mengikut Minggu Epid")
+            st.subheader(f"📈 Taburan Kes Mengikut Minggu Epid ({pilihan_kategori})")
             kes_epid = df_filter['Epid Minggu (Tkh Daftar)'].value_counts().sort_index()
             
             if not kes_epid.empty:
