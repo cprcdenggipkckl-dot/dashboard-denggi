@@ -55,16 +55,25 @@ def parse_address(address):
         
     return pd.Series([blok, tingkat])
 
-# Pengurusan State
+# --- PENGURUSAN STATE (MEMORI APLIKASI) ---
 if 'selected_lokaliti' not in st.session_state:
     st.session_state.selected_lokaliti = None
 if 'selected_wabak' not in st.session_state:
     st.session_state.selected_wabak = None
+if 'episode_filter' not in st.session_state:
+    st.session_state.episode_filter = "Semua"
 
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = f"Wabak No: {wabak_no}"
+    st.session_state.episode_filter = "Semua" # Reset filter supaya senarai lokaliti penuh terpapar
 
+def set_lokaliti_sahaja(lokaliti):
+    st.session_state.selected_lokaliti = lokaliti
+    st.session_state.selected_wabak = None
+    st.session_state.episode_filter = "Semua" # Reset filter supaya senarai lokaliti penuh terpapar
+
+# --- ANTARA MUKA UTAMA ---
 st.title("🦟 Dashboard Analisis Kes Denggi (Spesifik Wabak)")
 
 uploaded_file = st.file_uploader("Muat Naik Fail Excel Data Denggi", type=['xlsx', 'xls', 'csv'])
@@ -79,24 +88,54 @@ if uploaded_file is not None:
         df['Tarikh Daftar'] = pd.to_datetime(df['Tarikh Daftar'], errors='coerce')
         df['Tarikh Onset'] = pd.to_datetime(df['Tarikh Onset'], errors='coerce')
         
+        # --- PENGIRAAN KEKERAPAN EPISODE WABAK KESELURUHAN ---
+        # Hanya ambil kira 'Jenis Kes == Wabak' (abaikan Satu Kes), dan kira keunikan 'Wabak No'
+        df_wabak_sahaja = df[df['Jenis Kes'] == 'Wabak'].dropna(subset=['Wabak No'])
+        kekerapan_wabak = df_wabak_sahaja.groupby('Lokaliti (Alamat Semasa)')['Wabak No'].nunique()
+        semua_lokaliti_list = sorted(df['Lokaliti (Alamat Semasa)'].dropna().unique())
+        episode_map = {lok: kekerapan_wabak.get(lok, 0) for lok in semua_lokaliti_list}
+        
         # ---------------------------------------------------------
-        # PENGURUSAN MENU SIDEBAR (Tetapan diletakkan di atas sekali)
+        # PENGURUSAN MENU SIDEBAR
         # ---------------------------------------------------------
         st.sidebar.header("Tetapan Analisis")
         
-        senarai_lokaliti = sorted(df['Lokaliti (Alamat Semasa)'].dropna().unique())
-        index_lokaliti = 0
-        if st.session_state.selected_lokaliti in senarai_lokaliti:
-            index_lokaliti = senarai_lokaliti.index(st.session_state.selected_lokaliti)
-            
-        pilihan_lokaliti = st.sidebar.selectbox("1. Pilih Lokaliti", senarai_lokaliti, index=index_lokaliti)
+        # 1. Tapis ikut Kekerapan Episode
+        episodes_ada = sorted(list(set(episode_map.values())))
+        pilihan_tapis_ep = ["Semua"] + [f"{int(e)} Episode" for e in episodes_ada if e > 0]
         
-        if pilihan_lokaliti != st.session_state.selected_lokaliti:
-            st.session_state.selected_lokaliti = pilihan_lokaliti
-            st.session_state.selected_wabak = None
+        try:
+            ep_idx = pilihan_tapis_ep.index(st.session_state.episode_filter)
+        except ValueError:
+            ep_idx = 0
             
-        df_lok = df[df['Lokaliti (Alamat Semasa)'] == pilihan_lokaliti].copy()
+        pilihan_filter_episode = st.sidebar.selectbox("1. Tapis Kekerapan (Episode):", pilihan_tapis_ep, index=ep_idx)
+        st.session_state.episode_filter = pilihan_filter_episode
         
+        # Tapis senarai lokaliti mengikut kekerapan yang dipilih
+        if pilihan_filter_episode == "Semua":
+            senarai_lokaliti_tapis = semua_lokaliti_list
+        else:
+            ep_val = int(pilihan_filter_episode.split()[0])
+            senarai_lokaliti_tapis = sorted([lok for lok, count in episode_map.items() if count == ep_val])
+        
+        if not senarai_lokaliti_tapis:
+            st.sidebar.warning("Tiada lokaliti untuk kategori ini.")
+            pilihan_lokaliti = None
+            df_lok = pd.DataFrame()
+        else:
+            index_lokaliti = 0
+            if st.session_state.selected_lokaliti in senarai_lokaliti_tapis:
+                index_lokaliti = senarai_lokaliti_tapis.index(st.session_state.selected_lokaliti)
+                
+            pilihan_lokaliti = st.sidebar.selectbox("2. Pilih Lokaliti", senarai_lokaliti_tapis, index=index_lokaliti)
+            
+            if pilihan_lokaliti != st.session_state.selected_lokaliti:
+                st.session_state.selected_lokaliti = pilihan_lokaliti
+                st.session_state.selected_wabak = None
+                
+            df_lok = df[df['Lokaliti (Alamat Semasa)'] == pilihan_lokaliti].copy()
+            
         pilihan_kategori = None
         if not df_lok.empty:
             pilihan_wabak_list = []
@@ -111,10 +150,10 @@ if uploaded_file is not None:
             if st.session_state.selected_wabak in pilihan_wabak_list:
                 index_wabak = pilihan_wabak_list.index(st.session_state.selected_wabak)
                 
-            pilihan_kategori = st.sidebar.selectbox("2. Kategori Kes/Wabak:", pilihan_wabak_list, index=index_wabak)
+            pilihan_kategori = st.sidebar.selectbox("3. Kategori Kes/Wabak:", pilihan_wabak_list, index=index_wabak)
             st.session_state.selected_wabak = pilihan_kategori
             
-        # --- FUNGSI MUAT TURUN PDF (Diletakkan di bawah Tetapan) ---
+        # --- FUNGSI MUAT TURUN PDF ---
         st.sidebar.markdown("---")
         if st.sidebar.button("🖨️ Muat Turun / Cetak PDF"):
             components.html(
@@ -130,7 +169,7 @@ if uploaded_file is not None:
 
         
         # ---------------------------------------------------------
-        # TOP MENU: HIGHLIGHT WABAK SEMASA SAHAJA 
+        # HIGHLIGHT 1: WABAK AKTIF SEMASA (TOP 5)
         # ---------------------------------------------------------
         df_aktif = df[(df['Jenis Kes'] == 'Wabak') & 
                       (df['Wabak Status'].notna()) & 
@@ -176,24 +215,54 @@ if uploaded_file is not None:
                 st.subheader("🚀 Kadar Peningkatan (%)")
                 top_kadar = df_highlight.nlargest(5, 'Kadar Peningkatan (%)')
                 for _, row in top_kadar.iterrows():
-                    if st.button(f"{row['Kadar Peningkatan (%)']:.1f}% - {row['Lokaliti']}", key=f"kadar_{row['Wabak No']}", use_container_width=True):
-                        set_lokaliti_dan_wabak(row['Lokaliti'], row['Wabak No'])
+                    st.button(f"{row['Kadar Peningkatan (%)']:.1f}% - {row['Lokaliti']}", 
+                              key=f"kadar_{row['Wabak No']}", 
+                              on_click=set_lokaliti_dan_wabak, 
+                              args=(row['Lokaliti'], row['Wabak No']), 
+                              use_container_width=True)
 
             with c2:
                 st.subheader("🔥 Jumlah Kes Tertinggi")
                 top_kes = df_highlight.nlargest(5, 'Jumlah Kes')
                 for _, row in top_kes.iterrows():
-                    if st.button(f"{row['Jumlah Kes']} Kes - {row['Lokaliti']}", key=f"kes_{row['Wabak No']}", use_container_width=True):
-                        set_lokaliti_dan_wabak(row['Lokaliti'], row['Wabak No'])
+                    st.button(f"{row['Jumlah Kes']} Kes - {row['Lokaliti']}", 
+                              key=f"kes_{row['Wabak No']}", 
+                              on_click=set_lokaliti_dan_wabak, 
+                              args=(row['Lokaliti'], row['Wabak No']), 
+                              use_container_width=True)
 
             with c3:
                 st.subheader("⏳ Tempoh Wabak Terlama")
                 top_tempoh = df_highlight.nlargest(5, 'Tempoh (Hari)')
                 for _, row in top_tempoh.iterrows():
-                    if st.button(f"{row['Tempoh (Hari)']} Hari - {row['Lokaliti']}", key=f"tempoh_{row['Wabak No']}", use_container_width=True):
-                        set_lokaliti_dan_wabak(row['Lokaliti'], row['Wabak No'])
+                    st.button(f"{row['Tempoh (Hari)']} Hari - {row['Lokaliti']}", 
+                              key=f"tempoh_{row['Wabak No']}", 
+                              on_click=set_lokaliti_dan_wabak, 
+                              args=(row['Lokaliti'], row['Wabak No']), 
+                              use_container_width=True)
         else:
             st.success("Tiada wabak aktif (semasa) direkodkan buat masa ini.")
+            
+        # ---------------------------------------------------------
+        # HIGHLIGHT 2: EPISODE WABAK TERTINGGI (TOP 5)
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.header("🔁 Highlight: Kekerapan Episode Wabak Tertinggi (Top 5)")
+        
+        top5_kekerapan = kekerapan_wabak.nlargest(5)
+        
+        if not top5_kekerapan.empty and top5_kekerapan.max() > 0:
+            top5_kekerapan = top5_kekerapan[top5_kekerapan > 0]
+            cols = st.columns(len(top5_kekerapan))
+            for i, (lokaliti, count) in enumerate(top5_kekerapan.items()):
+                with cols[i]:
+                    st.button(f"**{count} Episode**\n\n{lokaliti}", 
+                              key=f"kekerapan_{lokaliti}", 
+                              on_click=set_lokaliti_sahaja, 
+                              args=(lokaliti,), 
+                              use_container_width=True)
+        else:
+            st.info("Tiada rekod episode wabak dikesan buat masa ini.")
             
         st.markdown("---")
         
@@ -231,9 +300,11 @@ if uploaded_file is not None:
             
             jumlah_kes = len(df_filter)
             pentadbir_lokaliti = df_filter['Pihak Pentadbir Lokaliti'].mode()[0] if not df_filter['Pihak Pentadbir Lokaliti'].empty else "Tidak Dinyatakan"
+            rekod_episode_lokaliti = episode_map.get(pilihan_lokaliti, 0)
             
             st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
             st.subheader(f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}")
+            st.markdown(f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*")
             
             col1, col2, col3, col4 = st.columns(4)
             kadar_velocity = jumlah_kes / tempoh_wabak_hari
@@ -250,7 +321,6 @@ if uploaded_file is not None:
             kes_puncak = 0
             status_arah_txt = "tidak dapat dipastikan"
             
-            # Penetapan lalai pembolehubah untuk elak ralat jika tiada Blok
             max_val_specific = -1
             max_b_specific = "Tidak Dinyatakan"
             max_t_specific = "Tidak Dinyatakan"
@@ -442,13 +512,12 @@ if uploaded_file is not None:
             zon_bahaya_semasa = list(set(onset_locs))
             zon_str = ', '.join(zon_bahaya_semasa) if zon_bahaya_semasa else "Tidak Dinyatakan"
 
-            # Manipulasi Ayat Jika Tiada Maklumat Blok
             ayat_hotspot = f"Titik jangkitan tertumpu secara kritikal disahkan berada pada Blok {max_b_specific} Tingkat {max_t_specific}." if max_b_specific != "Tidak Dinyatakan" else ""
 
             kesimpulan_ai = f"""
             Berdasarkan data harian terkini bagi **{pilihan_lokaliti}** ({pilihan_kategori} - **{status_wabak_semasa}**):
             
-            *   **Keterukan Wabak:** Secara teknikal, rantaian penularan ini mula tercetus pada **{tarikh_mula_str}** (pendaftaran kes ke-2), bertahan selama **{tempoh_wabak_hari} hari**, dan telah merekodkan sejumlah **{jumlah_kes} kes**. Kelajuan penularan berada pada tahap **{kadar_velocity:.2f} kes sehari**.
+            *   **Keterukan Wabak:** Secara teknikal, rantaian penularan ini mula tercetus pada **{tarikh_mula_str}** (pendaftaran kes ke-2), bertahan selama **{tempoh_wabak_hari} hari**, dan telah merekodkan sejumlah **{jumlah_kes} kes**. Kelajuan penularan berada pada tahap **{kadar_velocity:.2f} kes sehari**. Secara kumulatif, lokaliti ini merekodkan sejarah **{rekod_episode_lokaliti} episode wabak**.
             *   **Trend Epidemiologi:** Jumlah kes memuncak pada **Minggu Epid {minggu_puncak_txt}** ({kes_puncak} kes). Analisis menunjukkan trend kes mingguan terkini sedang **{status_arah_txt}**.
             *   **Tumpuan Struktur (Hotspot Dalaman):** Secara kumulatif, **Blok {blok_masalah_txt}** adalah kawasan yang mencatatkan jumlah pesakit teramai manakala takungan penyakit paling banyak dikesan berkumpul di **Tingkat {tingkat_masalah_txt}**. {ayat_hotspot}
             *   **Zon Jangkitan Aktif Terkini:** Mangsa-mangsa dengan episod gejala (onset) paling baharu (newly active vectors) mendiami kawasan **{zon_str}**. 
