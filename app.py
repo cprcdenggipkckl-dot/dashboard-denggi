@@ -252,7 +252,6 @@ if uploaded_file is not None:
             top10_kekerapan = top10_kekerapan[top10_kekerapan > 0]
             items = list(top10_kekerapan.items())
             
-            # Baris Pertama (sehingga 5)
             cols1 = st.columns(min(len(items), 5))
             for i in range(min(len(items), 5)):
                 lokaliti, count = items[i]
@@ -263,7 +262,6 @@ if uploaded_file is not None:
                               args=(lokaliti,), 
                               use_container_width=True)
             
-            # Baris Kedua (jika lebih dari 5)
             if len(items) > 5:
                 cols2 = st.columns(len(items) - 5)
                 for i in range(5, len(items)):
@@ -318,25 +316,69 @@ if uploaded_file is not None:
             st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
             st.subheader(f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}")
             
-            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND ---
+            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND KESELURUHAN LOKALITI ---
             st.markdown(f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*")
             
             if rekod_episode_lokaliti > 0:
                 df_wabak_lok = df_lok[df_lok['Jenis Kes'] == 'Wabak'].copy()
                 if not df_wabak_lok.empty:
-                    # Hasilkan Cross-Tabulation: Paksi X (Minggu Epid), Data (Wabak No)
-                    pivot_epid = pd.crosstab(df_wabak_lok['Epid Minggu (Tkh Daftar)'], df_wabak_lok['Wabak No'])
+                    # 1. Kumpulkan data setiap wabak ke dalam SATU baris mewakili 1 bar
+                    wabak_summary = df_wabak_lok.groupby('Wabak No').agg(
+                        Jumlah_Kes=('Wabak No', 'count'),
+                        Tarikh_Mula=('Tarikh Daftar', 'min'),
+                        Minggu_Label=('Epid Minggu (Tkh Daftar)', lambda x: x.iloc[0])
+                    ).reset_index()
                     
-                    fig_sejarah, ax_sejarah = plt.subplots(figsize=(12, 4))
-                    pivot_epid.plot(kind='bar', stacked=True, ax=ax_sejarah, colormap='tab20', edgecolor='black')
+                    wabak_summary = wabak_summary.dropna(subset=['Tarikh_Mula'])
                     
-                    ax_sejarah.set_xlabel("Minggu Epid")
-                    ax_sejarah.set_ylabel("Jumlah Kes")
-                    ax_sejarah.set_title(f"Sejarah Trend & Kekerapan Episode Wabak di {pilihan_lokaliti}")
-                    ax_sejarah.legend(title="No. Wabak", bbox_to_anchor=(1.01, 1), loc='upper left')
-                    plt.tight_layout()
-                    
-                    st.pyplot(fig_sejarah)
+                    if not wabak_summary.empty:
+                        # 2. Tetapkan period/minggu (Isnin hingga Ahad) sebagai garisan masa berterusan
+                        wabak_summary['Period'] = wabak_summary['Tarikh_Mula'].dt.to_period('W')
+                        
+                        min_p = wabak_summary['Period'].min()
+                        max_p = wabak_summary['Period'].max()
+                        
+                        # 3. Wujudkan siri masa berterusan termasuk minggu kosong (tambah buffer 1 minggu tepi)
+                        all_periods = pd.period_range(min_p - 1, max_p + 1, freq='W')
+                        
+                        pivot_sejarah = wabak_summary.pivot_table(index='Period', columns='Wabak No', values='Jumlah_Kes', aggfunc='sum')
+                        
+                        # 4. Reindex untuk memaksa ruang kosong muncul jika tiada kes pada minggu tersebut
+                        pivot_sejarah = pivot_sejarah.reindex(all_periods)
+                        
+                        period_to_label = wabak_summary.set_index('Period')['Minggu_Label'].to_dict()
+                        
+                        # Fungsi mendapatkan Label Minggu Epid
+                        def get_label(p):
+                            if p in period_to_label and pd.notnull(period_to_label[p]):
+                                return str(period_to_label[p])
+                            return f"ME {p.week}" # Fallback
+                            
+                        x_labels = [get_label(p) for p in pivot_sejarah.index]
+                        pivot_sejarah.index = x_labels
+                        
+                        fig_sejarah, ax_sejarah = plt.subplots(figsize=(12, 4))
+                        
+                        # Plot bar: 1 bar = 1 Wabak (diwarnakan berbeza mengikut kolum wabak)
+                        pivot_sejarah.plot(kind='bar', stacked=True, ax=ax_sejarah, colormap='tab20', edgecolor='black', width=0.8)
+                        
+                        ax_sejarah.set_xlabel("Minggu Epid (Garis Masa Penularan Bermula)")
+                        ax_sejarah.set_ylabel("Jumlah Kes Terkumpul")
+                        ax_sejarah.set_title(f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}")
+                        ax_sejarah.legend(title="No. Wabak", bbox_to_anchor=(1.01, 1), loc='upper left')
+                        
+                        # Uruskan kekemasan label jika siri masa terlalu panjang
+                        n_ticks = len(x_labels)
+                        if n_ticks > 25:
+                            step = n_ticks // 15
+                            for i, label in enumerate(ax_sejarah.xaxis.get_ticklabels()):
+                                if i % step != 0 and str(label.get_text()) not in period_to_label.values():
+                                    label.set_visible(False)
+                                    
+                        plt.xticks(rotation=45, ha='right')
+                        plt.tight_layout()
+                        
+                        st.pyplot(fig_sejarah)
             # -----------------------------------------------
 
             col1, col2, col3, col4 = st.columns(4)
