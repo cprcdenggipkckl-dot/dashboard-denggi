@@ -329,7 +329,6 @@ if uploaded_file is not None:
                 if not df_wabak_lok.empty:
                     wabak_summary = []
                     
-                    # Cipta Peta Warna Unik untuk Setiap Wabak
                     df_wabak_lok['Wabak_Str'] = df_wabak_lok['Wabak No'].astype(str)
                     unique_wabaks_str = sorted(df_wabak_lok['Wabak_Str'].unique())
                     theme_colors = plotly.colors.qualitative.Plotly
@@ -384,7 +383,6 @@ if uploaded_file is not None:
                         df_plot['Tarikh Mula Str'] = df_plot['Tarikh Mula'].dt.strftime('%d-%m-%Y')
                         df_plot['Tarikh Akhir Str'] = df_plot['Tarikh Akhir'].dt.strftime('%d-%m-%Y')
                         
-                        # Plotly Chart
                         fig_sejarah = px.bar(
                             df_plot,
                             x='Minggu Epid',
@@ -395,12 +393,10 @@ if uploaded_file is not None:
                             title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}"
                         )
                         
-                        # Set X-Axis untuk memaparkan ruangan kosong
                         fig_sejarah.update_xaxes(type='category', categoryorder='array', categoryarray=x_labels, title="Minggu Epid (Garis Masa Penularan Bermula)")
                         fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
                         fig_sejarah.update_layout(legend_title="No. Wabak")
                         
-                        # Tetapan Tooltip Hover Berinformasi
                         fig_sejarah.update_traces(
                             hovertemplate="<br>".join([
                                 "<b>Wabak No:</b> %{customdata[3]}",
@@ -411,7 +407,6 @@ if uploaded_file is not None:
                             ])
                         )
                         
-                        # Render carta interaktif dengan kebolehan On_Select
                         selected_data = st.plotly_chart(
                             fig_sejarah, 
                             on_select="rerun", 
@@ -420,7 +415,6 @@ if uploaded_file is not None:
                             key=f"plotly_sejarah_{pilihan_lokaliti}"
                         )
                         
-                        # Menangkap event klik untuk mengubah paparan analisis di bawah
                         if selected_data and selected_data.selection.points:
                             clicked_w_no_str = selected_data.selection.points[0]['customdata'][3]
                             target_w_str = f"Wabak No: {clicked_w_no_str}"
@@ -429,12 +423,10 @@ if uploaded_file is not None:
                                 st.session_state.selected_wabak = target_w_str
                                 st.rerun()
 
-                        # --- LOGIK MENUKAR WARNA BACKGROUND BERDASARKAN WABAK TERPILIH ---
                         if st.session_state.selected_wabak and "Wabak No:" in st.session_state.selected_wabak:
                             current_w_str = st.session_state.selected_wabak.replace("Wabak No: ", "").strip()
                             if current_w_str in color_map:
                                 bg_hex = color_map[current_w_str]
-                                # Inject CSS dengan kelegapan 10% (hex opacity '1A')
                                 st.markdown(f"""
                                 <style>
                                 .stApp {{
@@ -443,6 +435,10 @@ if uploaded_file is not None:
                                 </style>
                                 """, unsafe_allow_html=True)
             # -----------------------------------------------
+
+            # --- PEMBETULAN RALAT: PENGIRAAN VELOCITY DIMASUKKAN SEMULA DI SINI ---
+            kadar_velocity = jumlah_kes / tempoh_wabak_hari
+            peratus_increment = (kadar_velocity / jumlah_kes) * 100 if jumlah_kes > 0 else 0
 
             col1, col2, col3, col4 = st.columns(4)
             
@@ -473,7 +469,6 @@ if uploaded_file is not None:
                 df_epid = kes_epid.reset_index()
                 df_epid.columns = ['Minggu Epid', 'Jumlah Kes']
                 
-                # Gunakan Plotly untuk graf seragam
                 fig_epid = px.bar(
                     df_epid, 
                     x='Minggu Epid', 
