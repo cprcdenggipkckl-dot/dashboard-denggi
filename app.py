@@ -4,10 +4,11 @@ import re
 from datetime import datetime
 import streamlit.components.v1 as components
 import plotly.express as px
+import plotly.colors
 
 st.set_page_config(page_title="Dashboard Analisis Denggi", layout="wide")
 
-# --- CSS KHUSUS UNTUK CETAKAN PDF ---
+# --- CSS KHUSUS UNTUK CETAKAN PDF & ELEMEN JADUAL ---
 st.markdown("""
     <style>
     @media print {
@@ -25,6 +26,10 @@ st.markdown("""
         padding: 8px;
         text-align: center;
         border: 1px solid #ddd;
+    }
+    /* Transisi lembut untuk pertukaran warna background */
+    .stApp {
+        transition: background-color 0.5s ease;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -312,128 +317,134 @@ if uploaded_file is not None:
             pentadbir_lokaliti = df_filter['Pihak Pentadbir Lokaliti'].mode()[0] if not df_filter['Pihak Pentadbir Lokaliti'].empty else "Tidak Dinyatakan"
             rekod_episode_lokaliti = episode_map.get(pilihan_lokaliti, 0)
             
-            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND KESELURUHAN (PLOTLY) ---
+            st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
+            st.subheader(f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}")
             
-            current_theme_color = None # Pembolehubah memori tema warna
+            st.markdown(f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*")
             
+            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (PLOTLY) ---
             if rekod_episode_lokaliti > 0:
                 df_wabak_lok = df_lok[df_lok['Jenis Kes'] == 'Wabak'].copy()
+                
                 if not df_wabak_lok.empty:
+                    wabak_summary = []
                     
-                    # Sediakan data spesifik setiap wabak untuk graf Plotly
-                    plot_data = []
-                    for w, group in df_wabak_lok.groupby('Wabak No'):
-                        jumlah_k = len(group)
+                    # Cipta Peta Warna Unik untuk Setiap Wabak
+                    df_wabak_lok['Wabak_Str'] = df_wabak_lok['Wabak No'].astype(str)
+                    unique_wabaks_str = sorted(df_wabak_lok['Wabak_Str'].unique())
+                    theme_colors = plotly.colors.qualitative.Plotly
+                    color_map = {w: theme_colors[i % len(theme_colors)] for i, w in enumerate(unique_wabaks_str)}
+                    
+                    for w_no, group in df_wabak_lok.groupby('Wabak_Str'):
+                        j_kes = len(group)
                         t_kes = group['Tarikh Daftar'].dropna().sort_values().tolist()
+                        
                         if len(t_kes) >= 2:
                             t_m = t_kes[1]
                         elif len(t_kes) == 1:
                             t_m = t_kes[0]
                         else:
-                            continue
+                            t_m = pd.Timestamp.today().normalize()
                             
-                        stat = str(group['Wabak Status'].iloc[0])
-                        if 'Tamat' in stat:
-                            t_a = t_kes[-1]
+                        status_w = str(group['Wabak Status'].iloc[0])
+                        if 'Tamat' in status_w:
+                            t_a = group['Tarikh Daftar'].max()
                         else:
                             t_a = pd.Timestamp.today().normalize()
                             
-                        temp = max((t_a - t_m).days, 1)
+                        tempoh = max((t_a - t_m).days, 1)
+                        m_label = group['Epid Minggu (Tkh Daftar)'].iloc[0]
                         
-                        plot_data.append({
-                            'Wabak No': str(w),
-                            'Jumlah Kes': jumlah_k,
-                            'Tarikh Plot': t_m, # Digunakan untuk paksi X garisan masa berterusan
-                            'Tarikh Mula': t_m.strftime('%d-%m-%Y'),
-                            'Tarikh Akhir': t_a.strftime('%d-%m-%Y') if 'Tamat' in stat else 'Aktif (Kini)',
-                            'Tempoh (Hari)': temp
+                        wabak_summary.append({
+                            'Wabak_Str': w_no,
+                            'Jumlah Kes': j_kes,
+                            'Tarikh Mula': t_m,
+                            'Tarikh Akhir': t_a,
+                            'Tempoh (Hari)': tempoh,
+                            'Minggu_Label': m_label
                         })
                         
-                    df_plot = pd.DataFrame(plot_data)
+                    df_plot = pd.DataFrame(wabak_summary)
                     
                     if not df_plot.empty:
-                        df_plot = df_plot.sort_values('Tarikh Plot')
+                        df_plot['Period'] = df_plot['Tarikh Mula'].dt.to_period('W')
+                        min_p = df_plot['Period'].min()
+                        max_p = df_plot['Period'].max()
+                        all_periods = pd.period_range(min_p - 1, max_p + 1, freq='W')
                         
-                        # Set Palette Warna Tegas
-                        color_seq = px.colors.qualitative.Bold
-                        color_map = {w: color_seq[i % len(color_seq)] for i, w in enumerate(df_plot['Wabak No'].unique())}
+                        period_to_label = df_plot.set_index('Period')['Minggu_Label'].to_dict()
+                        def get_label(p):
+                            if p in period_to_label and pd.notnull(period_to_label[p]):
+                                return str(period_to_label[p])
+                            return f"ME {p.week}"
+                            
+                        x_labels = [get_label(p) for p in all_periods]
                         
-                        # --- INJEKSI CSS TEMA WARNA DINAMIK (Berdasarkan Pilihan Semasa) ---
-                        if st.session_state.selected_wabak and "Wabak No:" in st.session_state.selected_wabak:
-                            sel_w_str = st.session_state.selected_wabak.replace("Wabak No: ", "").strip()
-                            for k, v in color_map.items():
-                                if float(k) == float(sel_w_str):
-                                    current_theme_color = v
-                                    break
-                                    
-                        if current_theme_color:
-                            st.markdown(f"""
-                            <style>
-                            div[data-testid="stMetricValue"] {{ color: {current_theme_color} !important; }}
-                            h1, h2, h3 {{ color: {current_theme_color} !important; }}
-                            .block-container {{ border-top: 8px solid {current_theme_color}; border-radius: 5px; }}
-                            </style>
-                            """, unsafe_allow_html=True)
+                        df_plot['Minggu Epid'] = df_plot['Period'].apply(get_label)
+                        df_plot['Tarikh Mula Str'] = df_plot['Tarikh Mula'].dt.strftime('%d-%m-%Y')
+                        df_plot['Tarikh Akhir Str'] = df_plot['Tarikh Akhir'].dt.strftime('%d-%m-%Y')
                         
-                        # Bina Graf Interaktif Plotly
+                        # Plotly Chart
                         fig_sejarah = px.bar(
                             df_plot,
-                            x='Tarikh Plot',
+                            x='Minggu Epid',
                             y='Jumlah Kes',
-                            color='Wabak No',
+                            color='Wabak_Str',
                             color_discrete_map=color_map,
-                            hover_data={
-                                'Tarikh Plot': False,
-                                'Wabak No': True,
-                                'Tarikh Mula': True,
-                                'Tarikh Akhir': True,
-                                'Tempoh (Hari)': True
-                            },
-                            labels={'Tarikh Plot': 'Garis Masa Penularan (Tarikh Mula)', 'Jumlah Kes': 'Jumlah Kes Terkumpul'}
+                            custom_data=['Tarikh Mula Str', 'Tarikh Akhir Str', 'Tempoh (Hari)', 'Wabak_Str'],
+                            title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}"
                         )
                         
+                        # Set X-Axis untuk memaparkan ruangan kosong
+                        fig_sejarah.update_xaxes(type='category', categoryorder='array', categoryarray=x_labels, title="Minggu Epid (Garis Masa Penularan Bermula)")
+                        fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
+                        fig_sejarah.update_layout(legend_title="No. Wabak")
+                        
+                        # Tetapan Tooltip Hover Berinformasi
                         fig_sejarah.update_traces(
-                            hovertemplate=(
-                                "<b>Wabak No: %{customdata[0]}</b><br>"
-                                "Jumlah Kes: %{y}<br>"
-                                "Tarikh Mula: %{customdata[1]}<br>"
-                                "Tarikh Akhir: %{customdata[2]}<br>"
-                                "Tempoh: %{customdata[3]} Hari<extra></extra>"
-                            ),
-                            width=1000 * 3600 * 24 * 7 # Paksa lebar bar menyamai 7 hari
+                            hovertemplate="<br>".join([
+                                "<b>Wabak No:</b> %{customdata[3]}",
+                                "<b>Tarikh Mula:</b> %{customdata[0]}",
+                                "<b>Tarikh Akhir:</b> %{customdata[1]}",
+                                "<b>Tempoh Wabak:</b> %{customdata[2]} Hari",
+                                "<extra></extra>"
+                            ])
                         )
                         
-                        fig_sejarah.update_layout(
-                            title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}",
-                            xaxis_tickformat="%b %Y",
-                            xaxis=dict(showgrid=True),
-                            bargap=0.1
+                        # Render carta interaktif dengan kebolehan On_Select
+                        selected_data = st.plotly_chart(
+                            fig_sejarah, 
+                            on_select="rerun", 
+                            selection_mode="points", 
+                            use_container_width=True, 
+                            key=f"plotly_sejarah_{pilihan_lokaliti}"
                         )
+                        
+                        # Menangkap event klik untuk mengubah paparan analisis di bawah
+                        if selected_data and selected_data.selection.points:
+                            clicked_w_no_str = selected_data.selection.points[0]['customdata'][3]
+                            target_w_str = f"Wabak No: {clicked_w_no_str}"
+                            
+                            if st.session_state.selected_wabak != target_w_str:
+                                st.session_state.selected_wabak = target_w_str
+                                st.rerun()
 
-            # --- PAPARAN HEADER & GRAF DI SINI ---
-            st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
-            st.subheader(f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}")
-            st.markdown(f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*")
-            
-            if rekod_episode_lokaliti > 0 and not df_plot.empty:
-                # Paparkan graf dan tangkap isyarat KliK! (on_select)
-                try:
-                    event = st.plotly_chart(fig_sejarah, on_select="rerun", selection_mode="points", key=f"hist_{pilihan_lokaliti}")
-                    
-                    if event and len(event.selection['points']) > 0:
-                        clicked_w_no = event.selection['points'][0]['customdata'][0]
-                        target_wabak_str = f"Wabak No: {float(clicked_w_no)}"
-                        
-                        if st.session_state.selected_wabak != target_wabak_str:
-                            st.session_state.selected_wabak = target_wabak_str
-                            st.rerun() # Refresh serta merta untuk tukar tema & data!
-                except TypeError:
-                    st.plotly_chart(fig_sejarah, key=f"hist_{pilihan_lokaliti}")
-                    st.info("💡 (Sila kemas kini Streamlit ke versi >=1.35.0 melalui terminal/CMD `pip install --upgrade streamlit` untuk membolehkan ciri graf interaktif boleh di-klik).")
+                        # --- LOGIK MENUKAR WARNA BACKGROUND BERDASARKAN WABAK TERPILIH ---
+                        if st.session_state.selected_wabak and "Wabak No:" in st.session_state.selected_wabak:
+                            current_w_str = st.session_state.selected_wabak.replace("Wabak No: ", "").strip()
+                            if current_w_str in color_map:
+                                bg_hex = color_map[current_w_str]
+                                # Inject CSS dengan kelegapan 10% (hex opacity '1A')
+                                st.markdown(f"""
+                                <style>
+                                .stApp {{
+                                    background-color: {bg_hex}1A !important;
+                                }}
+                                </style>
+                                """, unsafe_allow_html=True)
+            # -----------------------------------------------
 
             col1, col2, col3, col4 = st.columns(4)
-            kadar_velocity = jumlah_kes / tempoh_wabak_hari
-            peratus_increment = (kadar_velocity / jumlah_kes) * 100 if jumlah_kes > 0 else 0
             
             col1.metric("Jumlah Kes", jumlah_kes)
             col2.metric(f"Tempoh (Hari) *Bermula {tarikh_mula_str}*", tempoh_wabak_hari)
@@ -451,6 +462,47 @@ if uploaded_file is not None:
             max_t_specific = "Tidak Dinyatakan"
             blok_masalah_txt = "Tidak Dinyatakan"
             tingkat_masalah_txt = "Tidak Dinyatakan"
+            
+            # ---------------------------------------------------------
+            # TABURAN KES MINGGU EPID (Wabak Terpilih Sahaja - Plotly)
+            # ---------------------------------------------------------
+            st.subheader(f"📈 Taburan Kes Mengikut Minggu Epid ({pilihan_kategori})")
+            kes_epid = df_filter['Epid Minggu (Tkh Daftar)'].value_counts().sort_index()
+            
+            if not kes_epid.empty:
+                df_epid = kes_epid.reset_index()
+                df_epid.columns = ['Minggu Epid', 'Jumlah Kes']
+                
+                # Gunakan Plotly untuk graf seragam
+                fig_epid = px.bar(
+                    df_epid, 
+                    x='Minggu Epid', 
+                    y='Jumlah Kes', 
+                    color_discrete_sequence=['lightcoral'],
+                    text='Jumlah Kes'
+                )
+                fig_epid.update_traces(textposition='outside')
+                fig_epid.update_layout(xaxis_title="Minggu Epid", yaxis_title="Jumlah Kes", height=350)
+                
+                st.plotly_chart(fig_epid, use_container_width=True, key="graf_minggu_epid")
+                
+                minggu_puncak_txt = str(kes_epid.idxmax())
+                kes_puncak = kes_epid.max()
+                purata_mingguan = kes_epid.mean()
+                
+                ulasan_epid = f"**Analisis Terperinci Mingguan:**\n"
+                ulasan_epid += f"- Secara purata, terdapat **{purata_mingguan:.1f} kes** didaftarkan setiap minggu.\n"
+                ulasan_epid += f"- Minggu puncak bagi penularan ini adalah pada **Minggu Epid {minggu_puncak_txt}** dengan rekod tertinggi **{kes_puncak} kes**.\n"
+                
+                if len(kes_epid) >= 2:
+                    m_kini = kes_epid.iloc[-1]
+                    m_lalu = kes_epid.iloc[-2]
+                    perbezaan = m_kini - m_lalu
+                    status_arah_txt = "meningkat" if perbezaan > 0 else "menurun" if perbezaan < 0 else "mendatar"
+                    ulasan_epid += f"- Perbandingan minggu terkini menunjukkan trend **{status_arah_txt}** ({m_kini} kes vs {m_lalu} kes pada minggu sebelumnya)."
+                st.info(ulasan_epid)
+                
+            st.markdown("---")
             
             # ---------------------------------------------------------
             # TABURAN BLOK & TINGKAT + PERINCIAN
@@ -612,6 +664,7 @@ if uploaded_file is not None:
             Berdasarkan data harian terkini bagi **{pilihan_lokaliti}** ({pilihan_kategori} - **{status_wabak_semasa}**):
             
             *   **Keterukan Wabak:** Secara teknikal, rantaian penularan ini mula tercetus pada **{tarikh_mula_str}** (pendaftaran kes ke-2), bertahan selama **{tempoh_wabak_hari} hari**, dan telah merekodkan sejumlah **{jumlah_kes} kes**. Kelajuan penularan berada pada tahap **{kadar_velocity:.2f} kes sehari**. Secara kumulatif, lokaliti ini merekodkan sejarah **{rekod_episode_lokaliti} episode wabak**.
+            *   **Trend Epidemiologi:** Jumlah kes memuncak pada **Minggu Epid {minggu_puncak_txt}** ({kes_puncak} kes). Analisis menunjukkan trend kes mingguan terkini sedang **{status_arah_txt}**.
             *   **Tumpuan Struktur (Hotspot Dalaman):** Secara kumulatif, **Blok {blok_masalah_txt}** adalah kawasan yang mencatatkan jumlah pesakit teramai manakala takungan penyakit paling banyak dikesan berkumpul di **Tingkat {tingkat_masalah_txt}**. {ayat_hotspot}
             *   **Zon Jangkitan Aktif Terkini:** Mangsa-mangsa dengan episod gejala (onset) paling baharu (newly active vectors) mendiami kawasan **{zon_str}**. 
             *   **Demografi Klinikal:** Kes paling banyak melibatkan kumpulan **{top_warga}** berkerjaya **{top_pekerjaan}**. Fasiliti yang paling banyak menotifikasikan kes dari wabak ini ialah **{fasiliti_utama_txt}**.
