@@ -27,7 +27,6 @@ st.markdown("""
         text-align: center;
         border: 1px solid #ddd;
     }
-    /* Transisi lembut untuk pertukaran warna background */
     .stApp {
         transition: background-color 0.5s ease;
     }
@@ -346,21 +345,35 @@ if uploaded_file is not None:
                             t_m = pd.Timestamp.today().normalize()
                             
                         status_w = str(group['Wabak Status'].iloc[0])
+                        t_last = group['Tarikh Daftar'].max()
+                        
+                        # --- LOGIK LABEL & TARIKH DINAMIK UNTUK TOOLTIP ---
                         if 'Tamat' in status_w:
-                            t_a = group['Tarikh Daftar'].max()
+                            t_a = t_last
+                            t_a_str = t_a.strftime('%d-%m-%Y')
+                            tempoh = max((t_a - t_m).days, 1)
+                            lbl_tarikh = "Tarikh Kes Terakhir"
+                            lbl_tempoh = "Tempoh Wabak"
                         else:
-                            t_a = pd.Timestamp.today().normalize()
-                            
-                        tempoh = max((t_a - t_m).days, 1)
+                            # SOP KKM: Anggaran Jangkaan Tamat = Kes Terakhir + 14 Hari
+                            t_anggaran_tamat = t_last + pd.Timedelta(days=14)
+                            t_a_str = t_anggaran_tamat.strftime('%d-%m-%Y')
+                            tempoh = max((pd.Timestamp.today().normalize() - t_m).days, 1)
+                            lbl_tarikh = "Anggaran Tarikh Tamat"
+                            lbl_tempoh = "Tempoh (Sehingga Kini)"
+                        
                         m_label = group['Epid Minggu (Tkh Daftar)'].iloc[0]
                         
                         wabak_summary.append({
                             'Wabak_Str': w_no,
                             'Jumlah Kes': j_kes,
                             'Tarikh Mula': t_m,
-                            'Tarikh Akhir': t_a,
+                            'Tarikh Mula Str': t_m.strftime('%d-%m-%Y'),
+                            'Tarikh Akhir Str': t_a_str,
                             'Tempoh (Hari)': tempoh,
-                            'Minggu_Label': m_label
+                            'Minggu_Label': m_label,
+                            'Label Tarikh': lbl_tarikh,
+                            'Label Tempoh': lbl_tempoh
                         })
                         
                     df_plot = pd.DataFrame(wabak_summary)
@@ -380,16 +393,16 @@ if uploaded_file is not None:
                         x_labels = [get_label(p) for p in all_periods]
                         
                         df_plot['Minggu Epid'] = df_plot['Period'].apply(get_label)
-                        df_plot['Tarikh Mula Str'] = df_plot['Tarikh Mula'].dt.strftime('%d-%m-%Y')
-                        df_plot['Tarikh Akhir Str'] = df_plot['Tarikh Akhir'].dt.strftime('%d-%m-%Y')
                         
+                        # Plotly Chart
                         fig_sejarah = px.bar(
                             df_plot,
                             x='Minggu Epid',
                             y='Jumlah Kes',
                             color='Wabak_Str',
                             color_discrete_map=color_map,
-                            custom_data=['Tarikh Mula Str', 'Tarikh Akhir Str', 'Tempoh (Hari)', 'Wabak_Str'],
+                            # Susun parameter custom_data
+                            custom_data=['Tarikh Mula Str', 'Tarikh Akhir Str', 'Tempoh (Hari)', 'Wabak_Str', 'Label Tarikh', 'Label Tempoh'],
                             title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}"
                         )
                         
@@ -397,12 +410,13 @@ if uploaded_file is not None:
                         fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
                         fig_sejarah.update_layout(legend_title="No. Wabak")
                         
+                        # Setkan Hover Template Dinamik Memanggil Parameter dari Custom Data
                         fig_sejarah.update_traces(
                             hovertemplate="<br>".join([
                                 "<b>Wabak No:</b> %{customdata[3]}",
                                 "<b>Tarikh Mula:</b> %{customdata[0]}",
-                                "<b>Tarikh Akhir:</b> %{customdata[1]}",
-                                "<b>Tempoh Wabak:</b> %{customdata[2]} Hari",
+                                "<b>%{customdata[4]}:</b> %{customdata[1]}",
+                                "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
                                 "<extra></extra>"
                             ])
                         )
@@ -436,7 +450,7 @@ if uploaded_file is not None:
                                 """, unsafe_allow_html=True)
             # -----------------------------------------------
 
-            # --- PEMBETULAN RALAT: PENGIRAAN VELOCITY DIMASUKKAN SEMULA DI SINI ---
+            # PENGIRAAN VELOCITY
             kadar_velocity = jumlah_kes / tempoh_wabak_hari
             peratus_increment = (kadar_velocity / jumlah_kes) * 100 if jumlah_kes > 0 else 0
 
@@ -460,7 +474,7 @@ if uploaded_file is not None:
             tingkat_masalah_txt = "Tidak Dinyatakan"
             
             # ---------------------------------------------------------
-            # TABURAN KES MINGGU EPID (Wabak Terpilih Sahaja - Plotly)
+            # TABURAN KES MINGGU EPID (Wabak Terpilih Sahaja)
             # ---------------------------------------------------------
             st.subheader(f"📈 Taburan Kes Mengikut Minggu Epid ({pilihan_kategori})")
             kes_epid = df_filter['Epid Minggu (Tkh Daftar)'].value_counts().sort_index()
