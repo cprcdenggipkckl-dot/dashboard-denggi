@@ -5,6 +5,7 @@ from datetime import datetime
 import streamlit.components.v1 as components
 import plotly.express as px
 import plotly.colors
+import matplotlib.pyplot as plt  # Wajib ada untuk fungsi mewarna jadual (background_gradient)
 
 st.set_page_config(page_title="Dashboard Analisis Denggi", layout="wide")
 
@@ -347,7 +348,6 @@ if uploaded_file is not None:
                         status_w = str(group['Wabak Status'].iloc[0])
                         t_last = group['Tarikh Daftar'].max()
                         
-                        # --- LOGIK LABEL & TARIKH DINAMIK UNTUK TOOLTIP ---
                         if 'Tamat' in status_w:
                             t_a = t_last
                             t_a_str = t_a.strftime('%d-%m-%Y')
@@ -355,7 +355,6 @@ if uploaded_file is not None:
                             lbl_tarikh = "Tarikh Kes Terakhir"
                             lbl_tempoh = "Tempoh Wabak"
                         else:
-                            # SOP KKM: Anggaran Jangkaan Tamat = Kes Terakhir + 14 Hari
                             t_anggaran_tamat = t_last + pd.Timedelta(days=14)
                             t_a_str = t_anggaran_tamat.strftime('%d-%m-%Y')
                             tempoh = max((pd.Timestamp.today().normalize() - t_m).days, 1)
@@ -394,14 +393,12 @@ if uploaded_file is not None:
                         
                         df_plot['Minggu Epid'] = df_plot['Period'].apply(get_label)
                         
-                        # Plotly Chart
                         fig_sejarah = px.bar(
                             df_plot,
                             x='Minggu Epid',
                             y='Jumlah Kes',
                             color='Wabak_Str',
                             color_discrete_map=color_map,
-                            # Susun parameter custom_data
                             custom_data=['Tarikh Mula Str', 'Tarikh Akhir Str', 'Tempoh (Hari)', 'Wabak_Str', 'Label Tarikh', 'Label Tempoh'],
                             title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}"
                         )
@@ -410,7 +407,6 @@ if uploaded_file is not None:
                         fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
                         fig_sejarah.update_layout(legend_title="No. Wabak")
                         
-                        # Setkan Hover Template Dinamik Memanggil Parameter dari Custom Data
                         fig_sejarah.update_traces(
                             hovertemplate="<br>".join([
                                 "<b>Wabak No:</b> %{customdata[3]}",
@@ -450,7 +446,6 @@ if uploaded_file is not None:
                                 """, unsafe_allow_html=True)
             # -----------------------------------------------
 
-            # PENGIRAAN VELOCITY
             kadar_velocity = jumlah_kes / tempoh_wabak_hari
             peratus_increment = (kadar_velocity / jumlah_kes) * 100 if jumlah_kes > 0 else 0
 
