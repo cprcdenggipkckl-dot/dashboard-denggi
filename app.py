@@ -39,25 +39,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Lajur penting yang digunakan oleh sistem (untuk pengecilan saiz fail sejarah 5 tahun)
-ESSENTIAL_COLUMNS = [
-    "Notifikasi No",
-    "Kes No",
-    "Tarikh Daftar",
-    "Tarikh Onset",
-    "Lokaliti (Alamat Semasa)",
-    "Jenis Kes",
-    "Wabak No",
-    "Wabak Status",
-    "Pihak Pentadbir Lokaliti",
-    "Epid Tahun (Tkh Daftar)",
-    "Epid Minggu (Tkh Daftar)",
-    "No Rumah",
-    "Kemudahan Kesihatan(Maklumat Pemberitahu)",
-    "Status Kewarganegaraan",
-    "Pekerjaan",
-]
-
 
 def read_raw_bytes(raw_bytes, file_name):
     """Membaca fail Excel (.xlsx, .xls) dan CSV (Microsoft Excel Comma Separated Values File) secara automatik."""
@@ -263,36 +244,6 @@ uploaded_file = st.file_uploader(
     "Muat Naik Fail Harian Tahun Semasa (2026) - Format Excel atau CSV",
     type=["xlsx", "xls", "csv"],
 )
-
-# --- ALAT BANTUAN DI SIDEBAR: PENYEDIAAN FAIL SEJARAH 5 TAHUN ---
-with st.sidebar.expander("🛠️ Penyediaan Fail Sejarah 5 Tahun"):
-    st.caption(
-        "Muat naik fail mentah 5 tahun (CSV/Excel) di sini untuk menjana fail `data_sejarah.csv` yang ringan & tanpa maklumat peribadi pesakit sebelum dimuat naik ke GitHub."
-    )
-    raw_hist_upload = st.file_uploader(
-        "Pilih Fail Mentah 5 Tahun",
-        type=["xlsx", "xls", "csv"],
-        key="raw_hist_converter",
-    )
-    if raw_hist_upload is not None:
-        try:
-            df_raw_conv = load_data(raw_hist_upload)
-            cols_to_keep = [c for c in ESSENTIAL_COLUMNS if c in df_raw_conv.columns]
-            df_slim = df_raw_conv[cols_to_keep]
-            csv_slim_bytes = df_slim.to_csv(index=False).encode("utf-8-sig")
-            size_mb = len(csv_slim_bytes) / (1024 * 1024)
-            st.success(
-                f"Sedia! {len(df_slim):,} rekod dimampatkan kepada **{size_mb:.2f} MB**."
-            )
-            st.download_button(
-                label="⬇️ Muat Turun data_sejarah.csv",
-                data=csv_slim_bytes,
-                file_name="data_sejarah.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
-        except Exception as conv_err:
-            st.error(f"Ralat penukaran: {conv_err}")
 
 if uploaded_file is not None or df_hist is not None:
     try:
