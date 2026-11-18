@@ -16,7 +16,7 @@ st.set_page_config(page_title="Dashboard Analisis Denggi", layout="wide")
 
 MS_PER_DAY = 24 * 60 * 60 * 1000
 
-# --- CSS KHUSUS UNTUK CETAKAN PDF, ELEMEN JADUAL & TOOLTIP METRIK ---
+# --- CSS KHUSUS UNTUK CETAKAN PDF, JADUAL STATUS WABAK & TOOLTIP METRIK ---
 st.markdown(
     """
     <style>
@@ -40,6 +40,113 @@ st.markdown(
     }
     .stApp {
         transition: background-color 0.5s ease;
+    }
+    /* Gaya Jadual STATUS WABAK (DENGGI) sepadan laporan harian */
+    .sw-title-bar {
+        background-color: #d9d9d9;
+        color: #000000;
+        font-weight: 800;
+        font-size: 1.25rem;
+        text-align: center;
+        padding: 8px 12px;
+        border: 1.5px solid #404040;
+        letter-spacing: 0.5px;
+    }
+    .sw-section-bar {
+        background-color: #7f2704;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-align: center;
+        padding: 6px 10px;
+        border-left: 1.5px solid #404040;
+        border-right: 1.5px solid #404040;
+        border-bottom: 1px solid #404040;
+        letter-spacing: 0.4px;
+    }
+    .sw-empty-row {
+        background-color: #ffffff;
+        color: #000000;
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-align: center;
+        padding: 8px;
+        border-left: 1.5px solid #404040;
+        border-right: 1.5px solid #404040;
+        border-bottom: 1.5px solid #404040;
+    }
+    .sw-grid-wrapper div[data-testid="stHorizontalBlock"] {
+        gap: 0px !important;
+        margin-bottom: 0px !important;
+    }
+    .sw-grid-wrapper div[data-testid="column"] {
+        padding: 0px !important;
+    }
+    .sw-hdr-cell {
+        background-color: #fce4d6;
+        color: #000000;
+        font-weight: 700;
+        font-size: 0.76rem;
+        line-height: 1.15;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border: 0.5px solid #595959;
+        padding: 2px 4px;
+        box-sizing: border-box;
+    }
+    .sw-data-cell {
+        font-size: 0.82rem;
+        line-height: 1.15;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border: 0.5px solid #595959;
+        padding: 2px 5px;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sw-grid-wrapper div[data-testid="stButton"] {
+        margin: 0px !important;
+    }
+    .sw-grid-wrapper div[data-testid="stButton"] > button {
+        width: 100% !important;
+        height: 36px !important;
+        min-height: 36px !important;
+        padding: 2px 8px !important;
+        margin: 0px !important;
+        border-radius: 0px !important;
+        border: 0.5px solid #595959 !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        font-size: 0.81rem !important;
+        font-weight: 500 !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        box-shadow: none !important;
+        line-height: 1.15 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+    .sw-grid-wrapper div[data-testid="stButton"] > button:hover {
+        background-color: #e8f1ff !important;
+        color: #0b57d0 !important;
+        text-decoration: underline !important;
+        border-color: #0b57d0 !important;
+    }
+    .sw-grid-wrapper div[data-testid="stButton"] > button p {
+        font-size: 0.81rem !important;
+        margin: 0px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
     }
     /* Kad metrik interaktif dengan kesan tonasi & gelembung info */
     .metric-hover-card {
@@ -150,6 +257,31 @@ def format_wabak_no(val):
         return str(val).strip()
 
 
+def format_date_short(dt_val):
+    """Memformat tarikh kepada D/M/YYYY seperti dalam laporan jadual harian."""
+    if pd.isna(dt_val):
+        return "-"
+    return f"{dt_val.day}/{dt_val.month}/{dt_val.year}"
+
+
+def map_kaw_jagaan(val):
+    s = str(val).upper().strip()
+    if "DEWAN BANDARAYA" in s or "DBKL" in s:
+        return "DBKL"
+    if "PKD" in s or "KKM" in s or "KESIHATAN" in s:
+        return "KKM"
+    return s if s and s != "NAN" else "-"
+
+
+def map_parlimen(val):
+    s = str(val).upper().strip()
+    if "BANDAR TUN RAZAK" in s or s == "BTR":
+        return "BTR"
+    if "CHERAS" in s:
+        return "CHERAS"
+    return s.replace("PARLIMEN ", "") if s and s != "NAN" else "-"
+
+
 def read_raw_bytes(raw_bytes, file_name):
     """Membaca fail Excel (.xlsx, .xls) dan CSV (Microsoft Excel Comma Separated Values File) secara automatik."""
     file_name = file_name.lower()
@@ -212,7 +344,7 @@ def read_raw_bytes(raw_bytes, file_name):
             )
 
     # Penukaran tarikh format Malaysia (DD/MM/YYYY)
-    for date_col in ["Tarikh Daftar", "Tarikh Onset"]:
+    for date_col in ["Tarikh Daftar", "Tarikh Onset", "Tkh Notifikasi"]:
         if date_col in df.columns:
             try:
                 df[date_col] = pd.to_datetime(
@@ -304,6 +436,221 @@ def parse_address(address):
     return pd.Series([blok, tingkat])
 
 
+def render_status_wabak_table(df_all, episode_map):
+    """Menjana jadual STATUS WABAK (DENGGI) merangkumi WABAK TAMAT dan SENARAI WABAK AKTIF."""
+    date_candidates = []
+    for c in ["Tarikh Daftar", "Tkh Notifikasi"]:
+        if c in df_all.columns and df_all[c].notna().any():
+            date_candidates.append(df_all[c].max())
+    report_date = (
+        max(date_candidates).normalize()
+        if date_candidates
+        else pd.Timestamp.today().normalize()
+    )
+
+    df_wabak = df_all[df_all["Jenis Kes"] == "Wabak"].dropna(subset=["Wabak No"]).copy()
+
+    def build_summary_rows(df_subset, is_tamat_section=False):
+        rows = []
+        if df_subset.empty:
+            return pd.DataFrame()
+
+        for (w_no, lok), grp in df_subset.groupby(["Wabak No", "Lokaliti (Alamat Semasa)"]):
+            status_raw = str(grp["Wabak Status"].iloc[0]).strip().upper()
+            kaw = (
+                map_kaw_jagaan(grp["Pihak Pentadbir Lokaliti"].iloc[0])
+                if "Pihak Pentadbir Lokaliti" in grp.columns
+                else "-"
+            )
+            parl = (
+                map_parlimen(grp["Mukim/Zon (Alamat Semasa)"].iloc[0])
+                if "Mukim/Zon (Alamat Semasa)" in grp.columns
+                else "-"
+            )
+            jum_kes = len(grp)
+            bil_ep = episode_map.get(lok, 1)
+
+            # Tarikh Mula = Tkh Notifikasi kes ke-2 (fallback kepada Tarikh Daftar)
+            if "Tkh Notifikasi" in grp.columns and grp["Tkh Notifikasi"].notna().any():
+                notif_dates = grp["Tkh Notifikasi"].dropna().sort_values().tolist()
+                t_mula = notif_dates[1] if len(notif_dates) >= 2 else notif_dates[0]
+                max_ref = grp["Tkh Notifikasi"].max()
+            else:
+                daftar_dates = grp["Tarikh Daftar"].dropna().sort_values().tolist()
+                if not daftar_dates:
+                    continue
+                t_mula = daftar_dates[1] if len(daftar_dates) >= 2 else daftar_dates[0]
+                max_ref = grp["Tarikh Daftar"].max()
+
+            t_tamat_est = max_ref + pd.Timedelta(days=14)
+
+            if is_tamat_section:
+                # Hanya paparkan wabak yang baru tamat pada tarikh laporan
+                if t_tamat_est.normalize() != report_date:
+                    continue
+                tempoh = max((t_tamat_est - t_mula).days, 1)
+            else:
+                tempoh = max((report_date - t_mula).days, 1)
+
+            rows.append(
+                {
+                    "Wabak No": w_no,
+                    "STATUS WABAK": status_raw,
+                    "KAW JAGAAN": kaw,
+                    "PARLIMEN": parl,
+                    "LOKALITI": lok,
+                    "JUMLAH KES": jum_kes,
+                    "BIL EPISOD": bil_ep,
+                    "TEMPOH WABAK": tempoh,
+                    "TARIKH MULA": format_date_short(t_mula),
+                    "TARIKH TAMAT": format_date_short(t_tamat_est),
+                }
+            )
+
+        if not rows:
+            return pd.DataFrame()
+
+        res_df = pd.DataFrame(rows)
+        status_order = {
+            "WABAK TERKAWAL": 1,
+            "WABAK TAK TERKAWAL": 2,
+            "HOTSPOT": 3,
+            "WABAK TAMAT": 4,
+        }
+        kaw_order = {"DBKL": 1, "KKM": 2}
+        parl_order = {"BTR": 1, "CHERAS": 2}
+
+        res_df["_s1"] = res_df["STATUS WABAK"].map(status_order).fillna(9)
+        res_df["_s2"] = res_df["KAW JAGAAN"].map(kaw_order).fillna(9)
+        res_df["_s3"] = res_df["PARLIMEN"].map(parl_order).fillna(9)
+        res_df = res_df.sort_values(by=["_s1", "_s2", "_s3", "LOKALITI"]).reset_index(
+            drop=True
+        )
+        res_df["BIL"] = res_df.groupby("STATUS WABAK").cumcount() + 1
+        return res_df
+
+    df_tamat_sub = df_wabak[
+        df_wabak["Wabak Status"].astype(str).str.contains("Tamat", case=False, na=False)
+    ]
+    df_aktif_sub = df_wabak[
+        df_wabak["Wabak Status"].notna()
+        & (~df_wabak["Wabak Status"].astype(str).str.contains("Tamat", case=False, na=False))
+    ]
+
+    df_tamat_table = build_summary_rows(df_tamat_sub, is_tamat_section=True)
+    df_aktif_table = build_summary_rows(df_aktif_sub, is_tamat_section=False)
+
+    col_ratios = [0.42, 1.55, 0.85, 0.85, 3.45, 0.82, 0.78, 0.82, 0.93, 0.93]
+    headers_html = [
+        "BIL",
+        "STATUS WABAK",
+        "KAW JAGAAN",
+        "PARLIMEN",
+        "LOKALITI",
+        "JUMLAH<br>KES",
+        "BIL<br>EPISOD",
+        "TEMPOH<br>WABAK",
+        "TARIKH MULA",
+        "TARIKH<br>TAMAT",
+    ]
+
+    status_colors = {
+        "WABAK TERKAWAL": ("#f8cbad", "#000000"),
+        "WABAK TAK TERKAWAL": ("#5b9bd5", "#000000"),
+        "HOTSPOT": ("#ff0000", "#000000"),
+        "WABAK TAMAT": ("#e2efda", "#000000"),
+    }
+    kaw_colors = {
+        "DBKL": ("#8faadc", "#000000"),
+        "KKM": ("#a9d08e", "#000000"),
+    }
+    parl_colors = {
+        "BTR": ("#c5b3e6", "#000000"),
+        "CHERAS": ("#ffe699", "#000000"),
+    }
+
+    def render_table_section(section_title, df_sec, key_prefix):
+        st.markdown(
+            f'<div class="sw-section-bar">{html.escape(section_title)}</div>',
+            unsafe_allow_html=True,
+        )
+        hdr_cols = st.columns(col_ratios)
+        for idx_h, h_txt in enumerate(headers_html):
+            hdr_cols[idx_h].markdown(
+                f'<div class="sw-hdr-cell">{h_txt}</div>', unsafe_allow_html=True
+            )
+
+        if df_sec.empty:
+            st.markdown('<div class="sw-empty-row">TIADA</div>', unsafe_allow_html=True)
+            return
+
+        for idx_r, row in df_sec.iterrows():
+            r_cols = st.columns(col_ratios)
+            st_bg, st_fg = status_colors.get(row["STATUS WABAK"], ("#ffffff", "#000000"))
+            kw_bg, kw_fg = kaw_colors.get(row["KAW JAGAAN"], ("#ffffff", "#000000"))
+            pl_bg, pl_fg = parl_colors.get(row["PARLIMEN"], ("#ffffff", "#000000"))
+
+            r_cols[0].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["BIL"]}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[1].markdown(
+                f'<div class="sw-data-cell" style="background:{st_bg};color:{st_fg};font-weight:700;">{html.escape(row["STATUS WABAK"])}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[2].markdown(
+                f'<div class="sw-data-cell" style="background:{kw_bg};color:{kw_fg};font-weight:700;">{html.escape(row["KAW JAGAAN"])}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[3].markdown(
+                f'<div class="sw-data-cell" style="background:{pl_bg};color:{pl_fg};font-weight:700;">{html.escape(row["PARLIMEN"])}</div>',
+                unsafe_allow_html=True,
+            )
+            with r_cols[4]:
+                st.button(
+                    row["LOKALITI"],
+                    key=f"sw_btn_{key_prefix}_{idx_r}_{format_wabak_no(row['Wabak No'])}",
+                    on_click=set_lokaliti_dan_wabak,
+                    args=(row["LOKALITI"], row["Wabak No"]),
+                    help=f"Klik untuk lihat analisis terperinci {row['LOKALITI']} (Wabak No: {format_wabak_no(row['Wabak No'])})",
+                    use_container_width=True,
+                )
+            r_cols[5].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["JUMLAH KES"]}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[6].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["BIL EPISOD"]}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[7].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["TEMPOH WABAK"]}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[8].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["TARIKH MULA"]}</div>',
+                unsafe_allow_html=True,
+            )
+            r_cols[9].markdown(
+                f'<div class="sw-data-cell" style="background:#ffffff;color:#000000;">{row["TARIKH TAMAT"]}</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("---")
+    st.markdown('<div class="sw-grid-wrapper">', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="sw-title-bar">STATUS WABAK (DENGGI) — {report_date.strftime("%d/%m/%Y")}</div>',
+        unsafe_allow_html=True,
+    )
+    render_table_section("WABAK TAMAT", df_tamat_table, "tamat")
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+    render_table_section("SENARAI WABAK AKTIF", df_aktif_table, "aktif")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.caption(
+        "💡 Klik pada mana-mana nama **LOKALITI** dalam jadual di atas untuk terus membuka analisis terperinci wabak tersebut di bawah."
+    )
+
+
 # --- PENGURUSAN STATE (MEMORI APLIKASI) ---
 if "selected_lokaliti" not in st.session_state:
     st.session_state.selected_lokaliti = None
@@ -311,18 +658,22 @@ if "selected_wabak" not in st.session_state:
     st.session_state.selected_wabak = None
 if "episode_filter" not in st.session_state:
     st.session_state.episode_filter = "Semua"
+if "scroll_to_detail" not in st.session_state:
+    st.session_state.scroll_to_detail = False
 
 
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = f"Wabak No: {format_wabak_no(wabak_no)}"
     st.session_state.episode_filter = "Semua"
+    st.session_state.scroll_to_detail = True
 
 
 def set_lokaliti_sahaja(lokaliti):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = None
     st.session_state.episode_filter = "Semua"
+    st.session_state.scroll_to_detail = True
 
 
 def set_chart_year_range(state_key, start_yr, end_yr):
@@ -376,6 +727,11 @@ if uploaded_file is not None or df_hist is not None:
         ].nunique()
         semua_lokaliti_list = sorted(df["Lokaliti (Alamat Semasa)"].dropna().unique())
         episode_map = {lok: kekerapan_wabak.get(lok, 0) for lok in semua_lokaliti_list}
+
+        # ---------------------------------------------------------
+        # JADUAL HARIAN: STATUS WABAK (DENGGI)
+        # ---------------------------------------------------------
+        render_status_wabak_table(df, episode_map)
 
         # ---------------------------------------------------------
         # PENGURUSAN MENU SIDEBAR
@@ -639,10 +995,27 @@ if uploaded_file is not None or df_hist is not None:
             )
             rekod_episode_lokaliti = episode_map.get(pilihan_lokaliti, 0)
 
+            st.markdown('<div id="analisis-lokaliti-anchor"></div>', unsafe_allow_html=True)
             st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
             st.subheader(
                 f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}"
             )
+
+            if st.session_state.scroll_to_detail:
+                st.session_state.scroll_to_detail = False
+                components.html(
+                    """
+                    <script>
+                    (function() {
+                        const anchor = window.parent.document.getElementById('analisis-lokaliti-anchor');
+                        if (anchor) {
+                            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    })();
+                    </script>
+                    """,
+                    height=0,
+                )
 
             st.markdown(
                 f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*"
@@ -820,7 +1193,6 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             period_to_label = {}
 
-                        # Buang pertindihan label pada penghujung tahun sambil mengekalkan pemetaan masa tepat
                         seen_labels = set()
                         period_items = []
                         for p in all_periods:
@@ -880,7 +1252,6 @@ if uploaded_file is not None or df_hist is not None:
                                 for i in range(0, len(period_items), tick_step)
                             ]
 
-                            # Bina graf dengan lebar setiap bar sepadan tepat dengan bilangan hari episod
                             fig_sejarah = go.Figure()
                             for _, row in df_plot.sort_values(
                                 by=["Tarikh Mula", "Wabak_Str"]
@@ -1095,7 +1466,6 @@ if uploaded_file is not None or df_hist is not None:
                                 f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
                             )
 
-                        # Jadual ringkasan semua episod supaya mudah disemak apabila banyak episod
                         with st.expander(
                             f"📋 Senarai Ringkas Semua Episod Wabak di {pilihan_lokaliti} ({len(df_plot_all)} Episod)"
                         ):
