@@ -40,6 +40,17 @@ st.markdown(
 )
 
 
+def format_wabak_no(val):
+    """Memformat nombor wabak supaya bersih tanpa '.0' di hujung."""
+    try:
+        f_val = float(val)
+        if f_val.is_integer():
+            return str(int(f_val))
+        return str(f_val)
+    except Exception:
+        return str(val).strip()
+
+
 def read_raw_bytes(raw_bytes, file_name):
     """Membaca fail Excel (.xlsx, .xls) dan CSV (Microsoft Excel Comma Separated Values File) secara automatik."""
     file_name = file_name.lower()
@@ -205,7 +216,7 @@ if "episode_filter" not in st.session_state:
 
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
-    st.session_state.selected_wabak = f"Wabak No: {wabak_no}"
+    st.session_state.selected_wabak = f"Wabak No: {format_wabak_no(wabak_no)}"
     st.session_state.episode_filter = "Semua"
 
 
@@ -329,7 +340,7 @@ if uploaded_file is not None or df_hist is not None:
                     .index.tolist()
                 )
                 for w in wabak_ordered:
-                    pilihan_wabak_list.append(f"Wabak No: {w}")
+                    pilihan_wabak_list.append(f"Wabak No: {format_wabak_no(w)}")
 
             if "Satu Kes" in df_lok["Jenis Kes"].values:
                 pilihan_wabak_list.append("Satu Kes (Kes Terpencil)")
@@ -545,8 +556,13 @@ if uploaded_file is not None or df_hist is not None:
                 if not df_wabak_lok.empty:
                     wabak_summary = []
 
-                    df_wabak_lok["Wabak_Str"] = df_wabak_lok["Wabak No"].astype(str)
-                    unique_wabaks_str = sorted(df_wabak_lok["Wabak_Str"].unique())
+                    df_wabak_lok["Wabak_Str"] = df_wabak_lok["Wabak No"].apply(
+                        format_wabak_no
+                    )
+                    unique_wabaks_str = sorted(
+                        df_wabak_lok["Wabak_Str"].unique(),
+                        key=lambda x: float(x) if x.replace(".", "", 1).isdigit() else 0,
+                    )
                     theme_colors = (
                         plotly.colors.qualitative.Plotly
                         + plotly.colors.qualitative.D3
@@ -614,7 +630,6 @@ if uploaded_file is not None or df_hist is not None:
                     df_plot_all = pd.DataFrame(wabak_summary)
 
                     if not df_plot_all.empty:
-                        # Tentukan julat tahun keseluruhan dataset supaya mudah pilih 2021-2026 atau tahun tertentu
                         global_min_yr = (
                             int(df["Tarikh Daftar"].dt.year.min())
                             if df["Tarikh Daftar"].notna().any()
@@ -632,7 +647,6 @@ if uploaded_file is not None or df_hist is not None:
                         if yr_state_key not in st.session_state:
                             st.session_state[yr_state_key] = (min_yr_plot, max_yr_plot)
 
-                        # Pastikan julat kekal sah jika bertukar fail
                         cur_s, cur_e = st.session_state[yr_state_key]
                         if cur_s < min_yr_plot or cur_e > max_yr_plot or cur_s > cur_e:
                             st.session_state[yr_state_key] = (min_yr_plot, max_yr_plot)
@@ -705,7 +719,6 @@ if uploaded_file is not None or df_hist is not None:
                             return f"{p.end_time.year}-ME{p.week:02d}"
 
                         x_labels = [get_label(p) for p in all_periods]
-                        # Pastikan tiada label pendua pada akhir tahun
                         x_labels = list(dict.fromkeys(x_labels))
 
                         tajuk_tempoh = (
@@ -717,8 +730,26 @@ if uploaded_file is not None or df_hist is not None:
                         if not df_plot.empty:
                             df_plot["Minggu Epid"] = df_plot["Period"].apply(get_label)
 
+                            # Kawalan zum / skrol garis masa yang jelas dengan penunjuk label minggu
+                            if len(x_labels) > 20:
+                                wk_start, wk_end = st.select_slider(
+                                    "🔍 Zum / Skrol Garis Masa Minggu Epid (Seret penanda kiri atau kanan):",
+                                    options=x_labels,
+                                    value=(x_labels[0], x_labels[-1]),
+                                    key=f"wk_zoom_{pilihan_lokaliti}_{yr_start}_{yr_end}",
+                                )
+                                idx_s = x_labels.index(wk_start)
+                                idx_e = x_labels.index(wk_end)
+                                x_labels_view = x_labels[idx_s : idx_e + 1]
+                            else:
+                                x_labels_view = x_labels
+
+                            df_plot_view = df_plot[
+                                df_plot["Minggu Epid"].isin(x_labels_view)
+                            ].copy()
+
                             fig_sejarah = px.bar(
-                                df_plot,
+                                df_plot_view if not df_plot_view.empty else df_plot,
                                 x="Minggu Epid",
                                 y="Jumlah Kes",
                                 color="Wabak_Str",
@@ -734,17 +765,25 @@ if uploaded_file is not None or df_hist is not None:
                                 title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
                             )
 
+                            # Jika julat zum tiada bar, kosongkan data supaya paksi kosong tetap dipaparkan kemas
+                            if df_plot_view.empty:
+                                fig_sejarah.data = []
+
                             fig_sejarah.update_xaxes(
                                 type="category",
                                 categoryorder="array",
-                                categoryarray=x_labels,
+                                categoryarray=x_labels_view,
                                 title="Tahun & Minggu Epid (Garis Masa Penularan Bermula)",
-                                rangeslider=dict(visible=True, thickness=0.06),
+                                rangeslider=dict(visible=False),
                             )
-                            fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
+                            fig_sejarah.update_yaxes(
+                                title="Jumlah Kes Terkumpul",
+                                rangemode="tozero",
+                            )
                             fig_sejarah.update_layout(
-                                height=480,
-                                bargap=0.05,
+                                height=440,
+                                bargap=0.12,
+                                dragmode="pan",
                                 legend=dict(
                                     title="No. Wabak (Skrol ▲▼)",
                                     orientation="v",
@@ -762,7 +801,7 @@ if uploaded_file is not None or df_hist is not None:
                                 marker_line_width=0.6,
                                 marker_line_color="rgba(0,0,0,0.45)",
                                 selected=dict(marker=dict(opacity=1.0)),
-                                unselected=dict(marker=dict(opacity=0.75)),
+                                unselected=dict(marker=dict(opacity=0.85)),
                                 hovertemplate="<br>".join(
                                     [
                                         "<b>Wabak No:</b> %{customdata[3]}",
@@ -779,7 +818,7 @@ if uploaded_file is not None or df_hist is not None:
                                 on_select="rerun",
                                 selection_mode="points",
                                 use_container_width=True,
-                                key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
+                                key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}_{x_labels_view[0]}_{x_labels_view[-1]}",
                             )
 
                             if selected_data and selected_data.selection.points:
