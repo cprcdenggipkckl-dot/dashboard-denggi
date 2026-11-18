@@ -1137,7 +1137,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
                 )
     df_lags = pd.DataFrame(lag_summary)
 
-    # Perbandingan kelengahan & Korelasi Pearson r mengikut Status Wabak
     status_comp_rows = []
     pearson_rows = []
     df_w_all = df_calc[df_calc["Jenis Kes"] == "Wabak"].dropna(subset=["Wabak No"]).copy()
@@ -1365,12 +1364,12 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
 
 
 def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
-    """Memanggil model Gemini Free Tier terkini (Gemini 3.8 Flash Thinking dengan fallback automatik)."""
+    """Memanggil model Gemini Free Tier terkini secara automatik."""
     models_to_try = [
-        ("gemini-3.8-flash", True, "Gemini 3.8 Flash Thinking"),
-        ("gemini-3.6-flash", True, "Gemini 3.6 Flash Thinking"),
-        ("gemini-3.5-flash-lite", False, "Gemini 3.5 Flash-Lite"),
-        ("gemini-2.5-flash", True, "Gemini 2.5 Flash Thinking"),
+        ("gemini-3.8-flash", True, "Gemini 3.8"),
+        ("gemini-3.6-flash", True, "Gemini 3.6"),
+        ("gemini-3.5-flash-lite", False, "Gemini 3.5"),
+        ("gemini-2.5-flash", True, "Gemini 2.5"),
     ]
     last_http_code = None
     for model_id, use_thinking, label in models_to_try:
@@ -1412,7 +1411,7 @@ def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
     return "", None, last_http_code
 
 
-def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, api_key):
+def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_api_key):
     """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan hover tonasi & tooltip) serta jawapan AI berpandukan data."""
     q_lower = question.lower().strip()
     df_forecast = analytics["df_forecast"]
@@ -1704,8 +1703,8 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, a
                 )
                 st.markdown(card_qa_risk_g, unsafe_allow_html=True)
 
-    # Jika kunci API tersedia (tertanam dalam st.secrets atau dimasukkan secara manual)
-    if api_key and api_key.strip():
+    # Panggil Gemini API yang tertanam dalam Secrets (dengan cache sesi untuk menjimatkan kuota percuma harian)
+    if embedded_api_key:
         fact_packet = {
             "tarikh_laporan": fmt_date_short(today_my),
             "trend_mingguan_kes_per_minggu": round(slope, 2),
@@ -1728,80 +1727,48 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, a
             else [],
             "ringkasan_lokaliti_dipilih": lok_sum,
         }
-        system_prompt = (
-            "Anda ialah Pakar Epidemiologi Denggi KKM. Jawab soalan pengguna HANYA berdasarkan fakta "
-            "dan angka dalam JSON DATA_SAHIH di bawah. JANGAN reka atau anggar sebarang angka yang tiada "
-            "dalam JSON. Susun jawapan dalam bentuk jadual Markdown atau poin ringkas yang padat dan praktikal."
+        cache_key = (
+            f"{question.strip()}|{fmt_date_short(today_my)}|"
+            f"{lok_sum.get('lokaliti', '')}|{lok_sum.get('jumlah_kes_sejarah', 0)}"
         )
-        user_prompt = (
-            f"DATA_SAHIH:\n{json.dumps(fact_packet, ensure_ascii=False, indent=2)}\n\n"
-            f"SOALAN PENGGUNA: {question}"
-        )
-        key_clean = api_key.strip()
-        if "Gemini" in provider:
-            text_out, active_model_label, err_code = call_gemini_thinking_free_tier(
-                key_clean, system_prompt, user_prompt
+        if "ai_response_cache" not in st.session_state:
+            st.session_state.ai_response_cache = {}
+
+        if cache_key in st.session_state.ai_response_cache:
+            text_out, active_model_label = st.session_state.ai_response_cache[cache_key]
+            err_code = None
+        else:
+            system_prompt = (
+                "Anda ialah Pakar Epidemiologi Denggi KKM. Jawab soalan pengguna HANYA berdasarkan fakta "
+                "dan angka dalam JSON DATA_SAHIH di bawah. JANGAN reka atau anggar sebarang angka yang tiada "
+                "dalam JSON. Susun jawapan dalam bentuk jadual Markdown atau poin ringkas yang padat dan praktikal."
             )
-            if text_out:
-                st.caption(
-                    f"⚙️ Ulasan Tambahan AI: **{active_model_label} (Free Tier — Grounded on Data)**"
+            user_prompt = (
+                f"DATA_SAHIH:\n{json.dumps(fact_packet, ensure_ascii=False, indent=2)}\n\n"
+                f"SOALAN PENGGUNA: {question}"
+            )
+            text_out, active_model_label, err_code = call_gemini_thinking_free_tier(
+                embedded_api_key, system_prompt, user_prompt
+            )
+            if text_out and active_model_label:
+                st.session_state.ai_response_cache[cache_key] = (
+                    text_out,
+                    active_model_label,
                 )
-                st.markdown(text_out)
-            elif err_code == 429:
-                st.warning(
-                    "⚠️ Had kuota percuma Gemini dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
-                )
-            else:
-                st.caption(
-                    "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)**"
-                )
-        elif provider in ("Groq (Free Tier)", "OpenRouter (Free Tier)"):
-            try:
-                url = (
-                    "https://api.groq.com/openai/v1/chat/completions"
-                    if provider == "Groq (Free Tier)"
-                    else "https://openrouter.ai/api/v1/chat/completions"
-                )
-                model_name = (
-                    "llama-3.3-70b-versatile"
-                    if provider == "Groq (Free Tier)"
-                    else "google/gemini-2.5-flash:free"
-                )
-                payload = {
-                    "model": model_name,
-                    "temperature": 0.0,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                }
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {key_clean}",
-                    },
-                    method="POST",
-                )
-                with urllib.request.urlopen(req, timeout=25) as resp:
-                    res_json = json.loads(resp.read().decode("utf-8"))
-                text_out = (
-                    res_json.get("choices", [{}])[0]
-                    .get("message", {})
-                    .get("content", "")
-                    .strip()
-                )
-                if text_out:
-                    st.caption(f"⚙️ Ulasan Tambahan AI: **{provider} (Grounded on Data)**")
-                    st.markdown(text_out)
-            except urllib.error.HTTPError as he:
-                if he.code == 429:
-                    st.warning(
-                        "⚠️ Had kuota percuma API dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
-                    )
-            except Exception:
-                pass
+
+        if text_out:
+            st.caption(
+                f"⚙️ Ulasan Tambahan AI: **{active_model_label} (based on Grounded on Data)**"
+            )
+            st.markdown(text_out)
+        elif err_code == 429:
+            st.warning(
+                "⚠️ Had kuota percuma harian Gemini dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
+            )
+        else:
+            st.caption(
+                "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)**"
+            )
     else:
         st.caption(
             "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana graf atau jadual di atas untuk melihat formula & pengiraan semasa."
@@ -1991,41 +1958,7 @@ if uploaded_file is not None or df_hist is not None:
         )
         st.sidebar.markdown("---")
 
-        # --- TETAPAN AI PERCUMA (AUTO-EMBEDDED MELALUI STREAMLIT SECRETS) ---
         embedded_gemini_key = get_embedded_gemini_key()
-        with st.sidebar.expander("🧠 Tetapan AI Thinking (Free Tier)"):
-            if embedded_gemini_key:
-                st.success(
-                    "✅ **Kunci API Gemini Tertanam Aktif** (Free Tier — Tiada caj & tidak perlu masukkan kunci setiap kali)."
-                )
-                default_provider_idx = 0
-            else:
-                st.caption(
-                    "Simpan `GEMINI_API_KEY` sekali sahaja dalam **Streamlit Cloud → Settings → Secrets** supaya tertanam kekal tanpa perlu dimasukkan setiap kali."
-                )
-                default_provider_idx = 1
-
-            ai_provider = st.selectbox(
-                "Penyedia AI Percuma:",
-                [
-                    "Gemini Thinking (Free Tier)",
-                    "Enjin AI Statistik Terbina Dalam (Tanpa API)",
-                    "Groq (Free Tier)",
-                    "OpenRouter (Free Tier)",
-                ],
-                index=default_provider_idx,
-                key="ai_provider_choice",
-            )
-            ai_api_key = embedded_gemini_key if "Gemini" in ai_provider else ""
-            if ai_provider != "Enjin AI Statistik Terbina Dalam (Tanpa API)":
-                manual_key = st.text_input(
-                    "Ganti Kunci API (Pilihan):",
-                    type="password",
-                    placeholder="Kosongkan jika sudah simpan dalam Secrets...",
-                    key="ai_free_api_key",
-                )
-                if manual_key and manual_key.strip():
-                    ai_api_key = manual_key.strip()
 
         # ---------------------------------------------------------
         # JADUAL HARIAN: STATUS WABAK (DENGGI) - INTERAKTIF & WHATSAPP EXPORT
@@ -2450,7 +2383,7 @@ if uploaded_file is not None or df_hist is not None:
             )
             if user_ai_q:
                 render_ai_qa_visuals_and_response(
-                    user_ai_q, ai_analytics, today_my, ai_provider, ai_api_key
+                    user_ai_q, ai_analytics, today_my, embedded_gemini_key
                 )
 
         # Jambatan JS untuk menyambungkan kesan tonasi & gelembung info apabila kursor berada di atas mana-mana graf Plotly dalam Pusat Analisis AI
