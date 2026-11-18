@@ -730,26 +730,22 @@ if uploaded_file is not None or df_hist is not None:
                         if not df_plot.empty:
                             df_plot["Minggu Epid"] = df_plot["Period"].apply(get_label)
 
-                            # Kawalan zum / skrol garis masa yang jelas dengan penunjuk label minggu
-                            if len(x_labels) > 20:
+                            zoom_label = "🔍 Zoom / Skrol Garis Masa Minggu Epid (Gerakkan penanda kiri atau kanan):"
+                            if len(x_labels) > 10:
                                 wk_start, wk_end = st.select_slider(
-                                    "🔍 Zum / Skrol Garis Masa Minggu Epid (Seret penanda kiri atau kanan):",
+                                    zoom_label,
                                     options=x_labels,
                                     value=(x_labels[0], x_labels[-1]),
                                     key=f"wk_zoom_{pilihan_lokaliti}_{yr_start}_{yr_end}",
                                 )
                                 idx_s = x_labels.index(wk_start)
                                 idx_e = x_labels.index(wk_end)
-                                x_labels_view = x_labels[idx_s : idx_e + 1]
                             else:
-                                x_labels_view = x_labels
-
-                            df_plot_view = df_plot[
-                                df_plot["Minggu Epid"].isin(x_labels_view)
-                            ].copy()
+                                idx_s = 0
+                                idx_e = len(x_labels) - 1
 
                             fig_sejarah = px.bar(
-                                df_plot_view if not df_plot_view.empty else df_plot,
+                                df_plot,
                                 x="Minggu Epid",
                                 y="Jumlah Kes",
                                 color="Wabak_Str",
@@ -765,14 +761,11 @@ if uploaded_file is not None or df_hist is not None:
                                 title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
                             )
 
-                            # Jika julat zum tiada bar, kosongkan data supaya paksi kosong tetap dipaparkan kemas
-                            if df_plot_view.empty:
-                                fig_sejarah.data = []
-
                             fig_sejarah.update_xaxes(
                                 type="category",
                                 categoryorder="array",
-                                categoryarray=x_labels_view,
+                                categoryarray=x_labels,
+                                range=[idx_s - 0.5, idx_e + 0.5],
                                 title="Tahun & Minggu Epid (Garis Masa Penularan Bermula)",
                                 rangeslider=dict(visible=False),
                             )
@@ -818,8 +811,95 @@ if uploaded_file is not None or df_hist is not None:
                                 on_select="rerun",
                                 selection_mode="points",
                                 use_container_width=True,
-                                key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}_{x_labels_view[0]}_{x_labels_view[-1]}",
+                                key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
                             )
+
+                            # Jambatan masa nyata (real-time) supaya graf mengezum serta-merta semasa penanda slider digerakkan
+                            if len(x_labels) > 10:
+                                components.html(
+                                    """
+                                    <script>
+                                    (function() {
+                                        const doc = window.parent.document;
+                                        const win = window.parent;
+                                        let rafId = null;
+
+                                        function findZoomSlider() {
+                                            const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
+                                            for (const s of sliders) {
+                                                if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {
+                                                    return s;
+                                                }
+                                            }
+                                            return null;
+                                        }
+
+                                        function findHistoryPlot(sliderEl) {
+                                            const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
+                                            if (!charts.length) return null;
+                                            if (!sliderEl) return charts[0];
+                                            const sRect = sliderEl.getBoundingClientRect();
+                                            let bestChart = charts[0];
+                                            let minDist = Infinity;
+                                            for (const c of charts) {
+                                                const cRect = c.getBoundingClientRect();
+                                                const dist = Math.abs(cRect.top - sRect.bottom);
+                                                if (cRect.top >= sRect.top - 20 && dist < minDist) {
+                                                    minDist = dist;
+                                                    bestChart = c;
+                                                }
+                                            }
+                                            return bestChart;
+                                        }
+
+                                        function syncZoomLive() {
+                                            const sliderEl = findZoomSlider();
+                                            if (!sliderEl) return;
+                                            const thumbs = sliderEl.querySelectorAll('[role="slider"]');
+                                            if (thumbs.length < 2) return;
+                                            const v0 = parseFloat(thumbs[0].getAttribute('aria-valuenow'));
+                                            const v1 = parseFloat(thumbs[1].getAttribute('aria-valuenow'));
+                                            if (isNaN(v0) || isNaN(v1)) return;
+                                            const minIdx = Math.min(v0, v1);
+                                            const maxIdx = Math.max(v0, v1);
+                                            const plotEl = findHistoryPlot(sliderEl);
+                                            if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {
+                                                try {
+                                                    win.Plotly.relayout(plotEl, {
+                                                        'xaxis.range': [minIdx - 0.5, maxIdx + 0.5],
+                                                        'xaxis.autorange': false
+                                                    });
+                                                } catch (e) {}
+                                            }
+                                        }
+
+                                        function bindRealtime() {
+                                            const sliderEl = findZoomSlider();
+                                            if (!sliderEl || sliderEl.dataset.rtBound === '1') return;
+                                            sliderEl.dataset.rtBound = '1';
+
+                                            const triggerUpdate = () => {
+                                                if (rafId) cancelAnimationFrame(rafId);
+                                                rafId = requestAnimationFrame(syncZoomLive);
+                                            };
+
+                                            const observer = new MutationObserver(triggerUpdate);
+                                            const thumbs = sliderEl.querySelectorAll('[role="slider"]');
+                                            thumbs.forEach(t => {
+                                                observer.observe(t, { attributes: true, attributeFilter: ['aria-valuenow'] });
+                                            });
+                                            sliderEl.addEventListener('pointermove', triggerUpdate, { passive: true });
+                                            sliderEl.addEventListener('touchmove', triggerUpdate, { passive: true });
+                                        }
+
+                                        bindRealtime();
+                                        const retryTimer = setInterval(bindRealtime, 400);
+                                        setTimeout(() => clearInterval(retryTimer), 6000);
+                                    })();
+                                    </script>
+                                    """,
+                                    height=0,
+                                )
 
                             if selected_data and selected_data.selection.points:
                                 clicked_w_no_str = selected_data.selection.points[0][
