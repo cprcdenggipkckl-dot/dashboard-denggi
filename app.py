@@ -123,15 +123,18 @@ st.markdown(
         color: #1d4ed8 !important;
         text-decoration: underline;
     }
-    /* Butang pencetus navigasi tersembunyi (kekal aktif dalam DOM tanpa display:none) */
-    .sw-hidden-triggers {
-        position: fixed;
-        left: -9999px;
-        top: -9999px;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        opacity: 0;
+    /* Sembunyikan butang pencetus navigasi SW_JUMP_* sepenuhnya */
+    [class*="st-key-sw_jump_trigger_"] {
+        position: fixed !important;
+        left: -9999px !important;
+        top: -9999px !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
     /* Kad metrik interaktif dengan kesan tonasi & gelembung info */
     .metric-hover-card {
@@ -1063,7 +1066,6 @@ if uploaded_file is not None or df_hist is not None:
 
         # Butang pencetus tersembunyi untuk setiap baris lokaliti dalam jadual STATUS WABAK (DENGGI)
         if sw_clickable_rows:
-            st.markdown('<div class="sw-hidden-triggers">', unsafe_allow_html=True)
             for idx_sw, (lok_sw, w_no_sw) in enumerate(sw_clickable_rows):
                 st.button(
                     f"SW_JUMP_{idx_sw}",
@@ -1071,7 +1073,6 @@ if uploaded_file is not None or df_hist is not None:
                     on_click=jump_to_lokaliti_from_table,
                     args=(lok_sw, w_no_sw),
                 )
-            st.markdown("</div>", unsafe_allow_html=True)
 
             components.html(
                 """
@@ -1079,7 +1080,20 @@ if uploaded_file is not None or df_hist is not None:
                 (function() {
                     const doc = window.parent.document;
 
+                    function hideJumpButtons() {
+                        const buttons = doc.querySelectorAll('button');
+                        buttons.forEach(btn => {
+                            if (btn.innerText && btn.innerText.trim().startsWith('SW_JUMP_')) {
+                                const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
+                                if (container) {
+                                    container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;margin:0;padding:0;';
+                                }
+                            }
+                        });
+                    }
+
                     function bindTableClicks() {
+                        hideJumpButtons();
                         const cells = doc.querySelectorAll('.sw-lok-link[data-sw-idx]');
                         cells.forEach(cell => {
                             if (cell.dataset.swBound === '1') return;
@@ -1099,8 +1113,8 @@ if uploaded_file is not None or df_hist is not None:
                     }
 
                     bindTableClicks();
-                    const timer = setInterval(bindTableClicks, 350);
-                    setTimeout(() => clearInterval(timer), 5000);
+                    const timer = setInterval(bindTableClicks, 250);
+                    setTimeout(() => clearInterval(timer), 6000);
                 })();
                 </script>
                 """,
