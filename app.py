@@ -335,6 +335,18 @@ st.markdown(
 )
 
 
+def get_embedded_gemini_key():
+    """Membaca kunci GEMINI_API_KEY yang tertanam dalam Streamlit Secrets atau pembolehubah persekitaran."""
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            val = str(st.secrets["GEMINI_API_KEY"]).strip()
+            if val:
+                return val
+    except Exception:
+        pass
+    return os.environ.get("GEMINI_API_KEY", "").strip()
+
+
 def get_today_malaysia():
     """Mengesan tarikh semasa secara automatik mengikut zon waktu Malaysia (Asia/Kuala_Lumpur)."""
     try:
@@ -1180,7 +1192,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
                 }
             )
 
-        # Kira korelasi Pearson r antara saiz episod wabak dan kelengahan
         w_ep_stats = df_w_all.groupby("Wabak No").agg(
             kes=("Notifikasi No", "count"),
             onset_l=("_onset_lag", lambda s: s[(s >= 0) & (s <= 45)].mean()),
@@ -1351,6 +1362,54 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
         "df_active_risk": df_active_risk,
         "lok_summary": lok_summary,
     }
+
+
+def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
+    """Memanggil model Gemini Free Tier terkini (Gemini 3.8 Flash Thinking dengan fallback automatik)."""
+    models_to_try = [
+        ("gemini-3.8-flash", True, "Gemini 3.8 Flash Thinking"),
+        ("gemini-3.6-flash", True, "Gemini 3.6 Flash Thinking"),
+        ("gemini-3.5-flash-lite", False, "Gemini 3.5 Flash-Lite"),
+        ("gemini-2.5-flash", True, "Gemini 2.5 Flash Thinking"),
+    ]
+    last_http_code = None
+    for model_id, use_thinking, label in models_to_try:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={key_clean}"
+            gen_cfg = {"temperature": 0.0}
+            if use_thinking:
+                gen_cfg["thinkingConfig"] = {"thinkingBudget": 1024}
+            payload = {
+                "systemInstruction": {"parts": [{"text": system_prompt}]},
+                "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+                "generationConfig": gen_cfg,
+            }
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                res_json = json.loads(resp.read().decode("utf-8"))
+            parts = (
+                res_json.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [])
+            )
+            text_out = "\n".join(
+                p.get("text", "") for p in parts if not p.get("thought", False)
+            ).strip()
+            if text_out:
+                return text_out, label, None
+        except urllib.error.HTTPError as he:
+            last_http_code = he.code
+            if he.code == 429:
+                return "", None, 429
+            continue
+        except Exception:
+            continue
+    return "", None, last_http_code
 
 
 def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, api_key):
@@ -1645,7 +1704,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, a
                 )
                 st.markdown(card_qa_risk_g, unsafe_allow_html=True)
 
-    # Jika pengguna memasukkan kunci API percuma (Personal Gmail Gemini Thinking / Groq / OpenRouter)
+    # Jika kunci API tersedia (tertanam dalam st.secrets atau dimasukkan secara manual)
     if api_key and api_key.strip():
         fact_packet = {
             "tarikh_laporan": fmt_date_short(today_my),
@@ -1678,36 +1737,26 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, a
             f"DATA_SAHIH:\n{json.dumps(fact_packet, ensure_ascii=False, indent=2)}\n\n"
             f"SOALAN PENGGUNA: {question}"
         )
-        try:
-            key_clean = api_key.strip()
-            text_out = ""
-            if provider == "Gemini Thinking (Personal Gmail AI Studio)":
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key_clean}"
-                payload = {
-                    "systemInstruction": {"parts": [{"text": system_prompt}]},
-                    "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.0,
-                        "thinkingConfig": {"thinkingBudget": 1024},
-                    },
-                }
-                req = urllib.request.Request(
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
+        key_clean = api_key.strip()
+        if "Gemini" in provider:
+            text_out, active_model_label, err_code = call_gemini_thinking_free_tier(
+                key_clean, system_prompt, user_prompt
+            )
+            if text_out:
+                st.caption(
+                    f"⚙️ Ulasan Tambahan AI: **{active_model_label} (Free Tier — Grounded on Data)**"
                 )
-                with urllib.request.urlopen(req, timeout=25) as resp:
-                    res_json = json.loads(resp.read().decode("utf-8"))
-                parts = (
-                    res_json.get("candidates", [{}])[0]
-                    .get("content", {})
-                    .get("parts", [])
+                st.markdown(text_out)
+            elif err_code == 429:
+                st.warning(
+                    "⚠️ Had kuota percuma Gemini dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
                 )
-                text_out = "\n".join(
-                    p.get("text", "") for p in parts if not p.get("thought", False)
-                ).strip()
-            elif provider in ("Groq (Free Tier)", "OpenRouter (Free Tier)"):
+            else:
+                st.caption(
+                    "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)**"
+                )
+        elif provider in ("Groq (Free Tier)", "OpenRouter (Free Tier)"):
+            try:
                 url = (
                     "https://api.groq.com/openai/v1/chat/completions"
                     if provider == "Groq (Free Tier)"
@@ -1743,16 +1792,16 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, provider, a
                     .get("content", "")
                     .strip()
                 )
-            if text_out:
-                st.caption(f"⚙️ Ulasan Tambahan AI: **{provider} (Grounded on Data)**")
-                st.markdown(text_out)
-        except urllib.error.HTTPError as he:
-            if he.code == 429:
-                st.warning(
-                    "⚠️ Had kuota percuma API dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
-                )
-        except Exception:
-            pass
+                if text_out:
+                    st.caption(f"⚙️ Ulasan Tambahan AI: **{provider} (Grounded on Data)**")
+                    st.markdown(text_out)
+            except urllib.error.HTTPError as he:
+                if he.code == 429:
+                    st.warning(
+                        "⚠️ Had kuota percuma API dicapai buat sementara waktu (akan reset secara automatik). Paparan jadual & graf di atas dijana terus oleh Enjin AI Statistik Terbina Dalam."
+                    )
+            except Exception:
+                pass
     else:
         st.caption(
             "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana graf atau jadual di atas untuk melihat formula & pengiraan semasa."
@@ -1942,29 +1991,41 @@ if uploaded_file is not None or df_hist is not None:
         )
         st.sidebar.markdown("---")
 
-        # --- TETAPAN AI PERCUMA (PILIHAN - TIADA API DIPERLUKAN) ---
-        with st.sidebar.expander("🧠 Tetapan AI Thinking (Pilihan Percuma)"):
-            st.caption(
-                "Tanpa kunci API, dashboard tetap menjalankan Enjin AI Statistik & Ramalan 95% CI terbina dalam secara percuma. Jika mahu huraian LLM percuma (auto-reset kuota harian), masukkan kunci API dari akaun Gmail peribadi (`aistudio.google.com`), Groq, atau OpenRouter."
-            )
+        # --- TETAPAN AI PERCUMA (AUTO-EMBEDDED MELALUI STREAMLIT SECRETS) ---
+        embedded_gemini_key = get_embedded_gemini_key()
+        with st.sidebar.expander("🧠 Tetapan AI Thinking (Free Tier)"):
+            if embedded_gemini_key:
+                st.success(
+                    "✅ **Kunci API Gemini Tertanam Aktif** (Free Tier — Tiada caj & tidak perlu masukkan kunci setiap kali)."
+                )
+                default_provider_idx = 0
+            else:
+                st.caption(
+                    "Simpan `GEMINI_API_KEY` sekali sahaja dalam **Streamlit Cloud → Settings → Secrets** supaya tertanam kekal tanpa perlu dimasukkan setiap kali."
+                )
+                default_provider_idx = 1
+
             ai_provider = st.selectbox(
                 "Penyedia AI Percuma:",
                 [
+                    "Gemini Thinking (Free Tier)",
                     "Enjin AI Statistik Terbina Dalam (Tanpa API)",
-                    "Gemini Thinking (Personal Gmail AI Studio)",
                     "Groq (Free Tier)",
                     "OpenRouter (Free Tier)",
                 ],
+                index=default_provider_idx,
                 key="ai_provider_choice",
             )
-            ai_api_key = ""
+            ai_api_key = embedded_gemini_key if "Gemini" in ai_provider else ""
             if ai_provider != "Enjin AI Statistik Terbina Dalam (Tanpa API)":
-                ai_api_key = st.text_input(
-                    "Kunci API Percuma:",
+                manual_key = st.text_input(
+                    "Ganti Kunci API (Pilihan):",
                     type="password",
-                    placeholder="Tampal kunci API percuma di sini...",
+                    placeholder="Kosongkan jika sudah simpan dalam Secrets...",
                     key="ai_free_api_key",
                 )
+                if manual_key and manual_key.strip():
+                    ai_api_key = manual_key.strip()
 
         # ---------------------------------------------------------
         # JADUAL HARIAN: STATUS WABAK (DENGGI) - INTERAKTIF & WHATSAPP EXPORT
