@@ -215,6 +215,10 @@ def set_lokaliti_sahaja(lokaliti):
     st.session_state.episode_filter = "Semua"
 
 
+def set_chart_year_range(state_key, start_yr, end_yr):
+    st.session_state[state_key] = (start_yr, end_yr)
+
+
 # --- ANTARA MUKA UTAMA ---
 st.title("🦟 Dashboard Analisis Kes Denggi (Spesifik Wabak)")
 
@@ -543,7 +547,11 @@ if uploaded_file is not None or df_hist is not None:
 
                     df_wabak_lok["Wabak_Str"] = df_wabak_lok["Wabak No"].astype(str)
                     unique_wabaks_str = sorted(df_wabak_lok["Wabak_Str"].unique())
-                    theme_colors = plotly.colors.qualitative.Plotly
+                    theme_colors = (
+                        plotly.colors.qualitative.Plotly
+                        + plotly.colors.qualitative.D3
+                        + plotly.colors.qualitative.Set2
+                    )
                     color_map = {
                         w: theme_colors[i % len(theme_colors)]
                         for i, w in enumerate(unique_wabaks_str)
@@ -590,31 +598,106 @@ if uploaded_file is not None or df_hist is not None:
                         wabak_summary.append(
                             {
                                 "Wabak_Str": w_no,
+                                "Tahun": y_val,
                                 "Jumlah Kes": j_kes,
                                 "Tarikh Mula": t_m,
                                 "Tarikh Mula Str": t_m.strftime("%d-%m-%Y"),
                                 "Tarikh Akhir Str": t_a_str,
                                 "Tempoh (Hari)": tempoh,
+                                "Status": status_w,
                                 "Minggu_Label": m_label,
                                 "Label Tarikh": lbl_tarikh,
                                 "Label Tempoh": lbl_tempoh,
                             }
                         )
 
-                    df_plot = pd.DataFrame(wabak_summary)
+                    df_plot_all = pd.DataFrame(wabak_summary)
 
-                    if not df_plot.empty:
-                        # Gunakan minggu Ahad-Sabtu (W-SAT) sejajar dengan Minggu Epid KKM
-                        df_plot["Period"] = df_plot["Tarikh Mula"].dt.to_period("W-SAT")
-                        min_p = df_plot["Period"].min()
-                        max_p = df_plot["Period"].max()
-                        all_periods = pd.period_range(min_p - 1, max_p + 1, freq="W-SAT")
-
-                        period_to_label = (
-                            df_plot.drop_duplicates(subset=["Period"])
-                            .set_index("Period")["Minggu_Label"]
-                            .to_dict()
+                    if not df_plot_all.empty:
+                        # Tentukan julat tahun keseluruhan dataset supaya mudah pilih 2021-2026 atau tahun tertentu
+                        global_min_yr = (
+                            int(df["Tarikh Daftar"].dt.year.min())
+                            if df["Tarikh Daftar"].notna().any()
+                            else int(df_plot_all["Tahun"].min())
                         )
+                        global_max_yr = (
+                            int(df["Tarikh Daftar"].dt.year.max())
+                            if df["Tarikh Daftar"].notna().any()
+                            else int(df_plot_all["Tahun"].max())
+                        )
+                        min_yr_plot = min(global_min_yr, int(df_plot_all["Tahun"].min()))
+                        max_yr_plot = max(global_max_yr, int(df_plot_all["Tahun"].max()))
+
+                        yr_state_key = f"yr_slider_{pilihan_lokaliti}"
+                        if yr_state_key not in st.session_state:
+                            st.session_state[yr_state_key] = (min_yr_plot, max_yr_plot)
+
+                        # Pastikan julat kekal sah jika bertukar fail
+                        cur_s, cur_e = st.session_state[yr_state_key]
+                        if cur_s < min_yr_plot or cur_e > max_yr_plot or cur_s > cur_e:
+                            st.session_state[yr_state_key] = (min_yr_plot, max_yr_plot)
+
+                        if min_yr_plot < max_yr_plot:
+                            st.markdown("**📅 Kawalan Paparan Tahun Graf:**")
+                            avail_yrs = list(range(min_yr_plot, max_yr_plot + 1))
+                            btn_cols = st.columns(len(avail_yrs) + 1)
+                            with btn_cols[0]:
+                                st.button(
+                                    f"Semua ({min_yr_plot}–{max_yr_plot})",
+                                    key=f"btn_all_yr_{pilihan_lokaliti}",
+                                    on_click=set_chart_year_range,
+                                    args=(yr_state_key, min_yr_plot, max_yr_plot),
+                                    use_container_width=True,
+                                )
+                            for idx_y, y_opt in enumerate(avail_yrs):
+                                with btn_cols[idx_y + 1]:
+                                    st.button(
+                                        f"{y_opt}",
+                                        key=f"btn_yr_{y_opt}_{pilihan_lokaliti}",
+                                        on_click=set_chart_year_range,
+                                        args=(yr_state_key, y_opt, y_opt),
+                                        use_container_width=True,
+                                    )
+
+                            yr_start, yr_end = st.slider(
+                                "Seret Julat Tahun (2021 hingga 2026):",
+                                min_value=min_yr_plot,
+                                max_value=max_yr_plot,
+                                key=yr_state_key,
+                            )
+                        else:
+                            yr_start, yr_end = min_yr_plot, max_yr_plot
+
+                        df_plot = df_plot_all[
+                            (df_plot_all["Tahun"] >= yr_start)
+                            & (df_plot_all["Tahun"] <= yr_end)
+                        ].copy()
+
+                        # Bina paksi minggu penuh untuk tempoh tahun dipilih supaya ruang kosong kelihatan tepat
+                        start_date_axis = pd.Timestamp(year=yr_start, month=1, day=1)
+                        if yr_end == global_max_yr and df["Tarikh Daftar"].notna().any():
+                            end_date_axis = max(
+                                df["Tarikh Daftar"].max(),
+                                df_plot_all["Tarikh Mula"].max(),
+                            ) + pd.Timedelta(days=7)
+                        else:
+                            end_date_axis = pd.Timestamp(year=yr_end, month=12, day=31)
+
+                        all_periods = pd.period_range(
+                            start=start_date_axis, end=end_date_axis, freq="W-SAT"
+                        )
+
+                        if not df_plot.empty:
+                            df_plot["Period"] = df_plot["Tarikh Mula"].dt.to_period(
+                                "W-SAT"
+                            )
+                            period_to_label = (
+                                df_plot.drop_duplicates(subset=["Period"])
+                                .set_index("Period")["Minggu_Label"]
+                                .to_dict()
+                            )
+                        else:
+                            period_to_label = {}
 
                         def get_label(p):
                             if p in period_to_label and pd.notnull(period_to_label[p]):
@@ -622,64 +705,124 @@ if uploaded_file is not None or df_hist is not None:
                             return f"{p.end_time.year}-ME{p.week:02d}"
 
                         x_labels = [get_label(p) for p in all_periods]
+                        # Pastikan tiada label pendua pada akhir tahun
+                        x_labels = list(dict.fromkeys(x_labels))
 
-                        df_plot["Minggu Epid"] = df_plot["Period"].apply(get_label)
-
-                        fig_sejarah = px.bar(
-                            df_plot,
-                            x="Minggu Epid",
-                            y="Jumlah Kes",
-                            color="Wabak_Str",
-                            color_discrete_map=color_map,
-                            custom_data=[
-                                "Tarikh Mula Str",
-                                "Tarikh Akhir Str",
-                                "Tempoh (Hari)",
-                                "Wabak_Str",
-                                "Label Tarikh",
-                                "Label Tempoh",
-                            ],
-                            title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti}",
+                        tajuk_tempoh = (
+                            f"Tahun {yr_start}"
+                            if yr_start == yr_end
+                            else f"Tahun {yr_start} – {yr_end}"
                         )
 
-                        fig_sejarah.update_xaxes(
-                            type="category",
-                            categoryorder="array",
-                            categoryarray=x_labels,
-                            title="Tahun & Minggu Epid (Garis Masa Penularan Bermula)",
-                        )
-                        fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
-                        fig_sejarah.update_layout(legend_title="No. Wabak")
+                        if not df_plot.empty:
+                            df_plot["Minggu Epid"] = df_plot["Period"].apply(get_label)
 
-                        fig_sejarah.update_traces(
-                            hovertemplate="<br>".join(
-                                [
-                                    "<b>Wabak No:</b> %{customdata[3]}",
-                                    "<b>Tarikh Mula:</b> %{customdata[0]}",
-                                    "<b>%{customdata[4]}:</b> %{customdata[1]}",
-                                    "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
-                                    "<extra></extra>",
-                                ]
+                            fig_sejarah = px.bar(
+                                df_plot,
+                                x="Minggu Epid",
+                                y="Jumlah Kes",
+                                color="Wabak_Str",
+                                color_discrete_map=color_map,
+                                custom_data=[
+                                    "Tarikh Mula Str",
+                                    "Tarikh Akhir Str",
+                                    "Tempoh (Hari)",
+                                    "Wabak_Str",
+                                    "Label Tarikh",
+                                    "Label Tempoh",
+                                ],
+                                title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
                             )
-                        )
 
-                        selected_data = st.plotly_chart(
-                            fig_sejarah,
-                            on_select="rerun",
-                            selection_mode="points",
-                            use_container_width=True,
-                            key=f"plotly_sejarah_{pilihan_lokaliti}",
-                        )
+                            fig_sejarah.update_xaxes(
+                                type="category",
+                                categoryorder="array",
+                                categoryarray=x_labels,
+                                title="Tahun & Minggu Epid (Garis Masa Penularan Bermula)",
+                                rangeslider=dict(visible=True, thickness=0.06),
+                            )
+                            fig_sejarah.update_yaxes(title="Jumlah Kes Terkumpul")
+                            fig_sejarah.update_layout(
+                                height=480,
+                                bargap=0.05,
+                                legend=dict(
+                                    title="No. Wabak (Skrol ▲▼)",
+                                    orientation="v",
+                                    yanchor="top",
+                                    y=1.0,
+                                    xanchor="left",
+                                    x=1.01,
+                                    font=dict(size=11),
+                                    tracegroupgap=2,
+                                    itemsizing="constant",
+                                ),
+                            )
 
-                        if selected_data and selected_data.selection.points:
-                            clicked_w_no_str = selected_data.selection.points[0][
-                                "customdata"
-                            ][3]
-                            target_w_str = f"Wabak No: {clicked_w_no_str}"
+                            fig_sejarah.update_traces(
+                                marker_line_width=0.6,
+                                marker_line_color="rgba(0,0,0,0.45)",
+                                selected=dict(marker=dict(opacity=1.0)),
+                                unselected=dict(marker=dict(opacity=0.75)),
+                                hovertemplate="<br>".join(
+                                    [
+                                        "<b>Wabak No:</b> %{customdata[3]}",
+                                        "<b>Tarikh Mula:</b> %{customdata[0]}",
+                                        "<b>%{customdata[4]}:</b> %{customdata[1]}",
+                                        "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
+                                        "<extra></extra>",
+                                    ]
+                                ),
+                            )
 
-                            if st.session_state.selected_wabak != target_w_str:
-                                st.session_state.selected_wabak = target_w_str
-                                st.rerun()
+                            selected_data = st.plotly_chart(
+                                fig_sejarah,
+                                on_select="rerun",
+                                selection_mode="points",
+                                use_container_width=True,
+                                key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
+                            )
+
+                            if selected_data and selected_data.selection.points:
+                                clicked_w_no_str = selected_data.selection.points[0][
+                                    "customdata"
+                                ][3]
+                                target_w_str = f"Wabak No: {clicked_w_no_str}"
+
+                                if st.session_state.selected_wabak != target_w_str:
+                                    st.session_state.selected_wabak = target_w_str
+                                    st.rerun()
+                        else:
+                            st.info(
+                                f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
+                            )
+
+                        # Jadual ringkasan semua episod supaya mudah disemak apabila banyak episod
+                        with st.expander(
+                            f"📋 Senarai Ringkas Semua Episod Wabak di {pilihan_lokaliti} ({len(df_plot_all)} Episod)"
+                        ):
+                            df_ep_table = df_plot_all.sort_values(
+                                by="Tarikh Mula", ascending=False
+                            )[
+                                [
+                                    "Wabak_Str",
+                                    "Minggu_Label",
+                                    "Tarikh Mula Str",
+                                    "Tarikh Akhir Str",
+                                    "Tempoh (Hari)",
+                                    "Jumlah Kes",
+                                    "Status",
+                                ]
+                            ].rename(
+                                columns={
+                                    "Wabak_Str": "No. Wabak",
+                                    "Minggu_Label": "Minggu Mula",
+                                    "Tarikh Mula Str": "Tarikh Mula",
+                                    "Tarikh Akhir Str": "Tarikh Tamat / Anggaran",
+                                }
+                            )
+                            st.dataframe(
+                                df_ep_table, use_container_width=True, hide_index=True
+                            )
 
                         if (
                             st.session_state.selected_wabak
@@ -741,7 +884,10 @@ if uploaded_file is not None or df_hist is not None:
                 df_filter["_Epid_Sort"] = (
                     df_filter["Epid Tahun (Tkh Daftar)"].astype(int).astype(str)
                     + "-ME"
-                    + df_filter["Epid Minggu (Tkh Daftar)"].astype(int).astype(str).str.zfill(2)
+                    + df_filter["Epid Minggu (Tkh Daftar)"]
+                    .astype(int)
+                    .astype(str)
+                    .str.zfill(2)
                 )
                 kes_epid = df_filter["_Epid_Sort"].value_counts().sort_index()
             else:
