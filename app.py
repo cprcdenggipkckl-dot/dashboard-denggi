@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import re
 from datetime import datetime
@@ -6,10 +7,13 @@ import matplotlib.pyplot as plt  # Wajib ada untuk fungsi mewarna jadual (backgr
 import pandas as pd
 import plotly.colors
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Dashboard Analisis Denggi", layout="wide")
+
+MS_PER_DAY = 24 * 60 * 60 * 1000
 
 # --- CSS KHUSUS UNTUK CETAKAN PDF & ELEMEN JADUAL ---
 st.markdown(
@@ -549,7 +553,7 @@ if uploaded_file is not None or df_hist is not None:
                 f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*"
             )
 
-            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (PLOTLY) ---
+            # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (LEBAR BAR MENGIKUT TEMPOH HARI) ---
             if rekod_episode_lokaliti > 0:
                 df_wabak_lok = df_lok[df_lok["Jenis Kes"] == "Wabak"].copy()
 
@@ -602,6 +606,11 @@ if uploaded_file is not None or df_hist is not None:
                             lbl_tarikh = "Anggaran Tarikh Tamat"
                             lbl_tempoh = "Tempoh (Sehingga Kini)"
 
+                        # Titik tengah & lebar bar (dalam milisaat) supaya lebar bar sepadan tepat dengan bilangan hari episod
+                        width_ms = tempoh * MS_PER_DAY
+                        center_dt = t_m + pd.Timedelta(milliseconds=width_ms / 2)
+                        end_dt_visual = t_m + pd.Timedelta(days=tempoh)
+
                         m_val = group["Epid Minggu (Tkh Daftar)"].iloc[0]
                         y_val = (
                             int(group["Epid Tahun (Tkh Daftar)"].iloc[0])
@@ -617,6 +626,9 @@ if uploaded_file is not None or df_hist is not None:
                                 "Tahun": y_val,
                                 "Jumlah Kes": j_kes,
                                 "Tarikh Mula": t_m,
+                                "End_Dt_Visual": end_dt_visual,
+                                "Center_Dt": center_dt,
+                                "Width_Ms": width_ms,
                                 "Tarikh Mula Str": t_m.strftime("%d-%m-%Y"),
                                 "Tarikh Akhir Str": t_a_str,
                                 "Tempoh (Hari)": tempoh,
@@ -687,12 +699,12 @@ if uploaded_file is not None or df_hist is not None:
                             & (df_plot_all["Tahun"] <= yr_end)
                         ].copy()
 
-                        # Bina paksi minggu penuh untuk tempoh tahun dipilih supaya ruang kosong kelihatan tepat
+                        # Bina paksi minggu penuh untuk tempoh tahun dipilih supaya ruang kosong & label ME tepat
                         start_date_axis = pd.Timestamp(year=yr_start, month=1, day=1)
                         if yr_end == global_max_yr and df["Tarikh Daftar"].notna().any():
                             end_date_axis = max(
                                 df["Tarikh Daftar"].max(),
-                                df_plot_all["Tarikh Mula"].max(),
+                                df_plot_all["End_Dt_Visual"].max(),
                             ) + pd.Timedelta(days=7)
                         else:
                             end_date_axis = pd.Timestamp(year=yr_end, month=12, day=31)
@@ -713,13 +725,33 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             period_to_label = {}
 
-                        def get_label(p):
-                            if p in period_to_label and pd.notnull(period_to_label[p]):
-                                return str(period_to_label[p])
-                            return f"{p.end_time.year}-ME{p.week:02d}"
+                        # Buang pertindihan label pada penghujung tahun sambil mengekalkan pemetaan masa tepat
+                        seen_labels = set()
+                        period_items = []
+                        for p in all_periods:
+                            lbl = (
+                                str(period_to_label[p])
+                                if (p in period_to_label and pd.notnull(period_to_label[p]))
+                                else f"{p.end_time.year}-ME{p.week:02d}"
+                            )
+                            if lbl not in seen_labels:
+                                seen_labels.add(lbl)
+                                period_items.append(
+                                    {
+                                        "label": lbl,
+                                        "start_ms": int(p.start_time.timestamp() * 1000),
+                                        "end_ms": int(
+                                            (p.end_time + pd.Timedelta(seconds=1)).timestamp()
+                                            * 1000
+                                        ),
+                                        "start_iso": p.start_time.strftime("%Y-%m-%d"),
+                                        "end_iso": (
+                                            p.end_time + pd.Timedelta(days=1)
+                                        ).strftime("%Y-%m-%d"),
+                                    }
+                                )
 
-                        x_labels = [get_label(p) for p in all_periods]
-                        x_labels = list(dict.fromkeys(x_labels))
+                        x_labels = [item["label"] for item in period_items]
 
                         tajuk_tempoh = (
                             f"Tahun {yr_start}"
@@ -728,8 +760,6 @@ if uploaded_file is not None or df_hist is not None:
                         )
 
                         if not df_plot.empty:
-                            df_plot["Minggu Epid"] = df_plot["Period"].apply(get_label)
-
                             zoom_label = "🔍 Zoom / Skrol Garis Masa Minggu Epid (Gerakkan penanda kiri atau kanan):"
                             if len(x_labels) > 10:
                                 wk_start, wk_end = st.select_slider(
@@ -744,29 +774,73 @@ if uploaded_file is not None or df_hist is not None:
                                 idx_s = 0
                                 idx_e = len(x_labels) - 1
 
-                            fig_sejarah = px.bar(
-                                df_plot,
-                                x="Minggu Epid",
-                                y="Jumlah Kes",
-                                color="Wabak_Str",
-                                color_discrete_map=color_map,
-                                custom_data=[
-                                    "Tarikh Mula Str",
-                                    "Tarikh Akhir Str",
-                                    "Tempoh (Hari)",
-                                    "Wabak_Str",
-                                    "Label Tarikh",
-                                    "Label Tempoh",
-                                ],
-                                title=f"Garis Masa Kekerapan & Saiz Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
-                            )
+                            visible_count = max(idx_e - idx_s + 1, 1)
+                            tick_step = max(1, visible_count // 42)
+                            tick_vals = [
+                                period_items[i]["start_iso"]
+                                for i in range(0, len(period_items), tick_step)
+                            ]
+                            tick_texts = [
+                                period_items[i]["label"]
+                                for i in range(0, len(period_items), tick_step)
+                            ]
+
+                            # Bina graf dengan lebar setiap bar sepadan tepat dengan bilangan hari episod
+                            fig_sejarah = go.Figure()
+                            for _, row in df_plot.sort_values(
+                                by=["Tarikh Mula", "Wabak_Str"]
+                            ).iterrows():
+                                w_str = row["Wabak_Str"]
+                                fig_sejarah.add_trace(
+                                    go.Bar(
+                                        x=[row["Center_Dt"]],
+                                        y=[row["Jumlah Kes"]],
+                                        width=[row["Width_Ms"]],
+                                        name=w_str,
+                                        marker=dict(
+                                            color=color_map[w_str],
+                                            line=dict(
+                                                width=0.8, color="rgba(0,0,0,0.55)"
+                                            ),
+                                        ),
+                                        opacity=0.9,
+                                        selected=dict(marker=dict(opacity=1.0)),
+                                        unselected=dict(marker=dict(opacity=0.85)),
+                                        customdata=[
+                                            [
+                                                row["Tarikh Mula Str"],
+                                                row["Tarikh Akhir Str"],
+                                                row["Tempoh (Hari)"],
+                                                w_str,
+                                                row["Label Tarikh"],
+                                                row["Label Tempoh"],
+                                                row["Jumlah Kes"],
+                                            ]
+                                        ],
+                                        hovertemplate="<br>".join(
+                                            [
+                                                "<b>Wabak No:</b> %{customdata[3]}",
+                                                "<b>Jumlah Kes:</b> %{customdata[6]} Kes",
+                                                "<b>Tarikh Mula:</b> %{customdata[0]}",
+                                                "<b>%{customdata[4]}:</b> %{customdata[1]}",
+                                                "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
+                                                "<extra></extra>",
+                                            ]
+                                        ),
+                                    )
+                                )
 
                             fig_sejarah.update_xaxes(
-                                type="category",
-                                categoryorder="array",
-                                categoryarray=x_labels,
-                                range=[idx_s - 0.5, idx_e + 0.5],
-                                title="Tahun & Minggu Epid (Garis Masa Penularan Bermula)",
+                                type="date",
+                                range=[
+                                    period_items[idx_s]["start_iso"],
+                                    period_items[idx_e]["end_iso"],
+                                ],
+                                tickmode="array",
+                                tickvals=tick_vals,
+                                ticktext=tick_texts,
+                                tickangle=-90,
+                                title="Tahun & Minggu Epid (Lebar Bar = Tempoh Hari Episod)",
                                 rangeslider=dict(visible=False),
                             )
                             fig_sejarah.update_yaxes(
@@ -774,8 +848,9 @@ if uploaded_file is not None or df_hist is not None:
                                 rangemode="tozero",
                             )
                             fig_sejarah.update_layout(
-                                height=440,
-                                bargap=0.12,
+                                title=f"Garis Masa Kekerapan, Saiz & Tempoh Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
+                                barmode="overlay",
+                                height=450,
                                 dragmode="pan",
                                 legend=dict(
                                     title="No. Wabak (Skrol ▲▼)",
@@ -790,22 +865,6 @@ if uploaded_file is not None or df_hist is not None:
                                 ),
                             )
 
-                            fig_sejarah.update_traces(
-                                marker_line_width=0.6,
-                                marker_line_color="rgba(0,0,0,0.45)",
-                                selected=dict(marker=dict(opacity=1.0)),
-                                unselected=dict(marker=dict(opacity=0.85)),
-                                hovertemplate="<br>".join(
-                                    [
-                                        "<b>Wabak No:</b> %{customdata[3]}",
-                                        "<b>Tarikh Mula:</b> %{customdata[0]}",
-                                        "<b>%{customdata[4]}:</b> %{customdata[1]}",
-                                        "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
-                                        "<extra></extra>",
-                                    ]
-                                ),
-                            )
-
                             selected_data = st.plotly_chart(
                                 fig_sejarah,
                                 on_select="rerun",
@@ -816,100 +875,126 @@ if uploaded_file is not None or df_hist is not None:
 
                             # Jambatan masa nyata (real-time) supaya graf mengezum serta-merta semasa penanda slider digerakkan
                             if len(x_labels) > 10:
+                                period_items_json = json.dumps(period_items)
                                 components.html(
-                                    """
+                                    f"""
                                     <script>
-                                    (function() {
+                                    (function() {{
+                                        const periodItems = {period_items_json};
                                         const doc = window.parent.document;
                                         const win = window.parent;
                                         let rafId = null;
 
-                                        function findZoomSlider() {
+                                        function findZoomSlider() {{
                                             const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
-                                            for (const s of sliders) {
-                                                if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {
+                                            for (const s of sliders) {{
+                                                if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {{
                                                     return s;
-                                                }
-                                            }
+                                                }}
+                                            }}
                                             return null;
-                                        }
+                                        }}
 
-                                        function findHistoryPlot(sliderEl) {
+                                        function findHistoryPlot(sliderEl) {{
                                             const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
                                             if (!charts.length) return null;
                                             if (!sliderEl) return charts[0];
                                             const sRect = sliderEl.getBoundingClientRect();
                                             let bestChart = charts[0];
                                             let minDist = Infinity;
-                                            for (const c of charts) {
+                                            for (const c of charts) {{
                                                 const cRect = c.getBoundingClientRect();
                                                 const dist = Math.abs(cRect.top - sRect.bottom);
-                                                if (cRect.top >= sRect.top - 20 && dist < minDist) {
+                                                if (cRect.top >= sRect.top - 20 && dist < minDist) {{
                                                     minDist = dist;
                                                     bestChart = c;
-                                                }
-                                            }
+                                                }}
+                                            }}
                                             return bestChart;
-                                        }
+                                        }}
 
-                                        function syncZoomLive() {
+                                        function syncZoomLive() {{
                                             const sliderEl = findZoomSlider();
-                                            if (!sliderEl) return;
+                                            if (!sliderEl || !periodItems.length) return;
                                             const thumbs = sliderEl.querySelectorAll('[role="slider"]');
                                             if (thumbs.length < 2) return;
-                                            const v0 = parseFloat(thumbs[0].getAttribute('aria-valuenow'));
-                                            const v1 = parseFloat(thumbs[1].getAttribute('aria-valuenow'));
+                                            const v0 = parseInt(thumbs[0].getAttribute('aria-valuenow'), 10);
+                                            const v1 = parseInt(thumbs[1].getAttribute('aria-valuenow'), 10);
                                             if (isNaN(v0) || isNaN(v1)) return;
-                                            const minIdx = Math.min(v0, v1);
-                                            const maxIdx = Math.max(v0, v1);
+                                            const minIdx = Math.max(0, Math.min(v0, v1));
+                                            const maxIdx = Math.min(periodItems.length - 1, Math.max(v0, v1));
+                                            const visibleCount = Math.max(maxIdx - minIdx + 1, 1);
+                                            const tickStep = Math.max(1, Math.floor(visibleCount / 42));
+                                            const tickVals = [];
+                                            const tickTexts = [];
+                                            for (let i = 0; i < periodItems.length; i += tickStep) {{
+                                                tickVals.push(periodItems[i].start_iso);
+                                                tickTexts.push(periodItems[i].label);
+                                            }}
                                             const plotEl = findHistoryPlot(sliderEl);
-                                            if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {
-                                                try {
-                                                    win.Plotly.relayout(plotEl, {
-                                                        'xaxis.range': [minIdx - 0.5, maxIdx + 0.5],
+                                            if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {{
+                                                try {{
+                                                    win.Plotly.relayout(plotEl, {{
+                                                        'xaxis.range': [periodItems[minIdx].start_iso, periodItems[maxIdx].end_iso],
+                                                        'xaxis.tickvals': tickVals,
+                                                        'xaxis.ticktext': tickTexts,
                                                         'xaxis.autorange': false
-                                                    });
-                                                } catch (e) {}
-                                            }
-                                        }
+                                                    }});
+                                                }} catch (e) {{}}
+                                            }}
+                                        }}
 
-                                        function bindRealtime() {
+                                        function bindRealtime() {{
                                             const sliderEl = findZoomSlider();
                                             if (!sliderEl || sliderEl.dataset.rtBound === '1') return;
                                             sliderEl.dataset.rtBound = '1';
 
-                                            const triggerUpdate = () => {
+                                            const triggerUpdate = () => {{
                                                 if (rafId) cancelAnimationFrame(rafId);
                                                 rafId = requestAnimationFrame(syncZoomLive);
-                                            };
+                                            }};
 
                                             const observer = new MutationObserver(triggerUpdate);
                                             const thumbs = sliderEl.querySelectorAll('[role="slider"]');
-                                            thumbs.forEach(t => {
-                                                observer.observe(t, { attributes: true, attributeFilter: ['aria-valuenow'] });
-                                            });
-                                            sliderEl.addEventListener('pointermove', triggerUpdate, { passive: true });
-                                            sliderEl.addEventListener('touchmove', triggerUpdate, { passive: true });
-                                        }
+                                            thumbs.forEach(t => {{
+                                                observer.observe(t, {{ attributes: true, attributeFilter: ['aria-valuenow'] }});
+                                            }});
+                                            sliderEl.addEventListener('pointermove', triggerUpdate, {{ passive: true }});
+                                            sliderEl.addEventListener('touchmove', triggerUpdate, {{ passive: true }});
+                                            syncZoomLive();
+                                        }}
 
                                         bindRealtime();
                                         const retryTimer = setInterval(bindRealtime, 400);
                                         setTimeout(() => clearInterval(retryTimer), 6000);
-                                    })();
+                                    }})();
                                     </script>
                                     """,
                                     height=0,
                                 )
 
                             if selected_data and selected_data.selection.points:
-                                clicked_w_no_str = selected_data.selection.points[0][
-                                    "customdata"
-                                ][3]
-                                target_w_str = f"Wabak No: {clicked_w_no_str}"
+                                pt = selected_data.selection.points[0]
+                                cdata = pt.get("customdata")
+                                if cdata and len(cdata) > 3:
+                                    clicked_w_no_str = str(cdata[3])
+                                elif "curve_number" in pt:
+                                    sorted_df_plot = df_plot.sort_values(
+                                        by=["Tarikh Mula", "Wabak_Str"]
+                                    ).reset_index(drop=True)
+                                    clicked_w_no_str = str(
+                                        sorted_df_plot.iloc[pt["curve_number"]][
+                                            "Wabak_Str"
+                                        ]
+                                    )
+                                else:
+                                    clicked_w_no_str = None
 
-                                if st.session_state.selected_wabak != target_w_str:
-                                    st.session_state.selected_wabak = target_w_str
-                                    st.rerun()
+                                if clicked_w_no_str:
+                                    target_w_str = f"Wabak No: {clicked_w_no_str}"
+                                    if st.session_state.selected_wabak != target_w_str:
+                                        st.session_state.selected_wabak = target_w_str
+                                        st.rerun()
                         else:
                             st.info(
                                 f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
