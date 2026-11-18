@@ -1,3 +1,4 @@
+import html
 import io
 import json
 import os
@@ -15,7 +16,7 @@ st.set_page_config(page_title="Dashboard Analisis Denggi", layout="wide")
 
 MS_PER_DAY = 24 * 60 * 60 * 1000
 
-# --- CSS KHUSUS UNTUK CETAKAN PDF & ELEMEN JADUAL ---
+# --- CSS KHUSUS UNTUK CETAKAN PDF, ELEMEN JADUAL & TOOLTIP METRIK ---
 st.markdown(
     """
     <style>
@@ -25,6 +26,8 @@ st.markdown(
         .stButton > button {display: none;}
         footer {visibility: hidden;}
         .stAlert {page-break-inside: avoid;}
+        .metric-tooltip-bubble {display: none !important;}
+        .metric-hover-card {padding: 0 !important; box-shadow: none !important; background: transparent !important;}
     }
     table {
         width: 100%;
@@ -37,6 +40,98 @@ st.markdown(
     }
     .stApp {
         transition: background-color 0.5s ease;
+    }
+    /* Kad metrik interaktif dengan kesan tonasi & gelembung info */
+    .metric-hover-card {
+        position: relative;
+        padding: 4px 10px 8px 10px;
+        border-radius: 10px;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+        cursor: help;
+    }
+    .metric-hover-card:hover {
+        background-color: rgba(255, 75, 75, 0.08);
+        box-shadow: 0 0 0 1px rgba(255, 75, 75, 0.35);
+    }
+    .metric-hover-label {
+        font-size: 0.875rem;
+        line-height: 1.4;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .metric-hover-badge {
+        font-size: 0.72rem;
+        opacity: 0.7;
+        border: 1px solid currentColor;
+        border-radius: 50%;
+        width: 15px;
+        height: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+    .metric-hover-value {
+        font-size: 2.25rem;
+        font-weight: 400;
+        line-height: 1.2;
+    }
+    .metric-tooltip-bubble {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 350px;
+        max-width: 85vw;
+        background-color: #1e2430;
+        color: #f8fafc;
+        padding: 14px 16px;
+        border-radius: 10px;
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        font-size: 0.82rem;
+        line-height: 1.5;
+        text-align: left;
+        z-index: 9999;
+        pointer-events: none;
+        transform: translateY(-4px);
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    }
+    .metric-hover-card:hover .metric-tooltip-bubble {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .tooltip-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #fca5a5;
+        margin-bottom: 6px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        padding-bottom: 4px;
+    }
+    .tooltip-section {
+        margin-bottom: 6px;
+    }
+    .tooltip-formula {
+        background-color: rgba(255, 255, 255, 0.08);
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #fde68a;
+        margin: 4px 0 6px 0;
+    }
+    .tooltip-current {
+        background-color: rgba(56, 189, 248, 0.14);
+        border-left: 3px solid #38bdf8;
+        padding: 6px 8px;
+        border-radius: 4px;
+        margin-top: 6px;
+        color: #e0f2fe;
     }
     </style>
     """,
@@ -1060,8 +1155,39 @@ if uploaded_file is not None or df_hist is not None:
             col2.metric(
                 f"Tempoh (Hari) *Bermula {tarikh_mula_str}*", tempoh_wabak_hari
             )
-            col3.metric("Velocity (Kes/Hari)", f"{kadar_velocity:.2f}")
-            col4.metric("Peningkatan (% Harian)", f"{peratus_increment:.1f}%")
+
+            safe_lokaliti = html.escape(str(pilihan_lokaliti))
+            safe_kategori = html.escape(str(pilihan_kategori))
+
+            velocity_html = (
+                f'<div class="metric-hover-card">'
+                f'<div class="metric-hover-label">Velocity (Kes/Hari) <span class="metric-hover-badge">?</span></div>'
+                f'<div class="metric-hover-value">{kadar_velocity:.2f}</div>'
+                f'<div class="metric-tooltip-bubble">'
+                f'<div class="tooltip-title">🚀 Velocity (Kes/Hari)</div>'
+                f'<div class="tooltip-section"><b>Maksud & Relevansi:</b> Mengukur kelajuan penularan wabak (purata kes baharu sehari). Nilai tinggi (cth. > 1.0 kes/hari) menandakan penularan agresif yang memerlukan kawalan kecemasan segera (ULV & S&D).</div>'
+                f'<div class="tooltip-section"><b>Formula & Cara Kira:</b>'
+                f'<div class="tooltip-formula">Jumlah Kes ÷ Tempoh Wabak (Hari)</div></div>'
+                f'<div class="tooltip-current"><b>Pengiraan Semasa ({safe_lokaliti} — {safe_kategori}):</b><br>'
+                f'{jumlah_kes} kes ÷ {tempoh_wabak_hari} hari = <b>{kadar_velocity:.2f} kes/hari</b></div>'
+                f'</div></div>'
+            )
+            col3.markdown(velocity_html, unsafe_allow_html=True)
+
+            increment_html = (
+                f'<div class="metric-hover-card">'
+                f'<div class="metric-hover-label">Peningkatan (% Harian) <span class="metric-hover-badge">?</span></div>'
+                f'<div class="metric-hover-value">{peratus_increment:.1f}%</div>'
+                f'<div class="metric-tooltip-bubble">'
+                f'<div class="tooltip-title">📈 Peningkatan (% Harian)</div>'
+                f'<div class="tooltip-section"><b>Maksud & Relevansi:</b> Mengukur momentum pertumbuhan purata harian berbanding keseluruhan kes terkumpul. Peratusan tinggi menandakan fasa awal wabak yang sedang berkembang pantas; peratusan mengecil menandakan lengkuk epid mulai mendatar.</div>'
+                f'<div class="tooltip-section"><b>Formula & Cara Kira:</b>'
+                f'<div class="tooltip-formula">(Velocity ÷ Jumlah Kes) × 100</div></div>'
+                f'<div class="tooltip-current"><b>Pengiraan Semasa ({safe_lokaliti} — {safe_kategori}):</b><br>'
+                f'({kadar_velocity:.2f} ÷ {jumlah_kes} kes) × 100 = <b>{peratus_increment:.1f}% sehari</b></div>'
+                f'</div></div>'
+            )
+            col4.markdown(increment_html, unsafe_allow_html=True)
 
             st.markdown("---")
 
