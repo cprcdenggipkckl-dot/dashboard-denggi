@@ -301,6 +301,39 @@ st.markdown(
         background-color: rgba(56, 189, 248, 0.05);
         transition: box-shadow 0.25s ease, background-color 0.25s ease;
     }
+    /* Kotak kesimpulan automatik berasaskan data di bawah setiap graf & jadual AI */
+    .ai-conclusion-box {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.09), rgba(99, 102, 241, 0.06));
+        border-left: 4px solid #0284c7;
+        border-top: 1px solid rgba(14, 165, 233, 0.26);
+        border-right: 1px solid rgba(14, 165, 233, 0.26);
+        border-bottom: 1px solid rgba(14, 165, 233, 0.26);
+        border-radius: 0 8px 8px 0;
+        padding: 9px 12px;
+        margin: 2px 0 12px 0;
+        font-size: 0.83rem;
+        line-height: 1.5;
+        transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .ai-conclusion-box:hover {
+        background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(99, 102, 241, 0.10));
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.14);
+    }
+    .ai-conclusion-title {
+        font-weight: 700;
+        font-size: 0.84rem;
+        color: #0369a1;
+        margin-bottom: 3px;
+    }
+    .ai-table-conclusion {
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 0 6px 6px 0;
+        background-color: rgba(14, 165, 233, 0.08);
+        border-left: 3px solid #0284c7;
+        font-size: 0.81rem;
+        line-height: 1.48;
+    }
     .tooltip-title {
         font-size: 0.9rem;
         font-weight: 700;
@@ -420,6 +453,16 @@ def get_parl_bg(p_str):
     return "#ffffff"
 
 
+def render_ai_conclusion_box(title, body_html):
+    """Menjana blok kesimpulan automatik berasaskan data di bawah setiap graf atau visualisasi."""
+    return (
+        f'<div class="ai-conclusion-box">'
+        f'<div class="ai-conclusion-title">📌 {html.escape(title)}</div>'
+        f"<div>{body_html}</div>"
+        f"</div>"
+    )
+
+
 def df_to_styled_html_table(df_in, badge_cols=None):
     """Menukar DataFrame kepada jadual HTML kemas dengan lencana warna pilihan."""
     if df_in is None or df_in.empty:
@@ -463,10 +506,16 @@ def build_ai_hover_card_html(
     relevance_html,
     formula_html,
     current_calc_html,
+    conclusion_html="",
     align_right=False,
 ):
-    """Membina kad interaktif dengan kesan tonasi (hover highlight) & gelembung info (tooltip bubble)."""
+    """Membina kad interaktif dengan kesan tonasi, kesimpulan data di bahagian bawah & gelembung info (tooltip bubble)."""
     align_cls = " ai-bubble-right" if align_right else ""
+    conc_block = (
+        f'<div class="ai-table-conclusion">{conclusion_html}</div>'
+        if conclusion_html
+        else ""
+    )
     return (
         f'<div class="ai-hover-card{align_cls}" data-ai-zone="{html.escape(zone_id)}">'
         f'<div class="ai-card-header">'
@@ -474,6 +523,7 @@ def build_ai_hover_card_html(
         f'<span class="ai-card-pill">? Info & Formula</span>'
         f"</div>"
         f"{body_html}"
+        f"{conc_block}"
         f'<div class="ai-tooltip-bubble">'
         f'<div class="tooltip-title">{tooltip_title}</div>'
         f'<div class="tooltip-section"><b>Maksud & Relevansi:</b> {relevance_html}</div>'
@@ -1412,7 +1462,7 @@ def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
 
 
 def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_api_key):
-    """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan hover tonasi & tooltip) serta jawapan AI berpandukan data."""
+    """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan kesimpulan data di bahagian bawah & hover tooltip) serta jawapan AI."""
     q_lower = question.lower().strip()
     df_forecast = analytics["df_forecast"]
     df_lags = analytics["df_lags"]
@@ -1440,12 +1490,27 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
     if is_forecast_q:
         with c_qa1:
             fc_table_html = df_to_styled_html_table(df_forecast)
-            top_fc_txt = (
-                f"Minggu <b>{df_forecast.iloc[0]['Minggu']}</b>: <b>{df_forecast.iloc[0]['Unjuran Kes']} kes</b> "
-                f"(95% CI: {df_forecast.iloc[0]['95% CI Bawah']} – {df_forecast.iloc[0]['95% CI Atas']})"
-                if not df_forecast.empty
-                else "Tiada unjuran"
-            )
+            if not df_forecast.empty:
+                tot_fc = round(float(df_forecast["Unjuran Kes"].sum()), 1)
+                tot_lo = round(float(df_forecast["95% CI Bawah"].sum()), 1)
+                tot_hi = round(float(df_forecast["95% CI Atas"].sum()), 1)
+                first_fc = df_forecast.iloc[0]
+                last_fc = df_forecast.iloc[-1]
+                top_fc_txt = (
+                    f"Minggu <b>{first_fc['Minggu']}</b>: <b>{first_fc['Unjuran Kes']} kes</b> "
+                    f"(95% CI: {first_fc['95% CI Bawah']} – {first_fc['95% CI Atas']})"
+                )
+                fc_tbl_conc = (
+                    f"<b>📌 Kesimpulan Jadual Unjuran:</b> Dalam tempoh 4 minggu hadapan "
+                    f"(<b>{html.escape(str(first_fc['Minggu']))}</b> hingga <b>{html.escape(str(last_fc['Minggu']))}</b>), "
+                    f"jumlah keseluruhan kes diunjurkan sebanyak <b>{tot_fc} kes</b> "
+                    f"(julat kumulatif 95% CI: <b>{tot_lo} – {tot_hi} kes</b>), bergerak daripada "
+                    f"<b>{first_fc['Unjuran Kes']} kes</b> kepada <b>{last_fc['Unjuran Kes']} kes</b>."
+                )
+            else:
+                top_fc_txt = "Tiada unjuran"
+                fc_tbl_conc = "<b>📌 Kesimpulan Jadual Unjuran:</b> Data mingguan tidak mencukupi untuk menjana jadual ramalan."
+
             card_fc_qa = build_ai_hover_card_html(
                 zone_id="ai_qa_left",
                 card_title="📅 Jadual Unjuran Kes 4 Minggu Hadapan (95% CI)",
@@ -1458,6 +1523,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"Kecerunan (b) = <b>{slope:+.2f} kes/minggu</b> | Ralat Piawai (s<sub>e</sub>) = <b>{s_err:.2f}</b> | R² = <b>{r_sq:.3f}</b><br>"
                     f"Seterusnya → {top_fc_txt}"
                 ),
+                conclusion_html=fc_tbl_conc,
                 align_right=False,
             )
             st.markdown(card_fc_qa, unsafe_allow_html=True)
@@ -1498,9 +1564,20 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     fig_qa_fc, use_container_width=True, key="qa_forecast_bar"
                 )
                 top1 = top_proj.iloc[0]
+                tot_top_proj = round(float(top_proj["Unjuran +14 Hari"].sum()), 1)
+                st.markdown(
+                    render_ai_conclusion_box(
+                        "Kesimpulan Graf & Titik Plot Unjuran +14 Hari",
+                        f"Daripada <b>{len(top_proj)} lokaliti aktif</b> yang diplot, titik tertinggi ialah "
+                        f"<b>{html.escape(str(top1['Lokaliti']))}</b> dengan unjuran <b>{top1['Unjuran +14 Hari']} kes baharu</b> "
+                        f"(batas 95% CI: <b>{top1['95% CI (+14 Hari)']} kes</b>). Secara gabungan, lokaliti teratas ini dijangka "
+                        f"menyumbang <b>{tot_top_proj} kes</b> dalam 14 hari akan datang jika tiada intervensi intensif dijalankan.",
+                    ),
+                    unsafe_allow_html=True,
+                )
                 card_qa_fc_g = build_ai_hover_card_html(
                     zone_id="ai_qa_right",
-                    card_title="📊 Graf Ralat Unjuran +14 Hari (95% Confidence Interval)",
+                    card_title="ℹ️ Metodologi Graf Ralat Unjuran +14 Hari (95% CI)",
                     body_html='<div style="font-size:0.8rem; opacity:0.85;">Garis menegak hitam pada setiap bar menunjukkan julat <b>Selang Keyakinan 95% (95% CI)</b> bagi jangkaan pertambahan kes 14 hari akan datang.</div>',
                     tooltip_title="🎯 Unjuran Poisson +14 Hari (95% CI)",
                     relevance_html="Mengira jangkaan pertambahan kes baharu bagi setiap lokaliti aktif dalam tempoh 14 hari akan datang berdasarkan kadar kes 7 hari terakhir dan halaju penularan.",
@@ -1539,6 +1616,23 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                 if not df_pearson.empty
                 else "Data korelasi dikira daripada episod wabak"
             )
+            exceed_rows = (
+                df_lags[df_lags["Status Prestasi"] == "MELEBIHI KPI"][
+                    "Metrik Kelewatan"
+                ].tolist()
+                if not df_lags.empty
+                else []
+            )
+            kpi_note = (
+                f"Tahap melebihi sasaran KPI: <b>{html.escape(', '.join(exceed_rows))}</b>."
+                if exceed_rows
+                else "Semua tahap operasi mematuhi sasaran KPI median."
+            )
+            corr_tbl_conc = (
+                f"<b>📌 Kesimpulan Jadual Kelengahan & Korelasi:</b> Median kelewatan dari mula gejala "
+                f"(Onset) ke notifikasi ialah <b>{med_o}</b>. {kpi_note} "
+                f"Hubungan linear terkuat dikesan pada <b>{r_sample}</b>."
+            )
             card_corr_qa = build_ai_hover_card_html(
                 zone_id="ai_qa_left",
                 card_title="⏱️ Jadual Kelewatan Operasi & Korelasi Pearson (r)",
@@ -1550,6 +1644,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"<b>Angka Semasa:</b> Median Onset→Notifikasi = <b>{med_o}</b><br>"
                     f"Korelasi: {r_sample}"
                 ),
+                conclusion_html=corr_tbl_conc,
                 align_right=False,
             )
             st.markdown(card_corr_qa, unsafe_allow_html=True)
@@ -1579,9 +1674,25 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                 st.plotly_chart(
                     fig_qa_corr, use_container_width=True, key="qa_corr_bar"
                 )
+                max_ep_row = df_status_corr.loc[
+                    df_status_corr["Purata Kes / Episod"].idxmax()
+                ]
+                min_ep_row = df_status_corr.loc[
+                    df_status_corr["Purata Kes / Episod"].idxmin()
+                ]
+                st.markdown(
+                    render_ai_conclusion_box(
+                        "Kesimpulan Graf Perbandingan Status Wabak",
+                        f"Kategori <b>{html.escape(str(max_ep_row['Status Wabak']))}</b> mencatatkan purata beban kes tertinggi "
+                        f"(<b>{max_ep_row['Purata Kes / Episod']} kes/episod</b>) berbanding <b>{html.escape(str(min_ep_row['Status Wabak']))}</b> "
+                        f"(<b>{min_ep_row['Purata Kes / Episod']} kes/episod</b>). Mempercepatkan pengesanan kes awal dan semburan SRT "
+                        f"menghalang wabak terkawal daripada berkembang ke kelompok kes bersaiz besar.",
+                    ),
+                    unsafe_allow_html=True,
+                )
                 card_qa_corr_g = build_ai_hover_card_html(
                     zone_id="ai_qa_right",
-                    card_title="📊 Graf Perbandingan Status Wabak vs Kelengahan",
+                    card_title="ℹ️ Metodologi Graf Status Wabak vs Kelengahan",
                     body_html='<div style="font-size:0.8rem; opacity:0.85;">Membandingkan purata bilangan kes per episod dengan purata hari lengah notifikasi dan semburan SRT bagi setiap kategori status wabak.</div>',
                     tooltip_title="📊 Korelasi Status Wabak & Kelengahan",
                     relevance_html="Mengenal pasti sama ada wabak yang bertukar menjadi Tak Terkawal atau Hotspot mempunyai kelengahan notifikasi pesakit atau tindakan kawalan yang lebih panjang.",
@@ -1641,6 +1752,12 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                 }
             }
             plan_html = df_to_styled_html_table(plan_df, badge_cols=plan_badge)
+            plan_tbl_conc = (
+                f"<b>📌 Kesimpulan Jadual Pelan Tindakan:</b> Operasi lapangan di <b>{html.escape(lok_name)}</b> "
+                f"wajar dimulakan dengan pemeriksaan PTP/S&D dalam tempoh <b>< 48 jam</b> di titik tumpuan "
+                f"<b>{html.escape(kluster_txt)}</b>, disusuli semburan ulangan SRT dan saringan ACD kepada kumpulan "
+                f"<b>{html.escape(nat_txt)} ({html.escape(occ_txt)})</b>."
+            )
             card_plan_qa = build_ai_hover_card_html(
                 zone_id="ai_qa_left",
                 card_title=f"🎯 Jadual Pelan Tindakan Taktikal: {lok_name}",
@@ -1652,6 +1769,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"<b>Lokaliti Sasaran:</b> {html.escape(lok_name)}<br>"
                     f"<b>Kluster Utama:</b> {html.escape(kluster_txt)} | <b>Demografi:</b> {html.escape(nat_txt)} ({html.escape(occ_txt)})"
                 ),
+                conclusion_html=plan_tbl_conc,
                 align_right=False,
             )
             st.markdown(card_plan_qa, unsafe_allow_html=True)
@@ -1688,9 +1806,22 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     fig_qa_risk, use_container_width=True, key="qa_risk_hbar"
                 )
                 top1 = df_active_risk.iloc[0]
+                n_crit_high = int(
+                    df_active_risk["Tahap Risiko"].isin(["KRITIKAL", "TINGGI"]).sum()
+                )
+                st.markdown(
+                    render_ai_conclusion_box(
+                        "Kesimpulan Graf Kedudukan Skor Risiko",
+                        f"Terdapat <b>{n_crit_high} daripada {len(df_active_risk)} lokaliti aktif</b> berada pada tahap "
+                        f"<b>KRITIKAL / TINGGI</b>. Lokaliti keutamaan #1 ialah <b>{html.escape(str(top1['Lokaliti']))}</b> "
+                        f"(Skor <b>{top1['Skor Risiko']}/100</b>, Velocity <b>{top1['Velocity (Kes/Hari)']} kes/hari</b>) dan perlu "
+                        f"diberi mobilisasi sumber kawalan vektor paling awal.",
+                    ),
+                    unsafe_allow_html=True,
+                )
                 card_qa_risk_g = build_ai_hover_card_html(
                     zone_id="ai_qa_right",
-                    card_title="📊 Graf Keutamaan Skor Risiko Eskalasi Semasa",
+                    card_title="ℹ️ Metodologi Graf Keutamaan Skor Risiko Eskalasi",
                     body_html='<div style="font-size:0.8rem; opacity:0.85;">Menunjukkan susunan lokaliti aktif mengikut <b>Skor Risiko Eskalasi (0–100)</b> bagi menentukan giliran pasukan kawalan vektor.</div>',
                     tooltip_title="🚨 Indeks Skor Risiko Eskalasi (0–100)",
                     relevance_html="Menggabungkan kelajuan kes harian (Velocity), kes 7 hari terakhir, tempoh wabak, dan status semasa untuk mengenal pasti lokaliti paling kritikal.",
@@ -2057,7 +2188,7 @@ if uploaded_file is not None or df_hist is not None:
         st.markdown("---")
         st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
         st.caption(
-            "Arahkan kursor tetikus ke atas mana-mana graf, jadual, atau data di bawah untuk kesan tonasi & gelembung info (formula, relevansi & angka semasa)."
+            "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data serta gelembung info formula apabila kursor diarahkan."
         )
 
         ai_analytics = compute_ai_epidemiological_analytics(
@@ -2143,9 +2274,41 @@ if uploaded_file is not None or df_hist is not None:
 
                     last_wk_lbl = str(hist_tail["Minggu"].iloc[-1])
                     last_wk_kes = int(hist_tail["Kes"].iloc[-1])
+                    peak_pt = hist_tail.loc[hist_tail["Kes"].idxmax()]
+                    low_pt = hist_tail.loc[hist_tail["Kes"].idxmin()]
                     next_fc = df_forecast.iloc[0]
+                    end_fc = df_forecast.iloc[-1]
+                    arah_fc = (
+                        "menurun"
+                        if slope_val < -0.2
+                        else ("meningkat" if slope_val > 0.2 else "mendatar")
+                    )
+
+                    # Kesimpulan automatik di bawah Graf Ramalan & Titik Plot
+                    st.markdown(
+                        render_ai_conclusion_box(
+                            "Kesimpulan Graf & Titik Plot Ramalan Mingguan",
+                            f"Sepanjang <b>{len(hist_tail)} minggu</b> titik plot sebenar, kes memuncak pada "
+                            f"<b>{html.escape(str(peak_pt['Minggu']))} ({int(peak_pt['Kes'])} kes)</b> dan menyusut ke titik terendah pada "
+                            f"<b>{html.escape(str(low_pt['Minggu']))} ({int(low_pt['Kes'])} kes)</b>. Garis regresi ({n_fit_val} minggu terkini) "
+                            f"menunjukkan arah <b>{arah_fc} ({slope_val:+.2f} kes/minggu, R² = {r_sq_val:.3f})</b>, dengan titik unjuran bergerak "
+                            f"daripada <b>{last_wk_kes} kes ({html.escape(last_wk_lbl)})</b> kepada <b>{end_fc['Unjuran Kes']} kes</b> "
+                            f"menjelang <b>{html.escape(str(end_fc['Minggu']))}</b> (95% CI: <b>{end_fc['95% CI Bawah']} – {end_fc['95% CI Atas']} kes</b>).",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
+                    tot_4w_fc = round(float(df_forecast["Unjuran Kes"].sum()), 1)
+                    avg_4w_fc = round(float(df_forecast["Unjuran Kes"].mean()), 1)
+                    tot_4w_lo = round(float(df_forecast["95% CI Bawah"].sum()), 1)
+                    tot_4w_hi = round(float(df_forecast["95% CI Atas"].sum()), 1)
 
                     fc_tbl_html = df_to_styled_html_table(df_forecast)
+                    fc_table_conc = (
+                        f"<b>📌 Kesimpulan Jadual Ramalan 4 Minggu:</b> Jumlah kumulatif kes yang dijangka bagi 4 minggu hadapan ialah "
+                        f"<b>{tot_4w_fc} kes</b> (purata <b>{avg_4w_fc} kes/minggu</b>), dengan julat keyakinan 95% keseluruhan antara "
+                        f"<b>{tot_4w_lo} hingga {tot_4w_hi} kes</b> sebagai panduan perancangan kapasiti logistik & kawalan vektor."
+                    )
                     card_fc_html = build_ai_hover_card_html(
                         zone_id="ai_zone_forecast",
                         card_title="📅 Jadual Ramalan Kes 4 Minggu Hadapan (95% CI)",
@@ -2159,6 +2322,7 @@ if uploaded_file is not None or df_hist is not None:
                             f"Ralat Piawai (s<sub>e</sub>) = <b>{s_err_val:.2f}</b> | R² = <b>{r_sq_val:.3f}</b><br>"
                             f"Unjuran Minggu {html.escape(str(next_fc['Minggu']))}: <b>{next_fc['Unjuran Kes']} kes</b> (95% CI: <b>{next_fc['95% CI Bawah']} – {next_fc['95% CI Atas']}</b>)"
                         ),
+                        conclusion_html=fc_table_conc,
                         align_right=False,
                     )
                     st.markdown(card_fc_html, unsafe_allow_html=True)
@@ -2199,6 +2363,25 @@ if uploaded_file is not None or df_hist is not None:
                         fig_risk, use_container_width=True, key="ai_risk_scatter"
                     )
 
+                    max_vel_pt = df_ar.loc[df_ar["Velocity (Kes/Hari)"].idxmax()]
+                    max_dur_pt = df_ar.loc[df_ar["Tempoh (Hari)"].idxmax()]
+                    max_proj_pt = df_ar.loc[df_ar["Unjuran +14 Hari"].idxmax()]
+                    avg_vel_all = round(float(df_ar["Velocity (Kes/Hari)"].mean()), 2)
+                    avg_dur_all = round(float(df_ar["Tempoh (Hari)"].mean()), 1)
+
+                    # Kesimpulan automatik di bawah Scatter Plot Matriks Risiko
+                    st.markdown(
+                        render_ai_conclusion_box(
+                            "Kesimpulan Plot Taburan Matriks Risiko Eskalasi",
+                            f"Daripada <b>{len(df_ar)} titik plot wabak aktif</b> (purata halaju <b>{avg_vel_all} kes/hari</b>, "
+                            f"purata tempoh <b>{avg_dur_all} hari</b>), titik halaju tertinggi ialah <b>{html.escape(str(max_vel_pt['Lokaliti']))}</b> "
+                            f"(<b>{max_vel_pt['Velocity (Kes/Hari)']} kes/hari</b>), tempoh terlama ialah <b>{html.escape(str(max_dur_pt['Lokaliti']))}</b> "
+                            f"(<b>{int(max_dur_pt['Tempoh (Hari)'])} hari</b>), manakala gelembung unjuran +14 hari terbesar tertumpu di "
+                            f"<b>{html.escape(str(max_proj_pt['Lokaliti']))}</b> (<b>{max_proj_pt['Unjuran +14 Hari']} kes</b>; 95% CI: <b>{max_proj_pt['95% CI (+14 Hari)']}</b>).",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
                     risk_display_df = df_ar[
                         [
                             "Lokaliti",
@@ -2219,6 +2402,19 @@ if uploaded_file is not None or df_hist is not None:
                         risk_display_df, badge_cols=risk_badges
                     )
                     top_r = df_ar.iloc[0]
+                    n_krit = int((df_ar["Tahap Risiko"] == "KRITIKAL").sum())
+                    n_tinggi = int((df_ar["Tahap Risiko"] == "TINGGI").sum())
+                    n_sed = int((df_ar["Tahap Risiko"] == "SEDERHANA").sum())
+                    tot_14d = round(float(df_ar["Unjuran +14 Hari"].sum()), 1)
+                    tot_14d_lo = round(float(df_ar["CI Bawah"].sum()), 1)
+                    tot_14d_hi = round(float(df_ar["CI Atas"].sum()), 1)
+
+                    risk_table_conc = (
+                        f"<b>📌 Kesimpulan Jadual Skor Risiko:</b> Pecahan tahap risiko wabak aktif ialah "
+                        f"<b>{n_krit} Kritikal</b>, <b>{n_tinggi} Tinggi</b>, dan <b>{n_sed} Sederhana</b>. "
+                        f"Keseluruhan wabak aktif diunjurkan menjana <b>{tot_14d} kes baharu</b> dalam +14 hari "
+                        f"(julat 95% CI: <b>{tot_14d_lo} – {tot_14d_hi} kes</b>), dengan keutamaan #1 di <b>{html.escape(str(top_r['Lokaliti']))}</b>."
+                    )
                     card_risk_html = build_ai_hover_card_html(
                         zone_id="ai_zone_risk",
                         card_title="🚨 Jadual Skor Risiko Eskalasi & Unjuran +14 Hari",
@@ -2231,6 +2427,7 @@ if uploaded_file is not None or df_hist is not None:
                             f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
                             f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
                         ),
+                        conclusion_html=risk_table_conc,
                         align_right=True,
                     )
                     st.markdown(card_risk_html, unsafe_allow_html=True)
@@ -2261,6 +2458,29 @@ if uploaded_file is not None or df_hist is not None:
                         fig_lag, use_container_width=True, key="ai_lag_chart"
                     )
 
+                    slow_lag = df_lags.loc[df_lags["Median (Hari)"].idxmax()]
+                    fast_lag = df_lags.loc[df_lags["Median (Hari)"].idxmin()]
+                    skewed_stages = df_lags[
+                        (df_lags["Purata (Hari)"] - df_lags["Median (Hari)"]) >= 1.0
+                    ]["Metrik Kelewatan"].tolist()
+                    skew_note = (
+                        f"Terdapat pencongan kes tertangguh (Purata jauh melebihi Median) pada <b>{html.escape(', '.join(skewed_stages))}</b>."
+                        if skewed_stages
+                        else "Taburan masa tindak balas adalah konsisten antara nilai Median dan Purata."
+                    )
+
+                    # Kesimpulan automatik di bawah Graf Kelengahan Operasi
+                    st.markdown(
+                        render_ai_conclusion_box(
+                            "Kesimpulan Graf Kelengahan Operasi Kawalan Vektor",
+                            f"Fasa paling panjang ialah <b>{html.escape(str(slow_lag['Metrik Kelewatan']))}</b> "
+                            f"(Median <b>{slow_lag['Median (Hari)']} hari</b>, Purata <b>{slow_lag['Purata (Hari)']} hari</b>), manakala "
+                            f"tindak balas terpantas ialah <b>{html.escape(str(fast_lag['Metrik Kelewatan']))}</b> "
+                            f"(Median <b>{fast_lag['Median (Hari)']} hari</b>). {skew_note}",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
                     lag_badges = {
                         "Status Prestasi": {
                             "PATUH KPI": ("#dcfce7", "#166534"),
@@ -2274,6 +2494,19 @@ if uploaded_file is not None or df_hist is not None:
                         f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
                         for _, r in df_lags.iterrows()
                     )
+                    n_patuh = int((df_lags["Status Prestasi"] == "PATUH KPI").sum())
+                    exceed_stages = df_lags[
+                        df_lags["Status Prestasi"] == "MELEBIHI KPI"
+                    ]["Metrik Kelewatan"].tolist()
+                    exceed_txt = (
+                        f"Tindakan penambahbaikan perlu difokuskan kepada <b>{html.escape(', '.join(exceed_stages))}</b> yang melebihi sasaran KPI."
+                        if exceed_stages
+                        else "Kesemua peringkat rantaian kawalan vektor mematuhi sasaran KPI."
+                    )
+                    lag_table_conc = (
+                        f"<b>📌 Kesimpulan Jadual Prestasi KPI:</b> Sebanyak <b>{n_patuh} daripada {len(df_lags)} metrik</b> "
+                        f"mematuhi sasaran KPI median. {exceed_txt}"
+                    )
                     card_lag_html = build_ai_hover_card_html(
                         zone_id="ai_zone_lags",
                         card_title="⏱️ Jadual Analisis Kelengahan Operasi Kawalan Vektor",
@@ -2282,6 +2515,7 @@ if uploaded_file is not None or df_hist is not None:
                         relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
                         formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
                         current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
+                        conclusion_html=lag_table_conc,
                         align_right=False,
                     )
                     st.markdown(card_lag_html, unsafe_allow_html=True)
@@ -2315,6 +2549,26 @@ if uploaded_file is not None or df_hist is not None:
                         fig_sc, use_container_width=True, key="ai_status_corr_chart"
                     )
 
+                    max_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmax()]
+                    min_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmin()]
+                    ratio_sz = round(
+                        float(max_sz["Purata Kes / Episod"])
+                        / max(float(min_sz["Purata Kes / Episod"]), 0.1),
+                        1,
+                    )
+
+                    # Kesimpulan automatik di bawah Graf Perbandingan Status Wabak
+                    st.markdown(
+                        render_ai_conclusion_box(
+                            "Kesimpulan Graf Status Wabak vs Saiz & Kelengahan",
+                            f"Episod berstatus <b>{html.escape(str(max_sz['Status Wabak']))}</b> merekodkan purata saiz kes "
+                            f"<b>{ratio_sz}× lebih besar</b> (<b>{max_sz['Purata Kes / Episod']} kes/episod</b>) berbanding "
+                            f"<b>{html.escape(str(min_sz['Status Wabak']))}</b> (<b>{min_sz['Purata Kes / Episod']} kes/episod</b>). "
+                            f"Pengesanan awal kes sebelum melepasi 2 minggu penularan adalah penentu utama mengelakkan eskalasi.",
+                        ),
+                        unsafe_allow_html=True,
+                    )
+
                     sc_tbl_html = df_to_styled_html_table(df_sc)
                     pearson_section_html = (
                         "<div style='margin-top:8px; font-weight:700; font-size:0.84rem;'>Pekali Korelasi Pearson (r):</div>"
@@ -2330,6 +2584,21 @@ if uploaded_file is not None or df_hist is not None:
                         if not df_pearson.empty
                         else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
                     )
+                    if not df_pearson.empty:
+                        best_p = df_pearson.loc[
+                            df_pearson["Pekali Korelasi (r)"].abs().idxmax()
+                        ]
+                        corr_table_conc = (
+                            f"<b>📌 Kesimpulan Jadual Korelasi Pearson (r):</b> Hubungan linear tertinggi antara kelewatan dan saiz wabak "
+                            f"ialah <b>{html.escape(str(best_p['Pasangan Pembolehubah']))}</b> dengan pekali "
+                            f"<b>r = {best_p['Pekali Korelasi (r)']} ({best_p['Kekuatan Hubungan']}, n={best_p['Bil. Episod (n)']})</b>. "
+                            f"Ini menunjukkan saiz wabak turut dipengaruhi kuat oleh kepadatan penduduk, struktur bangunan & takungan pembiakan setempat."
+                        )
+                    else:
+                        corr_table_conc = (
+                            f"<b>📌 Kesimpulan Jadual Status Wabak:</b> Sebanyak <b>{int(df_sc['Bil. Episod'].sum())} episod wabak</b> "
+                            f"telah dibandingkan merentas <b>{len(df_sc)} kategori status</b>."
+                        )
                     card_corr_html = build_ai_hover_card_html(
                         zone_id="ai_zone_corr",
                         card_title="📊 Jadual Korelasi Status Wabak & Pekali Pearson (r)",
@@ -2338,6 +2607,7 @@ if uploaded_file is not None or df_hist is not None:
                         relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
                         formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
                         current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
+                        conclusion_html=corr_table_conc,
                         align_right=True,
                     )
                     st.markdown(card_corr_html, unsafe_allow_html=True)
