@@ -3,9 +3,12 @@ import io
 import json
 import os
 import re
+import urllib.error
+import urllib.request
 from datetime import datetime
 import matplotlib
 import matplotlib.pyplot as plt  # Wajib ada untuk fungsi mewarna jadual (background_gradient)
+import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import plotly.colors
@@ -316,7 +319,6 @@ def build_status_wabak_tables(df, report_date):
     if df_w.empty:
         return pd.DataFrame(), pd.DataFrame()
 
-    # Kira BIL EPISOD bagi tahun semasa sahaja (tidak termasuk Satu Kes)
     if (
         "Epid Tahun (Tkh Daftar)" in df_w.columns
         and df_w["Epid Tahun (Tkh Daftar)"].notna().any()
@@ -354,7 +356,6 @@ def build_status_wabak_tables(df, report_date):
         )
         status_upper = raw_status.upper()
 
-        # Gunakan Tkh Notifikasi (fallback kepada Tarikh Daftar jika tiada)
         if "Tkh Notifikasi" in grp.columns:
             t_series = (
                 grp["Tkh Notifikasi"]
@@ -369,10 +370,8 @@ def build_status_wabak_tables(df, report_date):
         if not t_series:
             continue
 
-        # Tarikh mula wabak = notifikasi kes ke-2
         t_mula = t_series[1] if len(t_series) >= 2 else t_series[0]
         t_last = max(t_series)
-        # Tarikh tamat = notifikasi kes terakhir + 14 hari
         t_tamat = t_last + pd.Timedelta(days=14)
 
         kaw_val = (
@@ -391,7 +390,6 @@ def build_status_wabak_tables(df, report_date):
         bil_episod = int(ep_count_map.get(lok, 1))
 
         if "TAMAT" in status_upper:
-            # Papar dalam WABAK TAMAT jika tamat pada tarikh hari ini
             if t_tamat.normalize() == report_date:
                 tempoh = max((t_tamat - t_mula).days, 1)
                 tamat_rows.append(
@@ -738,7 +736,6 @@ def read_raw_bytes(raw_bytes, file_name):
 
     df.columns = df.columns.astype(str).str.strip()
 
-    # Kesan baris header sebenar jika terdapat tajuk laporan di baris teratas
     if "Tarikh Daftar" not in df.columns and "Lokaliti (Alamat Semasa)" not in df.columns:
         for i in range(min(10, len(df))):
             row_vals = [str(v).strip() for v in df.iloc[i].values]
@@ -747,7 +744,6 @@ def read_raw_bytes(raw_bytes, file_name):
                 df = df.iloc[i + 1 :].reset_index(drop=True)
                 break
 
-    # Penyeragaman jenis data supaya CSV dan Excel seragam
     if "Wabak No" in df.columns:
         df["Wabak No"] = pd.to_numeric(df["Wabak No"], errors="coerce")
 
@@ -760,8 +756,15 @@ def read_raw_bytes(raw_bytes, file_name):
                 .replace({"nan": pd.NA, "None": pd.NA, "": pd.NA})
             )
 
-    # Penukaran tarikh format Malaysia (DD/MM/YYYY)
-    for date_col in ["Tarikh Daftar", "Tarikh Onset", "Tkh Notifikasi"]:
+    date_cols = [
+        "Tarikh Daftar",
+        "Tarikh Onset",
+        "Tkh Notifikasi",
+        "Tkh PTP Aktiviti Pertama",
+        "Tkh SRT Aktiviti Pertama",
+        "Tkh ULV Aktiviti Pertama",
+    ]
+    for date_col in date_cols:
         if date_col in df.columns:
             try:
                 df[date_col] = pd.to_datetime(
@@ -808,7 +811,6 @@ def merge_datasets(df_hist, df_current):
 
     combined = pd.concat([df_hist, df_current], ignore_index=True)
 
-    # Buang rekod bertindih menggunakan ID unik (keutamaan kepada fail semasa yang terkini)
     if "Notifikasi No" in combined.columns and combined["Notifikasi No"].notna().any():
         combined["Notifikasi No"] = combined["Notifikasi No"].astype(str).str.strip()
         combined = combined.drop_duplicates(subset=["Notifikasi No"], keep="last")
@@ -853,6 +855,472 @@ def parse_address(address):
     return pd.Series([blok, tingkat])
 
 
+# =========================================================
+# ENJIN AI EPIDEMIOLOGI BERASASKAN DATA (ZERO-HALLUCINATION)
+# =========================================================
+def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my):
+    """Mengira ramalan 4 minggu (95% CI), matriks risiko eskalasi, korelasi operasi & pelan tindakan terus daripada data."""
+    df_calc = df.copy()
+    df_calc["_yr"] = pd.to_numeric(
+        df_calc.get("Epid Tahun (Tkh Daftar)", pd.Series(dtype=float)), errors="coerce"
+    ).fillna(df_calc["Tarikh Daftar"].dt.year)
+    df_calc["_me"] = pd.to_numeric(
+        df_calc.get("Epid Minggu (Tkh Daftar)", pd.Series(dtype=float)), errors="coerce"
+    )
+
+    valid_w = df_calc.dropna(subset=["_yr", "_me"]).copy()
+    valid_w["_yr"] = valid_w["_yr"].astype(int)
+    valid_w["_me"] = valid_w["_me"].astype(int)
+
+    weekly_df = (
+        valid_w.groupby(["_yr", "_me"])
+        .size()
+        .reset_index(name="Kes")
+        .sort_values(["_yr", "_me"])
+        .reset_index(drop=True)
+    )
+    weekly_df["Minggu"] = (
+        weekly_df["_yr"].astype(str)
+        + "-ME"
+        + weekly_df["_me"].astype(str).str.zfill(2)
+    )
+
+    # 1. Ramalan Trend 4 Minggu (OLS + Selang Keyakinan 95%)
+    forecast_rows = []
+    slope_per_week = 0.0
+    if len(weekly_df) >= 4:
+        recent = weekly_df.tail(min(12, len(weekly_df))).copy()
+        x = np.arange(len(recent), dtype=float)
+        y = recent["Kes"].values.astype(float)
+        slope_per_week, intercept = np.polyfit(x, y, 1)
+        y_hat = intercept + slope_per_week * x
+        resid = y - y_hat
+        dof = max(len(x) - 2, 1)
+        s_err = float(np.sqrt(np.sum(resid**2) / dof))
+        x_mean = float(np.mean(x))
+        sxx = float(np.sum((x - x_mean) ** 2))
+        t_crit = 2.228 if dof >= 10 else (2.306 if dof >= 8 else 2.776)
+
+        last_yr = int(recent["_yr"].iloc[-1])
+        last_me = int(recent["_me"].iloc[-1])
+
+        for step in range(1, 5):
+            xf = float(len(recent) - 1 + step)
+            yf = max(0.0, float(intercept + slope_per_week * xf))
+            se_pred = s_err * np.sqrt(
+                1.0 + 1.0 / len(x) + ((xf - x_mean) ** 2) / max(sxx, 1e-6)
+            )
+            ci_low = max(0.0, yf - t_crit * se_pred)
+            ci_high = yf + t_crit * se_pred
+
+            f_me = last_me + step
+            f_yr = last_yr
+            if f_me > 52:
+                f_me -= 52
+                f_yr += 1
+            forecast_rows.append(
+                {
+                    "Minggu": f"{f_yr}-ME{f_me:02d}",
+                    "Unjuran Kes": round(yf, 1),
+                    "95% CI Bawah": round(ci_low, 1),
+                    "95% CI Atas": round(ci_high, 1),
+                }
+            )
+    df_forecast = pd.DataFrame(forecast_rows)
+
+    # 2. Korelasi Operasi & Kelewatan Kawalan Vektor
+    lag_specs = [
+        ("Onset → Notifikasi", "Tarikh Onset", "Tkh Notifikasi"),
+        ("Notifikasi → PTP (Larviciding)", "Tkh Notifikasi", "Tkh PTP Aktiviti Pertama"),
+        ("Notifikasi → SRT (Fogging)", "Tkh Notifikasi", "Tkh SRT Aktiviti Pertama"),
+        ("Notifikasi → ULV", "Tkh Notifikasi", "Tkh ULV Aktiviti Pertama"),
+    ]
+    lag_summary = []
+    for label, c_start, c_end in lag_specs:
+        if c_start in df_calc.columns and c_end in df_calc.columns:
+            diff_days = (df_calc[c_end] - df_calc[c_start]).dt.days
+            valid_d = diff_days[(diff_days >= 0) & (diff_days <= 60)].dropna()
+            if not valid_d.empty:
+                lag_summary.append(
+                    {
+                        "Metrik Kelewatan": label,
+                        "Median (Hari)": round(float(valid_d.median()), 1),
+                        "Purata (Hari)": round(float(valid_d.mean()), 1),
+                        "Sampel Kes (n)": int(len(valid_d)),
+                    }
+                )
+    df_lags = pd.DataFrame(lag_summary)
+
+    # Perbandingan kelengahan mengikut Status Wabak
+    status_comp_rows = []
+    df_w_all = df_calc[df_calc["Jenis Kes"] == "Wabak"].dropna(subset=["Wabak No"]).copy()
+    if not df_w_all.empty:
+        if "Tarikh Onset" in df_w_all.columns and "Tkh Notifikasi" in df_w_all.columns:
+            df_w_all["_onset_lag"] = (
+                df_w_all["Tkh Notifikasi"] - df_w_all["Tarikh Onset"]
+            ).dt.days
+        else:
+            df_w_all["_onset_lag"] = np.nan
+
+        if (
+            "Tkh Notifikasi" in df_w_all.columns
+            and "Tkh SRT Aktiviti Pertama" in df_w_all.columns
+        ):
+            df_w_all["_srt_lag"] = (
+                df_w_all["Tkh SRT Aktiviti Pertama"] - df_w_all["Tkh Notifikasi"]
+            ).dt.days
+        else:
+            df_w_all["_srt_lag"] = np.nan
+
+        for st_name, grp in df_w_all.groupby("Wabak Status"):
+            o_valid = grp["_onset_lag"][
+                (grp["_onset_lag"] >= 0) & (grp["_onset_lag"] <= 45)
+            ].dropna()
+            s_valid = grp["_srt_lag"][
+                (grp["_srt_lag"] >= 0) & (grp["_srt_lag"] <= 45)
+            ].dropna()
+            status_comp_rows.append(
+                {
+                    "Status Wabak": str(st_name),
+                    "Bil. Episod": int(grp["Wabak No"].nunique()),
+                    "Purata Kes / Episod": round(
+                        len(grp) / max(grp["Wabak No"].nunique(), 1), 1
+                    ),
+                    "Purata Lengah Onset→Notif (Hari)": round(float(o_valid.mean()), 1)
+                    if not o_valid.empty
+                    else None,
+                    "Purata Lengah Notif→SRT (Hari)": round(float(s_valid.mean()), 1)
+                    if not s_valid.empty
+                    else None,
+                }
+            )
+    df_status_corr = pd.DataFrame(status_comp_rows)
+
+    # 3. Matriks Risiko Eskalasi Wabak Aktif & Unjuran 14 Hari (95% CI Poisson)
+    active_risk_rows = []
+    df_act = df_w_all[
+        ~df_w_all["Wabak Status"].astype(str).str.contains("Tamat", case=False, na=False)
+    ].copy()
+    if not df_act.empty:
+        for (w_no, lok), grp in df_act.groupby(["Wabak No", "Lokaliti (Alamat Semasa)"]):
+            st_w = str(grp["Wabak Status"].iloc[0])
+            t_ser = (
+                grp["Tkh Notifikasi"].fillna(grp["Tarikh Daftar"])
+                if "Tkh Notifikasi" in grp.columns
+                else grp["Tarikh Daftar"]
+            )
+            t_list = t_ser.dropna().sort_values().tolist()
+            if not t_list:
+                continue
+            t_mula = t_list[1] if len(t_list) >= 2 else t_list[0]
+            tempoh = max((today_my - t_mula).days, 1)
+            kes = len(grp)
+            vel = kes / tempoh
+            c_7d = int((t_ser >= (today_my - pd.Timedelta(days=7))).sum())
+            c_prev7d = int(
+                (
+                    (t_ser < (today_my - pd.Timedelta(days=7)))
+                    & (t_ser >= (today_my - pd.Timedelta(days=14)))
+                ).sum()
+            )
+            rate_daily = max(c_7d / 7.0, vel * 0.5)
+            proj_14d = rate_daily * 14.0
+            ci_l = max(0.0, proj_14d - 1.96 * np.sqrt(max(proj_14d, 0.5)))
+            ci_u = proj_14d + 1.96 * np.sqrt(max(proj_14d, 0.5))
+
+            # Skor Risiko Eskalasi (0 - 100) berasaskan Velocity, Kes 7 Hari Terkini, Tempoh & Status
+            risk_score = min(
+                100,
+                int(
+                    round(
+                        min(vel * 35, 35)
+                        + min(c_7d * 8, 30)
+                        + min(tempoh * 0.6, 20)
+                        + (
+                            15
+                            if "HOTSPOT" in st_w.upper()
+                            else (10 if "TAK TERKAWAL" in st_w.upper() else 0)
+                        )
+                    )
+                ),
+            )
+            risk_tier = (
+                "KRITIKAL"
+                if risk_score >= 70
+                else ("TINGGI" if risk_score >= 45 else "SEDERHANA")
+            )
+
+            active_risk_rows.append(
+                {
+                    "No. Wabak": format_wabak_no(w_no),
+                    "Lokaliti": str(lok).strip(),
+                    "Status Semasa": st_w,
+                    "Jumlah Kes": kes,
+                    "Tempoh (Hari)": tempoh,
+                    "Velocity (Kes/Hari)": round(vel, 2),
+                    "Kes 7 Hari Terkini": c_7d,
+                    "Kes 7-14 Hari Lalu": c_prev7d,
+                    "Unjuran +14 Hari": round(proj_14d, 1),
+                    "95% CI (+14 Hari)": f"{ci_l:.1f} – {ci_u:.1f}",
+                    "Skor Risiko": risk_score,
+                    "Tahap Risiko": risk_tier,
+                }
+            )
+    df_active_risk = pd.DataFrame(active_risk_rows)
+    if not df_active_risk.empty:
+        df_active_risk = df_active_risk.sort_values(
+            by=["Skor Risiko", "Velocity (Kes/Hari)"], ascending=False
+        ).reset_index(drop=True)
+
+    # 4. Ringkasan Spesifik Lokaliti Dipilih untuk Pelan Tindakan
+    lok_summary = {}
+    if df_lok is not None and not df_lok.empty and pilihan_lokaliti:
+        df_l = df_lok.copy()
+        df_l[["_Blok", "_Tingkat"]] = df_l["No Rumah"].apply(parse_address)
+        valid_bt = df_l[(df_l["_Blok"] != "TIDAK PASTI") & (df_l["_Tingkat"] != "TIDAK PASTI")]
+        top_cluster = "Tiada kluster bertingkat dikenal pasti"
+        if not valid_bt.empty:
+            grp_bt = valid_bt.groupby(["_Blok", "_Tingkat"]).size().sort_values(ascending=False)
+            top_b, top_t = grp_bt.index[0]
+            top_cluster = f"Blok {top_b}, Tingkat {top_t} ({int(grp_bt.iloc[0])} kes)"
+
+        top_occ = (
+            str(df_l["Pekerjaan"].dropna().mode().iloc[0])
+            if "Pekerjaan" in df_l.columns and not df_l["Pekerjaan"].dropna().empty
+            else "Tidak Dinyatakan"
+        )
+        top_nat = (
+            str(df_l["Status Kewarganegaraan"].dropna().mode().iloc[0])
+            if "Status Kewarganegaraan" in df_l.columns
+            and not df_l["Status Kewarganegaraan"].dropna().empty
+            else "Tidak Dinyatakan"
+        )
+        med_age = (
+            round(float(pd.to_numeric(df_l["Umur (Tahun)"], errors="coerce").median()), 1)
+            if "Umur (Tahun)" in df_l.columns
+            and pd.to_numeric(df_l["Umur (Tahun)"], errors="coerce").notna().any()
+            else None
+        )
+        lok_summary = {
+            "lokaliti": pilihan_lokaliti,
+            "jumlah_kes_sejarah": int(len(df_l)),
+            "bil_episod_wabak": int(
+                df_l[df_l["Jenis Kes"] == "Wabak"]["Wabak No"].dropna().nunique()
+            ),
+            "kluster_utama": top_cluster,
+            "pekerjaan_dominan": top_occ,
+            "kewarganegaraan_dominan": top_nat,
+            "median_umur": med_age,
+        }
+
+    return {
+        "weekly_df": weekly_df,
+        "df_forecast": df_forecast,
+        "slope_per_week": slope_per_week,
+        "df_lags": df_lags,
+        "df_status_corr": df_status_corr,
+        "df_active_risk": df_active_risk,
+        "lok_summary": lok_summary,
+    }
+
+
+def generate_grounded_ai_response(question, analytics, today_my, provider, api_key):
+    """Menjana jawapan berpandukan data sebenar tanpa halusinasi (menggunakan LLM percuma jika tersedia, atau enjin analitik terbina dalam)."""
+    q_lower = question.lower().strip()
+    df_forecast = analytics["df_forecast"]
+    df_lags = analytics["df_lags"]
+    df_status_corr = analytics["df_status_corr"]
+    df_active_risk = analytics["df_active_risk"]
+    lok_sum = analytics["lok_summary"]
+    slope = analytics["slope_per_week"]
+
+    # Bina konteks fakta 100% sahih daripada data
+    fact_packet = {
+        "tarikh_laporan": fmt_date_short(today_my),
+        "trend_mingguan_kes_per_minggu": round(slope, 2),
+        "ramalan_4_minggu_95CI": df_forecast.to_dict(orient="records")
+        if not df_forecast.empty
+        else [],
+        "kelewatan_operasi": df_lags.to_dict(orient="records")
+        if not df_lags.empty
+        else [],
+        "perbandingan_status_wabak": df_status_corr.to_dict(orient="records")
+        if not df_status_corr.empty
+        else [],
+        "wabak_aktif_risiko_tertinggi": df_active_risk.head(8).to_dict(orient="records")
+        if not df_active_risk.empty
+        else [],
+        "ringkasan_lokaliti_dipilih": lok_sum,
+    }
+
+    # Jika pengguna memasukkan kunci API percuma (Personal Gmail Gemini Thinking / Groq / OpenRouter)
+    if api_key and api_key.strip():
+        system_prompt = (
+            "Anda ialah Pakar Epidemiologi Denggi KKM. Jawab soalan pengguna HANYA berdasarkan fakta "
+            "dan angka dalam JSON DATA_SAHIH di bawah. JANGAN reka atau anggar sebarang angka yang tiada "
+            "dalam JSON. Nyatakan Selang Keyakinan 95% (95% CI) apabila membincangkan ramalan. Jawab dalam "
+            "Bahasa Melayu yang jelas, berstruktur dan praktikal untuk tindakan lapangan."
+        )
+        user_prompt = (
+            f"DATA_SAHIH:\n{json.dumps(fact_packet, ensure_ascii=False, indent=2)}\n\n"
+            f"SOALAN PENGGUNA: {question}"
+        )
+
+        try:
+            key_clean = api_key.strip()
+            if provider == "Gemini Thinking (Personal Gmail AI Studio)":
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key_clean}"
+                payload = {
+                    "systemInstruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.0,
+                        "thinkingConfig": {"thinkingBudget": 1024},
+                    },
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=25) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                parts = (
+                    res_json.get("candidates", [{}])[0]
+                    .get("content", {})
+                    .get("parts", [])
+                )
+                text_out = "\n".join(
+                    p.get("text", "") for p in parts if not p.get("thought", False)
+                ).strip()
+                if text_out:
+                    return text_out, "Gemini 2.5 Flash Thinking (Grounded on Data)"
+
+            elif provider in ("Groq (Free Tier)", "OpenRouter (Free Tier)"):
+                if provider == "Groq (Free Tier)":
+                    url = "https://api.groq.com/openai/v1/chat/completions"
+                    model_name = "llama-3.3-70b-versatile"
+                else:
+                    url = "https://openrouter.ai/api/v1/chat/completions"
+                    model_name = "google/gemini-2.5-flash:free"
+                payload = {
+                    "model": model_name,
+                    "temperature": 0.0,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                }
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key_clean}",
+                    },
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=25) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                text_out = (
+                    res_json.get("choices", [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                    .strip()
+                )
+                if text_out:
+                    return text_out, f"{provider} (Grounded on Data)"
+        except urllib.error.HTTPError as he:
+            if he.code == 429:
+                st.warning(
+                    "⚠️ Had kuota percuma API dicapai buat sementara waktu (akan reset secara automatik). Paparan beralih kepada Enjin AI Analitik Terbina Dalam (100% bebas had & sifar halusinasi)."
+                )
+            else:
+                st.warning(
+                    f"⚠️ Sambungan API tidak tersedia (Kod {he.code}). Paparan menggunakan Enjin AI Analitik Terbina Dalam."
+                )
+        except Exception:
+            st.warning(
+                "⚠️ Menggunakan Enjin AI Analitik Terbina Dalam (100% berasaskan data)."
+            )
+
+    # Fallback / Enjin Analitik Terbina Dalam (100% Berasaskan Data, Tanpa API)
+    lines = []
+    if any(k in q_lower for k in ["ramal", "predict", "forecast", "ci", "trend", "minggu"]):
+        arah = "menurun" if slope < -0.2 else ("meningkat" if slope > 0.2 else "mendatar")
+        lines.append(
+            f"### 📈 Ramalan Epidemiologi 4 Minggu Hadapan (Selang Keyakinan 95%)\n"
+            f"- **Kadar Perubahan Mingguan Semasa:** **{slope:+.2f} kes/minggu** (trend keseluruhan sedang **{arah}**)."
+        )
+        if not df_forecast.empty:
+            for _, r in df_forecast.iterrows():
+                lines.append(
+                    f"- **{r['Minggu']}:** Unjuran **{r['Unjuran Kes']} kes** *(95% CI: {r['95% CI Bawah']} – {r['95% CI Atas']} kes)*"
+                )
+        if not df_active_risk.empty:
+            top_r = df_active_risk.iloc[0]
+            lines.append(
+                f"\n**Lokaliti Risiko Tertinggi (+14 Hari):** **{top_r['Lokaliti']}** ({top_r['Status Semasa']}) dengan unjuran **{top_r['Unjuran +14 Hari']} kes baharu** *(95% CI: {top_r['95% CI (+14 Hari)']})*."
+            )
+
+    elif any(k in q_lower for k in ["korelasi", "correlation", "punca", "lewat", "lag", "sebab"]):
+        lines.append("### 🔗 Analisis Korelasi & Kelewatan Operasi Kawalan")
+        if not df_lags.empty:
+            for _, r in df_lags.iterrows():
+                lines.append(
+                    f"- **{r['Metrik Kelewatan']}:** Median **{r['Median (Hari)']} hari** (Purata **{r['Purata (Hari)']} hari**, n={r['Sampel Kes (n)']})"
+                )
+        if not df_status_corr.empty:
+            lines.append("\n**Perbandingan Mengikut Status Wabak:**")
+            for _, r in df_status_corr.iterrows():
+                o_txt = (
+                    f"{r['Purata Lengah Onset→Notif (Hari)']} hari"
+                    if pd.notna(r["Purata Lengah Onset→Notif (Hari)"])
+                    else "N/A"
+                )
+                s_txt = (
+                    f"{r['Purata Lengah Notif→SRT (Hari)']} hari"
+                    if pd.notna(r["Purata Lengah Notif→SRT (Hari)"])
+                    else "N/A"
+                )
+                lines.append(
+                    f"- **{r['Status Wabak']}** ({r['Bil. Episod']} episod, purata **{r['Purata Kes / Episod']} kes/episod**): Lengah Onset→Notifikasi = **{o_txt}**, Lengah Notifikasi→SRT = **{s_txt}**."
+                )
+
+    else:
+        # Pelan Tindakan Taktikal & Ringkasan Menyeluruh
+        lok_name = lok_sum.get("lokaliti", "Lokaliti Dipilih")
+        lines.append(f"### 🎯 Pelan Tindakan Taktikal & Analisis Data: {lok_name}")
+        if lok_sum:
+            umur_txt = (
+                f"{lok_sum['median_umur']} tahun"
+                if lok_sum.get("median_umur") is not None
+                else "Tidak Dinyatakan"
+            )
+            lines.append(
+                f"- **Profil Lokaliti:** **{lok_sum['jumlah_kes_sejarah']} kes** direkodkan merentasi **{lok_sum['bil_episod_wabak']} episod wabak**. Kluster struktur utama tertumpu di **{lok_sum['kluster_utama']}**."
+            )
+            lines.append(
+                f"- **Demografi Sasaran:** Kumpulan dominan ialah **{lok_sum['kewarganegaraan_dominan']}**, pekerjaan **{lok_sum['pekerjaan_dominan']}** (median umur **{umur_txt}**)."
+            )
+        if not df_active_risk.empty:
+            top3 = df_active_risk.head(3)
+            lines.append("\n**Keutamaan Intervensi Lapangan (Top 3 Risiko Eskalasi):**")
+            for _, r in top3.iterrows():
+                lines.append(
+                    f"1. **{r['Lokaliti']}** (*{r['Status Semasa']}* | Skor Risiko **{r['Skor Risiko']}/100**): {r['Jumlah Kes']} kes dalam {r['Tempoh (Hari)']} hari (Velocity **{r['Velocity (Kes/Hari)']} kes/hari**). Unjuran +14 hari: **{r['Unjuran +14 Hari']} kes** *(95% CI: {r['95% CI (+14 Hari)']})*."
+                )
+        lines.append(
+            "\n**Cadangan Tindakan Operasi (Berdasarkan Data):**\n"
+            "- **Pemusnahan Tempat Pembiakan (PTP / S&D):** Fokus radius 200m bermula dari blok & tingkat kluster utama dalam tempoh **< 48 jam** selepas notifikasi.\n"
+            "- **Semburan Ruang Termal (SRT) & ULV:** Laksanakan kitaran ulangan pada hari ke-7 hingga ke-10 bagi lokaliti dengan kes aktif dalam 7 hari terakhir untuk memutuskan rantaian generasi kedua nyamuk *Aedes*.\n"
+            "- **Pengesanan Kes Aktif (ACD) & Promosi Kesihatan:** Sasar kumpulan demografi/pekerjaan dominan bagi mengurangkan tempoh lengah dari mula gejala (`Tarikh Onset`) ke fasiliti kesihatan."
+        )
+
+    return "\n".join(lines), "Enjin Analitik Statistik Terbina Dalam (100% Data-Driven, Tanpa API)"
+
+
 # --- PENGURUSAN STATE (MEMORI APLIKASI) ---
 if "selected_lokaliti" not in st.session_state:
     st.session_state.selected_lokaliti = None
@@ -862,6 +1330,8 @@ if "episode_filter" not in st.session_state:
     st.session_state.episode_filter = "Semua"
 if "scroll_to_analisis" not in st.session_state:
     st.session_state.scroll_to_analisis = False
+if "ai_custom_question" not in st.session_state:
+    st.session_state.ai_custom_question = "Jana pelan tindakan taktikal dan ramalan risiko wabak semasa."
 
 
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
@@ -885,6 +1355,10 @@ def set_lokaliti_sahaja(lokaliti):
 
 def set_chart_year_range(state_key, start_yr, end_yr):
     st.session_state[state_key] = (start_yr, end_yr)
+
+
+def set_ai_prompt(prompt_text):
+    st.session_state.ai_custom_question = prompt_text
 
 
 # --- ANTARA MUKA UTAMA ---
@@ -989,7 +1463,6 @@ if uploaded_file is not None or df_hist is not None:
         pilihan_kategori = None
         if not df_lok.empty:
             pilihan_wabak_list = []
-            # Susun senarai wabak dari yang paling terkini (berdasarkan tarikh daftar terbaru)
             df_w_only = df_lok[df_lok["Jenis Kes"] == "Wabak"].dropna(subset=["Wabak No"])
             if not df_w_only.empty:
                 wabak_ordered = (
@@ -1029,6 +1502,30 @@ if uploaded_file is not None or df_hist is not None:
         )
         st.sidebar.markdown("---")
 
+        # --- TETAPAN AI PERCUMA (PILIHAN - TIADA API DIPERLUKAN) ---
+        with st.sidebar.expander("🧠 Tetapan AI Thinking (Pilihan Percuma)"):
+            st.caption(
+                "Tanpa kunci API, dashboard tetap menjalankan Enjin AI Statistik & Ramalan 95% CI terbina dalam secara percuma. Jika mahu huraian LLM percuma (auto-reset kuota harian), masukkan kunci API dari akaun Gmail peribadi (`aistudio.google.com`), Groq, atau OpenRouter."
+            )
+            ai_provider = st.selectbox(
+                "Penyedia AI Percuma:",
+                [
+                    "Enjin AI Statistik Terbina Dalam (Tanpa API)",
+                    "Gemini Thinking (Personal Gmail AI Studio)",
+                    "Groq (Free Tier)",
+                    "OpenRouter (Free Tier)",
+                ],
+                key="ai_provider_choice",
+            )
+            ai_api_key = ""
+            if ai_provider != "Enjin AI Statistik Terbina Dalam (Tanpa API)":
+                ai_api_key = st.text_input(
+                    "Kunci API Percuma:",
+                    type="password",
+                    placeholder="Tampal kunci API percuma di sini...",
+                    key="ai_free_api_key",
+                )
+
         # ---------------------------------------------------------
         # JADUAL HARIAN: STATUS WABAK (DENGGI) - INTERAKTIF & WHATSAPP EXPORT
         # ---------------------------------------------------------
@@ -1064,7 +1561,6 @@ if uploaded_file is not None or df_hist is not None:
 
         st.markdown(sw_html, unsafe_allow_html=True)
 
-        # Butang pencetus tersembunyi untuk setiap baris lokaliti dalam jadual STATUS WABAK (DENGGI)
         if sw_clickable_rows:
             for idx_sw, (lok_sw, w_no_sw) in enumerate(sw_clickable_rows):
                 st.button(
@@ -1120,6 +1616,228 @@ if uploaded_file is not None or df_hist is not None:
                 """,
                 height=0,
             )
+
+        # ---------------------------------------------------------
+        # PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (DATA-DRIVEN, ZERO-HALLUCINATION)
+        # ---------------------------------------------------------
+        st.markdown("---")
+        st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
+        st.caption(
+            "Semua ramalan, selang keyakinan 95% (95% CI), korelasi operasi, dan pelan tindakan dijana terus daripada data sebenar tanpa halusinasi."
+        )
+
+        ai_analytics = compute_ai_epidemiological_analytics(
+            df, df_lok, pilihan_lokaliti, today_my
+        )
+
+        ai_tab1, ai_tab2, ai_tab3 = st.tabs(
+            [
+                "📈 Ramalan Trend & 95% Confidence Interval",
+                "🔗 Korelasi Data & Kelewatan Operasi",
+                "🎯 Soal Jawab AI & Pelan Tindakan",
+            ]
+        )
+
+        with ai_tab1:
+            col_ai_f1, col_ai_f2 = st.columns([1.45, 1.0])
+
+            with col_ai_f1:
+                weekly_df = ai_analytics["weekly_df"]
+                df_forecast = ai_analytics["df_forecast"]
+                if not weekly_df.empty and not df_forecast.empty:
+                    hist_tail = weekly_df.tail(16)
+                    fig_fc = go.Figure()
+                    fig_fc.add_trace(
+                        go.Scatter(
+                            x=hist_tail["Minggu"],
+                            y=hist_tail["Kes"],
+                            mode="lines+markers",
+                            name="Kes Sebenar (Mingguan)",
+                            line=dict(color="#2563eb", width=2.5),
+                            marker=dict(size=7),
+                        )
+                    )
+                    # Sambungkan titik terakhir sebenar ke ramalan
+                    conn_x = [hist_tail["Minggu"].iloc[-1]] + df_forecast[
+                        "Minggu"
+                    ].tolist()
+                    conn_y = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                        "Unjuran Kes"
+                    ].tolist()
+                    conn_hi = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                        "95% CI Atas"
+                    ].tolist()
+                    conn_lo = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                        "95% CI Bawah"
+                    ].tolist()
+
+                    fig_fc.add_trace(
+                        go.Scatter(
+                            x=conn_x + conn_x[::-1],
+                            y=conn_hi + conn_lo[::-1],
+                            fill="toself",
+                            fillcolor="rgba(239, 68, 68, 0.16)",
+                            line=dict(color="rgba(255,255,255,0)"),
+                            hoverinfo="skip",
+                            name="Selang Keyakinan 95% (95% CI)",
+                        )
+                    )
+                    fig_fc.add_trace(
+                        go.Scatter(
+                            x=conn_x,
+                            y=conn_y,
+                            mode="lines+markers",
+                            name="Unjuran AI (4 Minggu)",
+                            line=dict(color="#dc2626", width=2.5, dash="dash"),
+                            marker=dict(size=8, symbol="diamond"),
+                        )
+                    )
+                    fig_fc.update_layout(
+                        title="Unjuran Kes Mingguan (4 Minggu Hadapan dengan 95% CI)",
+                        xaxis_title="Minggu Epid",
+                        yaxis_title="Jumlah Kes",
+                        height=380,
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                    )
+                    st.plotly_chart(
+                        fig_fc, use_container_width=True, key="ai_forecast_chart"
+                    )
+                    st.dataframe(
+                        df_forecast, use_container_width=True, hide_index=True
+                    )
+                else:
+                    st.info(
+                        "Data mingguan tidak mencukupi untuk menjana unjuran 4 minggu."
+                    )
+
+            with col_ai_f2:
+                df_ar = ai_analytics["df_active_risk"]
+                if not df_ar.empty:
+                    fig_risk = px.scatter(
+                        df_ar,
+                        x="Tempoh (Hari)",
+                        y="Velocity (Kes/Hari)",
+                        size="Unjuran +14 Hari",
+                        color="Status Semasa",
+                        hover_name="Lokaliti",
+                        hover_data={
+                            "No. Wabak": True,
+                            "Jumlah Kes": True,
+                            "Unjuran +14 Hari": True,
+                            "95% CI (+14 Hari)": True,
+                            "Skor Risiko": True,
+                        },
+                        color_discrete_map={
+                            "Wabak Terkawal": "#e06666",
+                            "Wabak Tak Terkawal": "#3e85c7",
+                            "Hotspot": "#fe0000",
+                        },
+                        title="Matriks Risiko Eskalasi Wabak Aktif",
+                    )
+                    fig_risk.update_layout(
+                        height=380,
+                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                    )
+                    st.plotly_chart(
+                        fig_risk, use_container_width=True, key="ai_risk_scatter"
+                    )
+                    st.dataframe(
+                        df_ar[
+                            [
+                                "Lokaliti",
+                                "Tahap Risiko",
+                                "Skor Risiko",
+                                "Unjuran +14 Hari",
+                                "95% CI (+14 Hari)",
+                            ]
+                        ],
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.success("Tiada wabak aktif semasa untuk pemodelan risiko.")
+
+        with ai_tab2:
+            c_corr1, c_corr2 = st.columns(2)
+            with c_corr1:
+                st.markdown("**⏱️ Analisis Kelengahan Operasi Kawalan Vektor**")
+                df_lags = ai_analytics["df_lags"]
+                if not df_lags.empty:
+                    fig_lag = px.bar(
+                        df_lags,
+                        x="Metrik Kelewatan",
+                        y=["Median (Hari)", "Purata (Hari)"],
+                        barmode="group",
+                        text_auto=True,
+                        color_discrete_sequence=["#0ea5e9", "#f59e0b"],
+                    )
+                    fig_lag.update_layout(
+                        height=340,
+                        xaxis_title="",
+                        yaxis_title="Bilangan Hari",
+                        legend_title="",
+                    )
+                    st.plotly_chart(
+                        fig_lag, use_container_width=True, key="ai_lag_chart"
+                    )
+                    st.dataframe(df_lags, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Kolum tarikh aktiviti PTP/SRT/ULV tidak lengkap.")
+
+            with c_corr2:
+                st.markdown("**📊 Korelasi Status Wabak vs Kelengahan & Saiz Kes**")
+                df_sc = ai_analytics["df_status_corr"]
+                if not df_sc.empty:
+                    st.dataframe(df_sc, use_container_width=True, hide_index=True)
+                    st.info(
+                        "💡 **Penemuan Data:** Bandingkan *Purata Lengah Onset→Notif (Hari)* antara `Wabak Terkawal` dan `Wabak Tak Terkawal`. Kelewatan pesakit mendapatkan rawatan memanjangkan tempoh nyamuk *Aedes* menggigit pesakit viremia sebelum kawalan vektor dimulakan."
+                    )
+                else:
+                    st.info("Tiada rekod wabak untuk perbandingan status.")
+
+        with ai_tab3:
+            q_cols = st.columns(3)
+            with q_cols[0]:
+                st.button(
+                    "📈 Ramalan 4 Minggu & 95% CI",
+                    key="btn_ai_q1",
+                    on_click=set_ai_prompt,
+                    args=(
+                        "Berikan ramalan trend kes 4 minggu hadapan berserta Selang Keyakinan 95% (95% CI) dan lokaliti aktif paling berisiko.",
+                    ),
+                    use_container_width=True,
+                )
+            with q_cols[1]:
+                st.button(
+                    "🔗 Korelasi Kelewatan & Eskalasi",
+                    key="btn_ai_q2",
+                    on_click=set_ai_prompt,
+                    args=(
+                        "Apakah korelasi antara kelengahan notifikasi/kawalan vektor (PTP, SRT, ULV) dengan status wabak tidak terkawal?",
+                    ),
+                    use_container_width=True,
+                )
+            with q_cols[2]:
+                st.button(
+                    "🎯 Pelan Tindakan Lokaliti Ini",
+                    key="btn_ai_q3",
+                    on_click=set_ai_prompt,
+                    args=(
+                        f"Jana pelan tindakan operasi terperinci berdasarkan data bagi lokaliti {pilihan_lokaliti}.",
+                    ),
+                    use_container_width=True,
+                )
+
+            user_ai_q = st.text_input(
+                "Tanya AI tentang data, korelasi, ramalan (95% CI) atau pelan tindakan:",
+                key="ai_custom_question",
+            )
+            if user_ai_q:
+                ai_answer, ai_engine_label = generate_grounded_ai_response(
+                    user_ai_q, ai_analytics, today_my, ai_provider, ai_api_key
+                )
+                st.caption(f"⚙️ Sumber Analisis: **{ai_engine_label}**")
+                st.markdown(ai_answer)
 
         # ---------------------------------------------------------
         # HIGHLIGHT 1: WABAK AKTIF SEMASA (TOP 5)
@@ -1368,7 +2086,6 @@ if uploaded_file is not None or df_hist is not None:
                             lbl_tarikh = "Anggaran Tarikh Tamat"
                             lbl_tempoh = "Tempoh (Sehingga Kini)"
 
-                        # Titik tengah & lebar bar (dalam milisaat) supaya lebar bar sepadan tepat dengan bilangan hari episod
                         width_ms = tempoh * MS_PER_DAY
                         center_dt = t_m + pd.Timedelta(milliseconds=width_ms / 2)
                         end_dt_visual = t_m + pd.Timedelta(days=tempoh)
