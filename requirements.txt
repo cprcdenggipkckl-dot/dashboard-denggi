@@ -1,7 +1,9 @@
 streamlit>=1.35.0
 pandas
+numpy
 openpyxl
 xlrd
 plotly
 matplotlib
 pillow
+google-genai
