@@ -6,4 +6,3 @@ xlrd
 plotly
 matplotlib
 pillow
-google-genai
