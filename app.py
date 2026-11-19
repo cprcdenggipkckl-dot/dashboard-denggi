@@ -235,14 +235,16 @@ st.markdown(
         box-shadow: 0 14px 36px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
 
-    /* Gaya Liquid-Glass untuk Kotak Pilihan (Selectbox) & Jarak Label */
-    [data-testid="stSelectbox"] label {
+    /* Gaya Liquid-Glass untuk Kotak Pilihan (Selectbox), Tarikh & Jarak Label */
+    [data-testid="stSelectbox"] label,
+    [data-testid="stDateInput"] label {
         font-weight: 600 !important;
         font-size: 0.86rem !important;
         color: #1e293b !important;
         margin-bottom: 6px !important;
     }
-    [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div,
+    [data-testid="stDateInput"] [data-baseweb="input"] {
         background: rgba(255, 255, 255, 0.84) !important;
         backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(203, 213, 225, 0.9) !important;
@@ -250,7 +252,8 @@ st.markdown(
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
         transition: all 0.2s ease !important;
     }
-    [data-testid="stSelectbox"] [data-baseweb="select"] > div:hover {
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div:hover,
+    [data-testid="stDateInput"] [data-baseweb="input"]:hover {
         border-color: rgba(14, 165, 233, 0.6) !important;
         background: rgba(255, 255, 255, 0.98) !important;
     }
@@ -800,6 +803,17 @@ def get_today_malaysia():
         return pd.Timestamp.today().normalize()
 
 
+def get_dataset_anchor_date(df, fallback_today):
+    """Mengesan tarikh laporan sebenar berdasarkan rekod terkini dalam dataset yang dimuat naik."""
+    candidates = []
+    for col in ["Tarikh Daftar", "Tkh Notifikasi"]:
+        if col in df.columns and df[col].notna().any():
+            candidates.append(df[col].max().normalize())
+    if candidates:
+        return max(candidates)
+    return fallback_today
+
+
 def format_wabak_no(val):
     """Memformat nombor wabak supaya bersih tanpa '.0' di hujung."""
     try:
@@ -1089,7 +1103,6 @@ def build_status_wabak_tables(df, report_date):
         lok_disp = clean_locality_display(lok_raw)
 
         if "TAMAT" in status_upper:
-            # Paparkan wabak yang diisytihar tamat pada hari laporan atau sejak semalam (tetingkap 24-48 jam PKD)
             if (report_date - pd.Timedelta(days=1)) <= t_tamat.normalize() <= report_date:
                 tempoh = max((t_tamat - t_mula).days, 1)
                 tamat_rows.append(
@@ -2524,6 +2537,11 @@ if uploaded_file is not None or df_hist is not None:
         df_current = load_data(uploaded_file) if uploaded_file is not None else None
         df = merge_datasets(df_hist, df_current)
 
+        # Tetapkan tarikh rujukan laporan mengikut rekod terkini dalam dataset (mengelak percanggahan selepas 12:00 tengah malam)
+        data_ref_date = get_dataset_anchor_date(
+            df_current if df_current is not None else df, today_my
+        )
+
         if uploaded_file is not None and df_hist is not None:
             st.success(
                 f"✅ **Data Disatukan:** Rekod sejarah 5 tahun + fail terkini `{uploaded_file.name}` berjaya digabungkan (**{len(df):,} jumlah rekod**)."
@@ -2542,7 +2560,7 @@ if uploaded_file is not None or df_hist is not None:
         # =========================================================
         # JALUR KPI EKSEKUTIF TERATAS (5 KAD LIQUID-GLASS)
         # =========================================================
-        curr_yr = today_my.year
+        curr_yr = data_ref_date.year
         df_curr_yr = df[df["Tarikh Daftar"].dt.year == curr_yr]
         if df_curr_yr.empty:
             df_curr_yr = df
@@ -2587,14 +2605,14 @@ if uploaded_file is not None or df_hist is not None:
         )
         c_last7 = int(
             (
-                (t_ref_global >= (today_my - pd.Timedelta(days=6)))
-                & (t_ref_global <= today_my)
+                (t_ref_global >= (data_ref_date - pd.Timedelta(days=6)))
+                & (t_ref_global <= data_ref_date)
             ).sum()
         )
         c_prev7 = int(
             (
-                (t_ref_global >= (today_my - pd.Timedelta(days=13)))
-                & (t_ref_global <= (today_my - pd.Timedelta(days=7)))
+                (t_ref_global >= (data_ref_date - pd.Timedelta(days=13)))
+                & (t_ref_global <= (data_ref_date - pd.Timedelta(days=7)))
             ).sum()
         )
         mom_7d_pct = ((c_last7 - c_prev7) / max(c_prev7, 1)) * 100
@@ -2633,11 +2651,11 @@ if uploaded_file is not None or df_hist is not None:
                 build_glass_kpi_html(
                     label="Wabak Aktif Semasa",
                     value_str=str(n_active_outbreaks),
-                    sub_str=f"Terkawal: <b>{max(n_active_outbreaks - n_crit_tier, 0)}</b> • Eskalasi: <b>{n_crit_tier}</b>",
+                    sub_str=f"Terkawal/Baru: <b>{max(n_active_outbreaks - n_crit_tier, 0)}</b> • Eskalasi: <b>{n_crit_tier}</b>",
                     tooltip_title="🚨 Bilangan Episod Wabak Aktif",
                     relevance_html="Menunjukkan jumlah rantaian penularan aktif yang masih dalam tempoh pemantauan 14 hari KKM dan memerlukan operasi kawalan vektor.",
                     formula_html="Count(Distinct Wabak No) bagi Status ≠ Wabak Tamat",
-                    current_calc_html=f"<b>Pecahan Semasa:</b> {max(n_active_outbreaks - n_crit_tier, 0)} Terkawal, {n_tak_terkawal} Tak Terkawal, {n_hotspot} Hotspot = <b>{n_active_outbreaks} aktif</b>.",
+                    current_calc_html=f"<b>Pecahan Semasa:</b> {max(n_active_outbreaks - n_crit_tier, 0)} Terkawal/Baru, {n_tak_terkawal} Tak Terkawal, {n_hotspot} Hotspot = <b>{n_active_outbreaks} aktif</b>.",
                 ),
                 unsafe_allow_html=True,
             )
@@ -2848,22 +2866,32 @@ if uploaded_file is not None or df_hist is not None:
         # =========================================================
         if st.session_state.active_workspace_view == VIEW_DAILY:
             try:
-                df_sw_tamat, df_sw_aktif = build_status_wabak_tables(df, today_my)
+                bar_c1, bar_c2, bar_c3 = st.columns([1.9, 1.9, 1.4])
+                with bar_c3:
+                    selected_rep_date = st.date_input(
+                        "📅 Tarikh Laporan Jadual:",
+                        value=data_ref_date.date(),
+                        key=f"sw_report_date_{data_ref_date.strftime('%Y%m%d')}_{len(df)}",
+                    )
+                active_rep_ts = pd.Timestamp(selected_rep_date).normalize()
+
+                df_sw_tamat, df_sw_aktif = build_status_wabak_tables(df, active_rep_ts)
                 sw_png_bytes = render_status_wabak_png(df_sw_tamat, df_sw_aktif)
                 sw_html, sw_clickable_rows = render_status_wabak_html(
                     df_sw_tamat, df_sw_aktif
                 )
 
-                bar_c1, bar_c2, bar_c3 = st.columns([2.2, 2.2, 2.6])
                 with bar_c1:
+                    st.markdown("<div style='height:31px;'></div>", unsafe_allow_html=True)
                     st.download_button(
                         label="📸 Muat Turun Gambar Table (WhatsApp)",
                         data=sw_png_bytes,
-                        file_name=f"Status_Wabak_Denggi_{today_my.strftime('%d-%m-%Y')}.png",
+                        file_name=f"Status_Wabak_Denggi_{active_rep_ts.strftime('%d-%m-%Y')}.png",
                         mime="image/png",
                         use_container_width=True,
                     )
                 with bar_c2:
+                    st.markdown("<div style='height:31px;'></div>", unsafe_allow_html=True)
                     with st.popover(
                         "🖼️ Paparan Screenshot Penuh (WhatsApp)", use_container_width=True
                     ):
@@ -2871,13 +2899,6 @@ if uploaded_file is not None or df_hist is not None:
                             "Klik kanan pada gambar di bawah dan pilih **Copy Image** atau **Save Image As** untuk terus tampal ke WhatsApp."
                         )
                         st.image(sw_png_bytes, use_container_width=True)
-                with bar_c3:
-                    st.markdown(
-                        f'<div class="no-print" style="text-align:right; padding-top:8px; font-size:0.86rem; color:#334155;">'
-                        f'📅 <b>Tarikh Laporan (Auto):</b> {fmt_date_short(today_my)}  |  <i>Klik nama lokaliti untuk buka analisis</i>'
-                        f"</div>",
-                        unsafe_allow_html=True,
-                    )
 
                 st.markdown(sw_html, unsafe_allow_html=True)
 
@@ -3117,9 +3138,11 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             continue
 
-                        tempoh_h = max((today_my - tarikh_mula).days, 1)
+                        tempoh_h = max((active_rep_ts - tarikh_mula).days, 1)
                         vel = jumlah_k / tempoh_h
-                        c_7d = int((t_ser >= (today_my - pd.Timedelta(days=6))).sum())
+                        c_7d = int(
+                            (t_ser >= (active_rep_ts - pd.Timedelta(days=6))).sum()
+                        )
 
                         data_wabak_aktif.append(
                             {
@@ -3282,7 +3305,7 @@ if uploaded_file is not None or df_hist is not None:
                                 elif len(t_kes) == 1:
                                     t_m = t_kes[0]
                                 else:
-                                    t_m = today_my
+                                    t_m = data_ref_date
 
                                 status_w = str(group["Wabak Status"].iloc[0])
                                 t_last = max(t_kes) if t_kes else t_m
@@ -3296,7 +3319,7 @@ if uploaded_file is not None or df_hist is not None:
                                 else:
                                     t_anggaran_tamat = t_last + pd.Timedelta(days=14)
                                     t_a_str = t_anggaran_tamat.strftime("%d-%m-%Y")
-                                    tempoh = max((today_my - t_m).days, 1)
+                                    tempoh = max((data_ref_date - t_m).days, 1)
                                     lbl_tarikh = "Anggaran Tarikh Tamat"
                                     lbl_tempoh = "Tempoh (Sehingga Kini)"
 
@@ -3945,7 +3968,7 @@ if uploaded_file is not None or df_hist is not None:
                         status_wabak_semasa = "Tiada (Satu Kes)"
                         tempoh_wabak_hari = 1
                         tarikh_mula_str = "N/A"
-                        tarikh_mula = today_my
+                        tarikh_mula = data_ref_date
                     else:
                         w_no = float(pilihan_kategori_aktif.replace("Wabak No: ", ""))
                         df_filter = df_lok[df_lok["Wabak No"] == w_no].copy()
@@ -3965,14 +3988,14 @@ if uploaded_file is not None or df_hist is not None:
                         elif len(tarikh_kes) == 1:
                             tarikh_mula = tarikh_kes[0]
                         else:
-                            tarikh_mula = today_my
+                            tarikh_mula = data_ref_date
 
                         tarikh_mula_str = tarikh_mula.strftime("%d-%m-%Y")
 
                         if "Tamat" in status_wabak_semasa:
                             tarikh_akhir = tarikh_kes[-1] + pd.Timedelta(days=14)
                         else:
-                            tarikh_akhir = today_my
+                            tarikh_akhir = data_ref_date
 
                         tempoh_wabak_hari = max((tarikh_akhir - tarikh_mula).days, 1)
 
@@ -4060,14 +4083,14 @@ if uploaded_file is not None or df_hist is not None:
                     )
                     lok_c7 = int(
                         (
-                            (t_ref_lok >= (today_my - pd.Timedelta(days=6)))
-                            & (t_ref_lok <= today_my)
+                            (t_ref_lok >= (data_ref_date - pd.Timedelta(days=6)))
+                            & (t_ref_lok <= data_ref_date)
                         ).sum()
                     )
                     lok_prev7 = int(
                         (
-                            (t_ref_lok >= (today_my - pd.Timedelta(days=13)))
-                            & (t_ref_lok <= (today_my - pd.Timedelta(days=7)))
+                            (t_ref_lok >= (data_ref_date - pd.Timedelta(days=13)))
+                            & (t_ref_lok <= (data_ref_date - pd.Timedelta(days=7)))
                         ).sum()
                     )
                     lok_mom_pct = ((lok_c7 - lok_prev7) / max(lok_prev7, 1)) * 100
@@ -4564,7 +4587,7 @@ if uploaded_file is not None or df_hist is not None:
                 )
 
                 ai_analytics = compute_ai_epidemiological_analytics(
-                    df, df_lok, pilihan_lokaliti, today_my
+                    df, df_lok, pilihan_lokaliti, data_ref_date
                 )
 
                 ai_tab1, ai_tab2, ai_tab3 = st.tabs(
@@ -5095,7 +5118,7 @@ if uploaded_file is not None or df_hist is not None:
                     )
                     if user_ai_q:
                         render_ai_qa_visuals_and_response(
-                            user_ai_q, ai_analytics, today_my, embedded_gemini_key
+                            user_ai_q, ai_analytics, data_ref_date, embedded_gemini_key
                         )
             except Exception as tab3_err:
                 st.error(f"Ralat pada Pusat Analisis AI: {tab3_err}")
