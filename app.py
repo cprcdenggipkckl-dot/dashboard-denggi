@@ -35,16 +35,13 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
     :root {
-        --glass-bg: rgba(255, 255, 255, 0.66);
-        --glass-bg-strong: rgba(255, 255, 255, 0.82);
-        --glass-border: rgba(255, 255, 255, 0.85);
+        --glass-bg: rgba(255, 255, 255, 0.68);
+        --glass-bg-strong: rgba(255, 255, 255, 0.86);
+        --glass-border: rgba(255, 255, 255, 0.88);
         --glass-shadow: 0 10px 34px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-        --glass-shadow-hover: 0 16px 42px rgba(14, 165, 233, 0.14), inset 0 1px 0 rgba(255, 255, 255, 1);
+        --glass-shadow-hover: 0 16px 42px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1);
         --text-primary: #0f172a;
         --text-muted: #475569;
-        --accent-blue: #0284c7;
-        --accent-indigo: #4f46e5;
-        --accent-crimson: #e11d48;
     }
 
     /* Sembunyikan bar pembangun Streamlit (Fork, GitHub, Deploy) untuk paparan eksekutif */
@@ -96,7 +93,7 @@ st.markdown(
 
     /* Sidebar Liquid-Glass */
     section[data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.58) !important;
+        background: rgba(255, 255, 255, 0.62) !important;
         backdrop-filter: blur(26px) saturate(185%) !important;
         -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
         border-right: 1px solid rgba(255, 255, 255, 0.85) !important;
@@ -113,7 +110,7 @@ st.markdown(
         padding: 18px 24px;
         box-shadow: var(--glass-shadow);
         margin-bottom: 14px;
-        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: box-shadow 0.3s ease;
     }
     .lg-banner:hover {
         box-shadow: var(--glass-shadow-hover);
@@ -160,7 +157,7 @@ st.markdown(
 
     /* Landing Hero Stage (Sebelum Fail Dimuat Naik) */
     .lg-landing-stage {
-        background: rgba(255, 255, 255, 0.72);
+        background: rgba(255, 255, 255, 0.74);
         backdrop-filter: blur(30px) saturate(195%);
         -webkit-backdrop-filter: blur(30px) saturate(195%);
         border: 1.5px solid rgba(255, 255, 255, 0.92);
@@ -179,7 +176,7 @@ st.markdown(
         margin-top: 18px;
     }
     .lg-feature-pill {
-        background: rgba(255, 255, 255, 0.78);
+        background: rgba(255, 255, 255, 0.82);
         border: 1px solid rgba(203, 213, 225, 0.75);
         border-radius: 999px;
         padding: 6px 14px;
@@ -191,7 +188,7 @@ st.markdown(
 
     /* Gaya Liquid-Glass untuk File Uploader (Drag & Drop Zone) */
     [data-testid="stFileUploader"] {
-        background: rgba(255, 255, 255, 0.68) !important;
+        background: rgba(255, 255, 255, 0.72) !important;
         backdrop-filter: blur(22px) saturate(180%) !important;
         -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
         border: 1.5px dashed rgba(14, 165, 233, 0.55) !important;
@@ -202,19 +199,18 @@ st.markdown(
     }
     [data-testid="stFileUploader"]:hover {
         border-color: #0284c7 !important;
-        background: rgba(255, 255, 255, 0.86) !important;
+        background: rgba(255, 255, 255, 0.90) !important;
         box-shadow: 0 14px 36px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
-        transform: translateY(-2px);
     }
 
     /* Gaya Tab Navigasi Liquid-Glass */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background: rgba(255, 255, 255, 0.58);
+        background: rgba(255, 255, 255, 0.62);
         backdrop-filter: blur(20px);
         padding: 6px;
         border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.88);
         box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
     }
     .stTabs [data-baseweb="tab"] {
@@ -233,19 +229,18 @@ st.markdown(
 
     /* Butang Liquid-Glass */
     .stButton > button, .stDownloadButton > button {
-        background: rgba(255, 255, 255, 0.76) !important;
+        background: rgba(255, 255, 255, 0.78) !important;
         backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(255, 255, 255, 0.92) !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
         font-weight: 600 !important;
-        transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1) !important;
+        transition: all 0.22s ease !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
-        background: rgba(255, 255, 255, 0.96) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
         border-color: rgba(14, 165, 233, 0.5) !important;
         box-shadow: 0 8px 22px rgba(14, 165, 233, 0.15) !important;
-        transform: translateY(-2px) !important;
     }
 
     @media print {
@@ -254,7 +249,7 @@ st.markdown(
         .stButton > button {display: none;}
         footer {visibility: hidden;}
         .stAlert {page-break-inside: avoid;}
-        .metric-tooltip-bubble, .ai-tooltip-bubble {display: none !important;}
+        .metric-tooltip-bubble, .ai-tooltip-bubble, #dw-global-tooltip-portal {display: none !important;}
         .metric-hover-card, .ai-hover-card {padding: 0 !important; box-shadow: none !important; background: transparent !important;}
         .no-print {display: none !important;}
     }
@@ -273,8 +268,7 @@ st.markdown(
     .sw-wrapper {
         width: 100%;
         overflow-x: auto;
-        background: rgba(255, 255, 255, 0.92);
-        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.94);
         padding: 8px;
         border: 1px solid rgba(255, 255, 255, 0.95);
         border-radius: 14px;
@@ -366,25 +360,22 @@ st.markdown(
         padding: 0 !important;
     }
 
-    /* Kad Metrik Liquid-Glass dengan Kesan Tonasi & Gelembung Info */
+    /* Kad Metrik Liquid-Glass dengan Kesan Tonasi */
     .metric-hover-card {
         position: relative;
-        background: var(--glass-bg);
-        backdrop-filter: blur(22px) saturate(180%);
-        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        background: var(--glass-bg-strong);
         border: 1px solid var(--glass-border);
         border-radius: 16px;
         padding: 12px 14px;
         box-shadow: var(--glass-shadow);
-        transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
         cursor: help;
         margin-bottom: 6px;
     }
     .metric-hover-card:hover {
-        background: rgba(255, 255, 255, 0.88);
-        border-color: rgba(14, 165, 233, 0.55);
+        background: rgba(240, 249, 255, 0.96);
+        border-color: rgba(14, 165, 233, 0.65);
         box-shadow: var(--glass-shadow-hover);
-        transform: translateY(-3px);
     }
     .metric-hover-label {
         font-size: 0.8rem;
@@ -400,11 +391,11 @@ st.markdown(
     .metric-hover-badge {
         font-size: 0.68rem;
         color: #0369a1;
-        background: rgba(14, 165, 233, 0.12);
-        border: 1px solid rgba(14, 165, 233, 0.35);
+        background: rgba(14, 165, 233, 0.14);
+        border: 1px solid rgba(14, 165, 233, 0.38);
         border-radius: 50%;
-        width: 17px;
-        height: 17px;
+        width: 18px;
+        height: 18px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -423,38 +414,6 @@ st.markdown(
         color: var(--text-muted);
         margin-top: 4px;
     }
-    .metric-tooltip-bubble {
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 0;
-        width: 350px;
-        max-width: 85vw;
-        background: rgba(15, 23, 42, 0.94);
-        backdrop-filter: blur(20px);
-        color: #f8fafc;
-        padding: 14px 16px;
-        border-radius: 14px;
-        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        font-size: 0.81rem;
-        line-height: 1.5;
-        text-align: left;
-        z-index: 99999;
-        pointer-events: none;
-        transform: translateY(-4px);
-        transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
-    }
-    .metric-hover-card.bubble-right .metric-tooltip-bubble {
-        left: auto;
-        right: 0;
-    }
-    .metric-hover-card:hover .metric-tooltip-bubble {
-        visibility: visible;
-        opacity: 1;
-        transform: translateY(0);
-    }
 
     /* Kad interaktif bagi graf, jadual & data dalam Pusat Analisis AI */
     .ai-hover-card {
@@ -462,19 +421,16 @@ st.markdown(
         padding: 12px 14px;
         border-radius: 16px;
         border: 1px solid var(--glass-border);
-        background: var(--glass-bg);
-        backdrop-filter: blur(22px) saturate(180%);
-        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        background: var(--glass-bg-strong);
         box-shadow: var(--glass-shadow);
-        transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
         cursor: help;
         margin-bottom: 10px;
     }
     .ai-hover-card:hover, .ai-hover-card.ai-zone-active {
-        background: rgba(255, 255, 255, 0.88);
-        border-color: rgba(14, 165, 233, 0.55);
+        background: rgba(240, 249, 255, 0.96);
+        border-color: rgba(14, 165, 233, 0.65);
         box-shadow: var(--glass-shadow-hover);
-        transform: translateY(-2px);
     }
     .ai-card-header {
         display: flex;
@@ -496,44 +452,17 @@ st.markdown(
         border: 1px solid rgba(14, 165, 233, 0.35);
         white-space: nowrap;
     }
-    .ai-tooltip-bubble {
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 10px;
-        width: 420px;
-        max-width: 90vw;
-        background: rgba(15, 23, 42, 0.94);
-        backdrop-filter: blur(20px);
-        color: #f8fafc;
-        padding: 14px 16px;
-        border-radius: 14px;
-        box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        font-size: 0.81rem;
-        line-height: 1.5;
-        text-align: left;
-        z-index: 99999;
-        pointer-events: none;
-        transform: translateY(-4px);
-        transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+
+    /* Templat kandungan tooltip tersembunyi (dipaparkan oleh Portal Terapung Paling Hadapan) */
+    .metric-tooltip-bubble, .ai-tooltip-bubble {
+        display: none !important;
     }
-    .ai-hover-card.ai-bubble-right .ai-tooltip-bubble {
-        left: auto;
-        right: 10px;
-    }
-    .ai-hover-card:hover .ai-tooltip-bubble,
-    .ai-hover-card.ai-zone-active .ai-tooltip-bubble {
-        visibility: visible;
-        opacity: 1;
-        transform: translateY(0);
-    }
+
     .ai-data-table {
         width: 100%;
         border-collapse: collapse;
         font-size: 0.82rem;
-        background-color: rgba(255, 255, 255, 0.92);
+        background-color: rgba(255, 255, 255, 0.95);
         color: #0f172a;
         border-radius: 8px;
         overflow: hidden;
@@ -556,28 +485,27 @@ st.markdown(
     }
     .ai-chart-plot-active {
         border-radius: 14px;
-        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.45), 0 10px 26px rgba(14, 165, 233, 0.16);
-        background-color: rgba(56, 189, 248, 0.05);
+        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.55), 0 10px 26px rgba(14, 165, 233, 0.18);
+        background-color: rgba(56, 189, 248, 0.06);
         transition: box-shadow 0.25s ease, background-color 0.25s ease;
     }
     .ai-conclusion-box {
-        background: rgba(255, 255, 255, 0.72);
-        backdrop-filter: blur(18px);
+        background: rgba(255, 255, 255, 0.82);
         border-left: 4px solid #0284c7;
-        border-top: 1px solid rgba(255, 255, 255, 0.9);
-        border-right: 1px solid rgba(255, 255, 255, 0.9);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.9);
+        border-top: 1px solid rgba(255, 255, 255, 0.92);
+        border-right: 1px solid rgba(255, 255, 255, 0.92);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.92);
         border-radius: 0 12px 12px 0;
         padding: 10px 14px;
         margin: 4px 0 12px 0;
         font-size: 0.83rem;
         line-height: 1.5;
         box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-        transition: all 0.25s ease;
+        transition: background-color 0.24s ease, box-shadow 0.24s ease;
     }
     .ai-conclusion-box:hover {
-        background: rgba(255, 255, 255, 0.92);
-        box-shadow: 0 8px 22px rgba(2, 132, 199, 0.12);
+        background: rgba(240, 249, 255, 0.96);
+        box-shadow: 0 8px 22px rgba(2, 132, 199, 0.14);
     }
     .ai-conclusion-title {
         font-weight: 700;
@@ -595,30 +523,30 @@ st.markdown(
         line-height: 1.48;
     }
     .tooltip-title {
-        font-size: 0.9rem;
+        font-size: 0.92rem;
         font-weight: 700;
         color: #7dd3fc;
         margin-bottom: 6px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+        padding-bottom: 5px;
     }
     .tooltip-section {
-        margin-bottom: 6px;
+        margin-bottom: 7px;
     }
     .tooltip-formula {
-        background-color: rgba(255, 255, 255, 0.08);
-        padding: 5px 8px;
-        border-radius: 6px;
+        background-color: rgba(255, 255, 255, 0.09);
+        padding: 6px 9px;
+        border-radius: 7px;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.78rem;
         color: #fde68a;
         margin: 4px 0 6px 0;
     }
     .tooltip-current {
-        background-color: rgba(56, 189, 248, 0.16);
+        background-color: rgba(56, 189, 248, 0.18);
         border-left: 3px solid #38bdf8;
-        padding: 6px 8px;
-        border-radius: 4px;
+        padding: 7px 9px;
+        border-radius: 5px;
         margin-top: 6px;
         color: #e0f2fe;
     }
@@ -651,6 +579,203 @@ st.markdown(
     </style>
     """,
     unsafe_allow_html=True,
+)
+
+# =========================================================
+# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (SENTIASA DI HADAPAN)
+# =========================================================
+components.html(
+    """
+    <script>
+    (function() {
+        const doc = window.parent.document;
+        const win = window.parent;
+
+        // Suntik gaya portal terus ke dokumen induk supaya z-index 2147483647 mengatasi semua tab & butang
+        if (!doc.getElementById('dw-portal-style')) {
+            const st = doc.createElement('style');
+            st.id = 'dw-portal-style';
+            st.textContent = `
+                #dw-global-tooltip-portal {
+                    position: fixed;
+                    z-index: 2147483647;
+                    pointer-events: none;
+                    width: 390px;
+                    max-width: 92vw;
+                    background: rgba(15, 23, 42, 0.96);
+                    backdrop-filter: blur(22px) saturate(180%);
+                    -webkit-backdrop-filter: blur(22px) saturate(180%);
+                    color: #f8fafc;
+                    padding: 15px 17px;
+                    border-radius: 14px;
+                    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(125, 211, 252, 0.32);
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                    font-size: 0.82rem;
+                    line-height: 1.5;
+                    text-align: left;
+                    opacity: 0;
+                    visibility: hidden;
+                    transform: translateY(4px);
+                    transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
+                }
+                #dw-global-tooltip-portal.dw-visible {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translateY(0);
+                }
+                #dw-global-tooltip-portal .tooltip-title {
+                    font-size: 0.92rem;
+                    font-weight: 700;
+                    color: #7dd3fc;
+                    margin-bottom: 6px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+                    padding-bottom: 5px;
+                }
+                #dw-global-tooltip-portal .tooltip-section {
+                    margin-bottom: 7px;
+                }
+                #dw-global-tooltip-portal .tooltip-formula {
+                    background-color: rgba(255, 255, 255, 0.10);
+                    padding: 6px 9px;
+                    border-radius: 7px;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-size: 0.78rem;
+                    color: #fde68a;
+                    margin: 4px 0 6px 0;
+                }
+                #dw-global-tooltip-portal .tooltip-current {
+                    background-color: rgba(56, 189, 248, 0.18);
+                    border-left: 3px solid #38bdf8;
+                    padding: 7px 9px;
+                    border-radius: 5px;
+                    margin-top: 6px;
+                    color: #e0f2fe;
+                }
+                .ai-chart-plot-active {
+                    border-radius: 14px;
+                    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.55), 0 10px 26px rgba(14, 165, 233, 0.18) !important;
+                    background-color: rgba(56, 189, 248, 0.06) !important;
+                }
+                .ai-zone-active {
+                    background: rgba(240, 249, 255, 0.96) !important;
+                    border-color: rgba(14, 165, 233, 0.65) !important;
+                }
+            `;
+            doc.head.appendChild(st);
+        }
+
+        let portal = doc.getElementById('dw-global-tooltip-portal');
+        if (!portal) {
+            portal = doc.createElement('div');
+            portal.id = 'dw-global-tooltip-portal';
+            doc.body.appendChild(portal);
+        }
+
+        let activeHost = null;
+        let activePlot = null;
+        let activeCard = null;
+
+        function hidePortal() {
+            if (portal) portal.classList.remove('dw-visible');
+            if (activePlot) activePlot.classList.remove('ai-chart-plot-active');
+            if (activeCard) activeCard.classList.remove('ai-zone-active');
+            activeHost = null;
+            activePlot = null;
+            activeCard = null;
+        }
+
+        function positionPortal(anchorRect) {
+            const pad = 12;
+            const pRect = portal.getBoundingClientRect();
+            const pWidth = pRect.width || 390;
+            const pHeight = pRect.height || 210;
+
+            let left = anchorRect.left;
+            if (left + pWidth > win.innerWidth - pad) {
+                left = win.innerWidth - pWidth - pad;
+            }
+            if (left < pad) left = pad;
+
+            let top = anchorRect.bottom + 8;
+            if (top + pHeight > win.innerHeight - pad) {
+                top = anchorRect.top - pHeight - 8;
+            }
+            if (top < pad) top = pad;
+
+            portal.style.left = Math.round(left) + 'px';
+            portal.style.top = Math.round(top) + 'px';
+        }
+
+        function showPortalForTarget(target) {
+            if (!target || !target.closest) return;
+
+            // 1. Kad Metrik atau Kad AI
+            const card = target.closest('.metric-hover-card, .ai-hover-card');
+            if (card) {
+                const bubble = card.querySelector('.metric-tooltip-bubble, .ai-tooltip-bubble');
+                if (bubble) {
+                    if (activeHost !== card) {
+                        hidePortal();
+                        activeHost = card;
+                        activeCard = card;
+                        card.classList.add('ai-zone-active');
+                        portal.innerHTML = bubble.innerHTML;
+                        portal.classList.add('dw-visible');
+                    }
+                    positionPortal(card.getBoundingClientRect());
+                    return;
+                }
+            }
+
+            // 2. Graf Plotly dalam Pusat Analisis AI (dipautkan ke kad AI dalam lajur sama)
+            const plotEl = target.closest('[data-testid="stPlotlyChart"]');
+            if (plotEl) {
+                const tabPanel = plotEl.closest('[data-testid="stTabPanel"]');
+                const colContainer = plotEl.closest('[data-testid="column"], [data-testid="stColumn"]');
+                if (tabPanel && colContainer) {
+                    const pairedCard = colContainer.querySelector('.ai-hover-card[data-ai-zone]');
+                    if (pairedCard) {
+                        const bubble = pairedCard.querySelector('.ai-tooltip-bubble');
+                        if (bubble) {
+                            if (activeHost !== plotEl) {
+                                hidePortal();
+                                activeHost = plotEl;
+                                activePlot = plotEl;
+                                activeCard = pairedCard;
+                                plotEl.classList.add('ai-chart-plot-active');
+                                pairedCard.classList.add('ai-zone-active');
+                                portal.innerHTML = bubble.innerHTML;
+                                portal.classList.add('dw-visible');
+                            }
+                            positionPortal(plotEl.getBoundingClientRect());
+                            return;
+                        }
+                    }
+                }
+            }
+
+            if (activeHost && !activeHost.contains(target)) {
+                hidePortal();
+            }
+        }
+
+        if (!win._dwTooltipPortalBound) {
+            win._dwTooltipPortalBound = true;
+            doc.addEventListener('mouseover', function(e) {
+                showPortalForTarget(e.target);
+            }, true);
+            doc.addEventListener('mouseleave', hidePortal, true);
+            win.addEventListener('scroll', hidePortal, true);
+            doc.addEventListener('click', function(e) {
+                if (e.target && e.target.closest('[data-baseweb="tab"]')) {
+                    hidePortal();
+                }
+            }, true);
+        }
+    })();
+    </script>
+    """,
+    height=0,
 )
 
 
@@ -758,13 +883,11 @@ def build_glass_kpi_html(
     relevance_html,
     formula_html,
     current_calc_html,
-    align_right=False,
     accent_color="#0f172a",
 ):
     """Membina kad KPI Liquid-Glass dengan kesan tonasi & gelembung info apabila kursor diarahkan."""
-    r_cls = " bubble-right" if align_right else ""
     return (
-        f'<div class="metric-hover-card{r_cls}">'
+        f'<div class="metric-hover-card">'
         f'<div class="metric-hover-label"><span>{html.escape(label)}</span><span class="metric-hover-badge">?</span></div>'
         f'<div class="metric-hover-value" style="color:{accent_color};">{html.escape(str(value_str))}</div>'
         f'<div class="metric-hover-sub">{sub_str}</div>'
@@ -823,17 +946,15 @@ def build_ai_hover_card_html(
     formula_html,
     current_calc_html,
     conclusion_html="",
-    align_right=False,
 ):
     """Membina kad interaktif dengan kesan tonasi, kesimpulan data di bahagian bawah & gelembung info."""
-    align_cls = " ai-bubble-right" if align_right else ""
     conc_block = (
         f'<div class="ai-table-conclusion">{conclusion_html}</div>'
         if conclusion_html
         else ""
     )
     return (
-        f'<div class="ai-hover-card{align_cls}" data-ai-zone="{html.escape(zone_id)}">'
+        f'<div class="ai-hover-card" data-ai-zone="{html.escape(zone_id)}">'
         f'<div class="ai-card-header">'
         f"<span>{html.escape(card_title)}</span>"
         f'<span class="ai-card-pill">? Info & Formula</span>'
@@ -1290,7 +1411,6 @@ def read_raw_bytes(raw_bytes, file_name):
     if "Wabak No" in df.columns:
         df["Wabak No"] = pd.to_numeric(df["Wabak No"], errors="coerce")
 
-    # Seragamkan ruang kosong berganda pada nama lokaliti supaya rekod 2021-2026 tidak berpecah
     for col in ["Jenis Kes", "Wabak Status", "Lokaliti (Alamat Semasa)"]:
         if col in df.columns:
             df[col] = (
@@ -1844,7 +1964,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"Seterusnya → {top_fc_txt}"
                 ),
                 conclusion_html=fc_tbl_conc,
-                align_right=False,
             )
             st.markdown(card_fc_qa, unsafe_allow_html=True)
 
@@ -1908,7 +2027,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                         f"<b>Tertinggi Semasa — {html.escape(top1['Lokaliti'])}:</b><br>"
                         f"Kes 7h = <b>{top1['Kes 7 Hari Terkini']}</b> | Unjuran +14h = <b>{top1['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top1['95% CI (+14 Hari)']}</b>)"
                     ),
-                    align_right=True,
                 )
                 st.markdown(card_qa_fc_g, unsafe_allow_html=True)
 
@@ -1967,7 +2085,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"Korelasi: {r_sample}"
                 ),
                 conclusion_html=corr_tbl_conc,
-                align_right=False,
             )
             st.markdown(card_corr_qa, unsafe_allow_html=True)
 
@@ -2024,7 +2141,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     current_calc_html=(
                         f"<b>Kategori Dianalisis:</b> {len(df_status_corr)} status wabak daripada <b>{int(df_status_corr['Bil. Episod'].sum())} episod</b> keseluruhan."
                     ),
-                    align_right=True,
                 )
                 st.markdown(card_qa_corr_g, unsafe_allow_html=True)
 
@@ -2094,7 +2210,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     f"<b>Kluster Utama:</b> {html.escape(kluster_txt)} | <b>Demografi:</b> {html.escape(nat_txt)} ({html.escape(occ_txt)})"
                 ),
                 conclusion_html=plan_tbl_conc,
-                align_right=False,
             )
             st.markdown(card_plan_qa, unsafe_allow_html=True)
 
@@ -2156,7 +2271,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                         f"<b>Keutamaan #1 Semasa:</b> {html.escape(top1['Lokaliti'])}<br>"
                         f"Skor = <b>{top1['Skor Risiko']}/100 ({top1['Tahap Risiko']})</b> | Velocity = <b>{top1['Velocity (Kes/Hari)']} kes/hari</b>"
                     ),
-                    align_right=True,
                 )
                 st.markdown(card_qa_risk_g, unsafe_allow_html=True)
 
@@ -2282,7 +2396,6 @@ def set_ai_prompt(prompt_text):
 today_my = get_today_malaysia()
 df_hist, hist_filename = load_historical_data()
 
-# Jika belum ada fail dimuat naik dan tiada fail sejarah dalam repositori, papar Hero Landing Stage yang memukau
 if df_hist is None:
     st.markdown(
         f"""
@@ -2582,7 +2695,6 @@ if uploaded_file is not None or df_hist is not None:
                     relevance_html="Mengukur kepantasan pesakit mendapatkan rawatan dan fasiliti kesihatan membuat notifikasi selepas gejala bermula. Lengah yang rendah memendekkan tempoh nyamuk Aedes menggigit pesakit viremia.",
                     formula_html="Median(Tkh Notifikasi − Tarikh Onset)",
                     current_calc_html=f"<b>Angka Semasa:</b> Median kelewatan daripada <b>{len(o_lag_valid):,} kes</b> ialah <b>{med_o_lag} hari</b>.",
-                    align_right=True,
                     accent_color="#059669" if med_o_lag <= 3.0 else "#d97706",
                 ),
                 unsafe_allow_html=True,
@@ -2621,2018 +2733,2047 @@ if uploaded_file is not None or df_hist is not None:
         # TAB 1: JADUAL HARIAN STATUS WABAK, PETA GPS & HIGHLIGHT
         # =========================================================
         with main_tab1:
-            df_sw_tamat, df_sw_aktif = build_status_wabak_tables(df, today_my)
-            sw_png_bytes = render_status_wabak_png(df_sw_tamat, df_sw_aktif)
-            sw_html, sw_clickable_rows = render_status_wabak_html(
-                df_sw_tamat, df_sw_aktif
-            )
-
-            bar_c1, bar_c2, bar_c3 = st.columns([2.2, 2.2, 2.6])
-            with bar_c1:
-                st.download_button(
-                    label="📸 Muat Turun Gambar Table (WhatsApp)",
-                    data=sw_png_bytes,
-                    file_name=f"Status_Wabak_Denggi_{today_my.strftime('%d-%m-%Y')}.png",
-                    mime="image/png",
-                    use_container_width=True,
-                )
-            with bar_c2:
-                with st.popover(
-                    "🖼️ Paparan Screenshot Penuh (WhatsApp)", use_container_width=True
-                ):
-                    st.caption(
-                        "Klik kanan pada gambar di bawah dan pilih **Copy Image** atau **Save Image As** untuk terus tampal ke WhatsApp."
-                    )
-                    st.image(sw_png_bytes, use_container_width=True)
-            with bar_c3:
-                st.markdown(
-                    f'<div class="no-print" style="text-align:right; padding-top:8px; font-size:0.86rem; color:#334155;">'
-                    f'📅 <b>Tarikh Laporan (Auto):</b> {fmt_date_short(today_my)}  |  <i>Klik nama lokaliti untuk buka analisis</i>'
-                    f"</div>",
-                    unsafe_allow_html=True,
+            try:
+                df_sw_tamat, df_sw_aktif = build_status_wabak_tables(df, today_my)
+                sw_png_bytes = render_status_wabak_png(df_sw_tamat, df_sw_aktif)
+                sw_html, sw_clickable_rows = render_status_wabak_html(
+                    df_sw_tamat, df_sw_aktif
                 )
 
-            st.markdown(sw_html, unsafe_allow_html=True)
-
-            if sw_clickable_rows:
-                for idx_sw, (lok_sw, w_no_sw) in enumerate(sw_clickable_rows):
-                    st.button(
-                        f"SW_JUMP_{idx_sw}",
-                        key=f"sw_jump_trigger_{idx_sw}_{format_wabak_no(w_no_sw)}",
-                        on_click=jump_to_lokaliti_from_table,
-                        args=(lok_sw, w_no_sw),
+                bar_c1, bar_c2, bar_c3 = st.columns([2.2, 2.2, 2.6])
+                with bar_c1:
+                    st.download_button(
+                        label="📸 Muat Turun Gambar Table (WhatsApp)",
+                        data=sw_png_bytes,
+                        file_name=f"Status_Wabak_Denggi_{today_my.strftime('%d-%m-%Y')}.png",
+                        mime="image/png",
+                        use_container_width=True,
+                    )
+                with bar_c2:
+                    with st.popover(
+                        "🖼️ Paparan Screenshot Penuh (WhatsApp)", use_container_width=True
+                    ):
+                        st.caption(
+                            "Klik kanan pada gambar di bawah dan pilih **Copy Image** atau **Save Image As** untuk terus tampal ke WhatsApp."
+                        )
+                        st.image(sw_png_bytes, use_container_width=True)
+                with bar_c3:
+                    st.markdown(
+                        f'<div class="no-print" style="text-align:right; padding-top:8px; font-size:0.86rem; color:#334155;">'
+                        f'📅 <b>Tarikh Laporan (Auto):</b> {fmt_date_short(today_my)}  |  <i>Klik nama lokaliti untuk buka analisis</i>'
+                        f"</div>",
+                        unsafe_allow_html=True,
                     )
 
-                components.html(
-                    """
-                    <script>
-                    (function() {
-                        const doc = window.parent.document;
+                st.markdown(sw_html, unsafe_allow_html=True)
 
-                        function hideJumpButtons() {
-                            const buttons = doc.querySelectorAll('button');
-                            buttons.forEach(btn => {
-                                if (btn.innerText && btn.innerText.trim().startsWith('SW_JUMP_')) {
-                                    const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
-                                    if (container) {
-                                        container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;margin:0;padding:0;';
-                                    }
-                                }
-                            });
-                        }
+                if sw_clickable_rows:
+                    for idx_sw, (lok_sw, w_no_sw) in enumerate(sw_clickable_rows):
+                        st.button(
+                            f"SW_JUMP_{idx_sw}",
+                            key=f"sw_jump_trigger_{idx_sw}_{format_wabak_no(w_no_sw)}",
+                            on_click=jump_to_lokaliti_from_table,
+                            args=(lok_sw, w_no_sw),
+                        )
 
-                        function bindTableClicks() {
-                            hideJumpButtons();
-                            const cells = doc.querySelectorAll('.sw-lok-link[data-sw-idx]');
-                            cells.forEach(cell => {
-                                if (cell.dataset.swBound === '1') return;
-                                cell.dataset.swBound = '1';
-                                cell.addEventListener('click', function() {
-                                    const idx = this.getAttribute('data-sw-idx');
-                                    const targetLabel = 'SW_JUMP_' + idx;
-                                    const buttons = doc.querySelectorAll('button');
-                                    for (const btn of buttons) {
-                                        if (btn.innerText && btn.innerText.trim() === targetLabel) {
-                                            btn.click();
-                                            break;
+                    components.html(
+                        """
+                        <script>
+                        (function() {
+                            const doc = window.parent.document;
+
+                            function hideJumpButtons() {
+                                const buttons = doc.querySelectorAll('button');
+                                buttons.forEach(btn => {
+                                    if (btn.innerText && btn.innerText.trim().startsWith('SW_JUMP_')) {
+                                        const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
+                                        if (container) {
+                                            container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;margin:0;padding:0;';
                                         }
                                     }
                                 });
-                            });
-                        }
+                            }
 
-                        bindTableClicks();
-                        const timer = setInterval(bindTableClicks, 250);
-                        setTimeout(() => clearInterval(timer), 6000);
-                    })();
-                    </script>
-                    """,
-                    height=0,
-                )
+                            function bindTableClicks() {
+                                hideJumpButtons();
+                                const cells = doc.querySelectorAll('.sw-lok-link[data-sw-idx]');
+                                cells.forEach(cell => {
+                                    if (cell.dataset.swBound === '1') return;
+                                    cell.dataset.swBound = '1';
+                                    cell.addEventListener('click', function() {
+                                        const idx = this.getAttribute('data-sw-idx');
+                                        const targetLabel = 'SW_JUMP_' + idx;
+                                        const buttons = doc.querySelectorAll('button');
+                                        for (const btn of buttons) {
+                                            if (btn.innerText && btn.innerText.trim() === targetLabel) {
+                                                btn.click();
+                                                break;
+                                            }
+                                        }
+                                    });
+                                });
+                            }
 
-            # --- PETA INTERAKTIF KLUSTER & HOTSPOT GPS ---
-            st.markdown("---")
-            st.subheader("🗺️ Peta Interaktif Kluster & Hotspot GPS (Spatial Surveillance)")
-
-            if "Latitud (ISO)" in df.columns and "Lngitud (ISO)" in df.columns:
-                df_map_src = df.copy()
-                df_map_src["_lat"] = pd.to_numeric(
-                    df_map_src["Latitud (ISO)"], errors="coerce"
-                )
-                df_map_src["_lng"] = pd.to_numeric(
-                    df_map_src["Lngitud (ISO)"], errors="coerce"
-                )
-                df_map_valid = df_map_src[
-                    (df_map_src["_lat"] > 1.0)
-                    & (df_map_src["_lat"] < 8.0)
-                    & (df_map_src["_lng"] > 99.0)
-                    & (df_map_src["_lng"] < 120.0)
-                ].copy()
-
-                if not df_map_valid.empty:
-                    df_map_valid["Status Peta"] = (
-                        df_map_valid["Wabak Status"]
-                        .fillna("Satu Kes")
-                        .astype(str)
-                        .str.strip()
+                            bindTableClicks();
+                            const timer = setInterval(bindTableClicks, 250);
+                            setTimeout(() => clearInterval(timer), 6000);
+                        })();
+                        </script>
+                        """,
+                        height=0,
                     )
-                    map_c1, map_c2 = st.columns([2, 1])
-                    with map_c1:
-                        map_filter_mode = st.radio(
-                            "Tapis Lapisan Peta:",
-                            [
-                                "Wabak Aktif Sahaja (Terkawal, Tak Terkawal & Hotspot)",
-                                "Semua Episod Wabak (Aktif & Tamat)",
-                                "Semua Kes (Termasuk Satu Kes)",
-                            ],
-                            horizontal=True,
-                            key="gps_map_filter_mode",
-                        )
-                    with map_c2:
-                        map_style_choice = st.selectbox(
-                            "Gaya Peta:",
-                            ["carto-positron", "open-street-map"],
-                            index=0,
-                            key="gps_map_style_choice",
-                        )
 
-                    if "Wabak Aktif Sahaja" in map_filter_mode:
-                        df_map_filtered = df_map_valid[
-                            (df_map_valid["Jenis Kes"] == "Wabak")
-                            & (
-                                ~df_map_valid["Status Peta"].str.contains(
-                                    "Tamat", case=False, na=False
-                                )
+                # --- PETA INTERAKTIF KLUSTER & HOTSPOT GPS (SERASI PLOTLY 5 & 6) ---
+                st.markdown("---")
+                st.subheader("🗺️ Peta Interaktif Kluster & Hotspot GPS (Spatial Surveillance)")
+
+                if "Latitud (ISO)" in df.columns and "Lngitud (ISO)" in df.columns:
+                    df_map_src = df.copy()
+                    df_map_src["_lat"] = pd.to_numeric(
+                        df_map_src["Latitud (ISO)"], errors="coerce"
+                    )
+                    df_map_src["_lng"] = pd.to_numeric(
+                        df_map_src["Lngitud (ISO)"], errors="coerce"
+                    )
+                    df_map_valid = df_map_src[
+                        (df_map_src["_lat"] > 1.0)
+                        & (df_map_src["_lat"] < 8.0)
+                        & (df_map_src["_lng"] > 99.0)
+                        & (df_map_src["_lng"] < 120.0)
+                    ].copy()
+
+                    if not df_map_valid.empty:
+                        df_map_valid["Status Peta"] = (
+                            df_map_valid["Wabak Status"]
+                            .fillna("Satu Kes")
+                            .astype(str)
+                            .str.strip()
+                        )
+                        map_c1, map_c2 = st.columns([2, 1])
+                        with map_c1:
+                            map_filter_mode = st.radio(
+                                "Tapis Lapisan Peta:",
+                                [
+                                    "Wabak Aktif Sahaja (Terkawal, Tak Terkawal & Hotspot)",
+                                    "Semua Episod Wabak (Aktif & Tamat)",
+                                    "Semua Kes (Termasuk Satu Kes)",
+                                ],
+                                horizontal=True,
+                                key="gps_map_filter_mode",
                             )
-                        ]
-                    elif "Semua Episod Wabak" in map_filter_mode:
-                        df_map_filtered = df_map_valid[
-                            df_map_valid["Jenis Kes"] == "Wabak"
-                        ]
-                    else:
-                        df_map_filtered = df_map_valid
+                        with map_c2:
+                            map_style_choice = st.selectbox(
+                                "Gaya Peta:",
+                                ["carto-positron", "open-street-map"],
+                                index=0,
+                                key="gps_map_style_choice",
+                            )
 
-                    if not df_map_filtered.empty:
-                        lok_gps = df_map_filtered.groupby(
-                            ["Lokaliti (Alamat Semasa)", "Status Peta"], as_index=False
-                        ).agg(
-                            Lat=("_lat", "median"),
-                            Lng=("_lng", "median"),
-                            Jumlah_Kes=("Notifikasi No", "count"),
-                            Pentadbir=(
-                                "Pihak Pentadbir Lokaliti",
-                                lambda s: s.dropna().iloc[0]
-                                if not s.dropna().empty
-                                else "-",
-                            ),
-                        )
-                        fig_map = px.scatter_mapbox(
-                            lok_gps,
-                            lat="Lat",
-                            lon="Lng",
-                            color="Status Peta",
-                            size="Jumlah_Kes",
-                            size_max=26,
-                            zoom=11.6,
-                            hover_name="Lokaliti (Alamat Semasa)",
-                            hover_data={
-                                "Status Peta": True,
-                                "Jumlah_Kes": True,
-                                "Pentadbir": True,
-                                "Lat": ":.5f",
-                                "Lng": ":.5f",
-                            },
-                            color_discrete_map={
+                        if "Wabak Aktif Sahaja" in map_filter_mode:
+                            df_map_filtered = df_map_valid[
+                                (df_map_valid["Jenis Kes"] == "Wabak")
+                                & (
+                                    ~df_map_valid["Status Peta"].str.contains(
+                                        "Tamat", case=False, na=False
+                                    )
+                                )
+                            ]
+                        elif "Semua Episod Wabak" in map_filter_mode:
+                            df_map_filtered = df_map_valid[
+                                df_map_valid["Jenis Kes"] == "Wabak"
+                            ]
+                        else:
+                            df_map_filtered = df_map_valid
+
+                        if not df_map_filtered.empty:
+                            lok_gps = df_map_filtered.groupby(
+                                ["Lokaliti (Alamat Semasa)", "Status Peta"],
+                                as_index=False,
+                            ).agg(
+                                Lat=("_lat", "median"),
+                                Lng=("_lng", "median"),
+                                Jumlah_Kes=("Notifikasi No", "count"),
+                                Pentadbir=(
+                                    "Pihak Pentadbir Lokaliti",
+                                    lambda s: s.dropna().iloc[0]
+                                    if not s.dropna().empty
+                                    else "-",
+                                ),
+                            )
+                            map_color_discrete = {
                                 "Hotspot": "#fe0000",
                                 "Wabak Tak Terkawal": "#2563eb",
                                 "Wabak Terkawal": "#f97316",
                                 "Wabak Tamat": "#10b981",
                                 "Satu Kes": "#64748b",
-                            },
-                        )
-                        fig_map.update_layout(
-                            mapbox_style=map_style_choice,
-                            height=440,
-                            margin=dict(l=0, r=0, t=10, b=0),
-                            legend=dict(
-                                title="Status Lokaliti",
-                                orientation="h",
-                                yanchor="bottom",
-                                y=1.01,
-                                x=0,
-                            ),
-                        )
-                        st.plotly_chart(
-                            fig_map, use_container_width=True, key="gps_hotspot_map"
-                        )
+                            }
+                            if hasattr(px, "scatter_map"):
+                                fig_map = px.scatter_map(
+                                    lok_gps,
+                                    lat="Lat",
+                                    lon="Lng",
+                                    color="Status Peta",
+                                    size="Jumlah_Kes",
+                                    size_max=26,
+                                    zoom=11.6,
+                                    map_style=map_style_choice,
+                                    hover_name="Lokaliti (Alamat Semasa)",
+                                    hover_data={
+                                        "Status Peta": True,
+                                        "Jumlah_Kes": True,
+                                        "Pentadbir": True,
+                                        "Lat": ":.5f",
+                                        "Lng": ":.5f",
+                                    },
+                                    color_discrete_map=map_color_discrete,
+                                )
+                            else:
+                                fig_map = px.scatter_mapbox(
+                                    lok_gps,
+                                    lat="Lat",
+                                    lon="Lng",
+                                    color="Status Peta",
+                                    size="Jumlah_Kes",
+                                    size_max=26,
+                                    zoom=11.6,
+                                    mapbox_style=map_style_choice,
+                                    hover_name="Lokaliti (Alamat Semasa)",
+                                    hover_data={
+                                        "Status Peta": True,
+                                        "Jumlah_Kes": True,
+                                        "Pentadbir": True,
+                                        "Lat": ":.5f",
+                                        "Lng": ":.5f",
+                                    },
+                                    color_discrete_map=map_color_discrete,
+                                )
+
+                            fig_map.update_layout(
+                                height=440,
+                                margin=dict(l=0, r=0, t=10, b=0),
+                                legend=dict(
+                                    title="Status Lokaliti",
+                                    orientation="h",
+                                    yanchor="bottom",
+                                    y=1.01,
+                                    x=0,
+                                ),
+                            )
+                            st.plotly_chart(
+                                fig_map, use_container_width=True, key="gps_hotspot_map"
+                            )
+                        else:
+                            st.info("Tiada koordinat GPS untuk lapisan tapisan ini.")
                     else:
-                        st.info("Tiada koordinat GPS untuk lapisan tapisan ini.")
+                        st.info("Koordinat GPS sah tidak ditemui dalam fail yang dimuat naik.")
+
+                # --- HIGHLIGHT 1: WABAK AKTIF SEMASA (TOP 5) ---
+                df_aktif = df[
+                    (df["Jenis Kes"] == "Wabak")
+                    & (df["Wabak Status"].notna())
+                    & (
+                        ~df["Wabak Status"]
+                        .astype(str)
+                        .str.contains("Tamat", case=False, na=False)
+                    )
+                ].copy()
+
+                st.markdown("---")
+                st.subheader("🚨 Highlight: Wabak Aktif Semasa (Top 5)")
+
+                if not df_aktif.empty:
+                    data_wabak_aktif = []
+                    grouped = df_aktif.groupby(["Lokaliti (Alamat Semasa)", "Wabak No"])
+
+                    for (lokaliti, wabak_no), group in grouped:
+                        jumlah_k = len(group)
+                        t_ser = (
+                            group["Tkh Notifikasi"].fillna(group["Tarikh Daftar"])
+                            if "Tkh Notifikasi" in group.columns
+                            else group["Tarikh Daftar"]
+                        )
+                        tarikh_kes = t_ser.dropna().sort_values().tolist()
+
+                        if len(tarikh_kes) >= 2:
+                            tarikh_mula = tarikh_kes[1]
+                        elif len(tarikh_kes) == 1:
+                            tarikh_mula = tarikh_kes[0]
+                        else:
+                            continue
+
+                        tempoh_h = max((today_my - tarikh_mula).days, 1)
+                        vel = jumlah_k / tempoh_h
+                        c_7d = int((t_ser >= (today_my - pd.Timedelta(days=6))).sum())
+
+                        data_wabak_aktif.append(
+                            {
+                                "Lokaliti": lokaliti,
+                                "Wabak No": wabak_no,
+                                "Jumlah Kes": jumlah_k,
+                                "Tempoh (Hari)": tempoh_h,
+                                "Velocity": vel,
+                                "Kes 7H": c_7d,
+                            }
+                        )
+
+                    df_highlight = pd.DataFrame(data_wabak_aktif)
+                    c1, c2, c3 = st.columns(3)
+
+                    with c1:
+                        st.markdown("**🚀 Velocity Tertinggi (Kes/Hari)**")
+                        top_vel = df_highlight.nlargest(5, "Velocity")
+                        for _, row in top_vel.iterrows():
+                            st.button(
+                                f"{row['Velocity']:.2f} kes/hari - {row['Lokaliti']}",
+                                key=f"vel_{row['Wabak No']}",
+                                on_click=set_lokaliti_dan_wabak,
+                                args=(row["Lokaliti"], row["Wabak No"]),
+                                use_container_width=True,
+                            )
+
+                    with c2:
+                        st.markdown("**🔥 Jumlah Kes Tertinggi**")
+                        top_kes = df_highlight.nlargest(5, "Jumlah Kes")
+                        for _, row in top_kes.iterrows():
+                            st.button(
+                                f"{row['Jumlah Kes']} Kes - {row['Lokaliti']}",
+                                key=f"kes_{row['Wabak No']}",
+                                on_click=set_lokaliti_dan_wabak,
+                                args=(row["Lokaliti"], row["Wabak No"]),
+                                use_container_width=True,
+                            )
+
+                    with c3:
+                        st.markdown("**⏳ Tempoh Wabak Terlama**")
+                        top_tempoh = df_highlight.nlargest(5, "Tempoh (Hari)")
+                        for _, row in top_tempoh.iterrows():
+                            st.button(
+                                f"{row['Tempoh (Hari)']} Hari - {row['Lokaliti']}",
+                                key=f"tempoh_{row['Wabak No']}",
+                                on_click=set_lokaliti_dan_wabak,
+                                args=(row["Lokaliti"], row["Wabak No"]),
+                                use_container_width=True,
+                            )
                 else:
-                    st.info("Koordinat GPS sah tidak ditemui dalam fail yang dimuat naik.")
+                    st.success("Tiada wabak aktif (semasa) direkodkan buat masa ini.")
 
-            # --- HIGHLIGHT 1: WABAK AKTIF SEMASA (TOP 5 - DISERAGAMKAN DENGAN Tkh Notifikasi) ---
-            df_aktif = df[
-                (df["Jenis Kes"] == "Wabak")
-                & (df["Wabak Status"].notna())
-                & (
-                    ~df["Wabak Status"]
-                    .astype(str)
-                    .str.contains("Tamat", case=False, na=False)
-                )
-            ].copy()
+                # --- HIGHLIGHT 2: EPISODE WABAK TERTINGGI (TOP 10) ---
+                st.markdown("---")
+                st.subheader("🔁 Highlight: Kekerapan Episode Wabak Tertinggi (Top 10)")
 
-            st.markdown("---")
-            st.subheader("🚨 Highlight: Wabak Aktif Semasa (Top 5)")
+                top10_kekerapan = kekerapan_wabak.nlargest(10)
 
-            if not df_aktif.empty:
-                data_wabak_aktif = []
-                grouped = df_aktif.groupby(["Lokaliti (Alamat Semasa)", "Wabak No"])
+                if not top10_kekerapan.empty and top10_kekerapan.max() > 0:
+                    top10_kekerapan = top10_kekerapan[top10_kekerapan > 0]
+                    items = list(top10_kekerapan.items())
 
-                for (lokaliti, wabak_no), group in grouped:
-                    jumlah_k = len(group)
-                    t_ser = (
-                        group["Tkh Notifikasi"].fillna(group["Tarikh Daftar"])
-                        if "Tkh Notifikasi" in group.columns
-                        else group["Tarikh Daftar"]
-                    )
-                    tarikh_kes = t_ser.dropna().sort_values().tolist()
-
-                    if len(tarikh_kes) >= 2:
-                        tarikh_mula = tarikh_kes[1]
-                    elif len(tarikh_kes) == 1:
-                        tarikh_mula = tarikh_kes[0]
-                    else:
-                        continue
-
-                    tempoh_h = max((today_my - tarikh_mula).days, 1)
-                    vel = jumlah_k / tempoh_h
-                    c_7d = int((t_ser >= (today_my - pd.Timedelta(days=6))).sum())
-
-                    data_wabak_aktif.append(
-                        {
-                            "Lokaliti": lokaliti,
-                            "Wabak No": wabak_no,
-                            "Jumlah Kes": jumlah_k,
-                            "Tempoh (Hari)": tempoh_h,
-                            "Velocity": vel,
-                            "Kes 7H": c_7d,
-                        }
-                    )
-
-                df_highlight = pd.DataFrame(data_wabak_aktif)
-                c1, c2, c3 = st.columns(3)
-
-                with c1:
-                    st.markdown("**🚀 Velocity Tertinggi (Kes/Hari)**")
-                    top_vel = df_highlight.nlargest(5, "Velocity")
-                    for _, row in top_vel.iterrows():
-                        st.button(
-                            f"{row['Velocity']:.2f} kes/hari - {row['Lokaliti']}",
-                            key=f"vel_{row['Wabak No']}",
-                            on_click=set_lokaliti_dan_wabak,
-                            args=(row["Lokaliti"], row["Wabak No"]),
-                            use_container_width=True,
-                        )
-
-                with c2:
-                    st.markdown("**🔥 Jumlah Kes Tertinggi**")
-                    top_kes = df_highlight.nlargest(5, "Jumlah Kes")
-                    for _, row in top_kes.iterrows():
-                        st.button(
-                            f"{row['Jumlah Kes']} Kes - {row['Lokaliti']}",
-                            key=f"kes_{row['Wabak No']}",
-                            on_click=set_lokaliti_dan_wabak,
-                            args=(row["Lokaliti"], row["Wabak No"]),
-                            use_container_width=True,
-                        )
-
-                with c3:
-                    st.markdown("**⏳ Tempoh Wabak Terlama**")
-                    top_tempoh = df_highlight.nlargest(5, "Tempoh (Hari)")
-                    for _, row in top_tempoh.iterrows():
-                        st.button(
-                            f"{row['Tempoh (Hari)']} Hari - {row['Lokaliti']}",
-                            key=f"tempoh_{row['Wabak No']}",
-                            on_click=set_lokaliti_dan_wabak,
-                            args=(row["Lokaliti"], row["Wabak No"]),
-                            use_container_width=True,
-                        )
-            else:
-                st.success("Tiada wabak aktif (semasa) direkodkan buat masa ini.")
-
-            # --- HIGHLIGHT 2: EPISODE WABAK TERTINGGI (TOP 10) ---
-            st.markdown("---")
-            st.subheader("🔁 Highlight: Kekerapan Episode Wabak Tertinggi (Top 10)")
-
-            top10_kekerapan = kekerapan_wabak.nlargest(10)
-
-            if not top10_kekerapan.empty and top10_kekerapan.max() > 0:
-                top10_kekerapan = top10_kekerapan[top10_kekerapan > 0]
-                items = list(top10_kekerapan.items())
-
-                cols1 = st.columns(min(len(items), 5))
-                for i in range(min(len(items), 5)):
-                    lokaliti, count = items[i]
-                    with cols1[i]:
-                        st.button(
-                            f"**{count} Episode**\n\n{lokaliti}",
-                            key=f"kekerapan1_{lokaliti}",
-                            on_click=set_lokaliti_sahaja,
-                            args=(lokaliti,),
-                            use_container_width=True,
-                        )
-
-                if len(items) > 5:
-                    cols2 = st.columns(len(items) - 5)
-                    for i in range(5, len(items)):
+                    cols1 = st.columns(min(len(items), 5))
+                    for i in range(min(len(items), 5)):
                         lokaliti, count = items[i]
-                        with cols2[i - 5]:
+                        with cols1[i]:
                             st.button(
                                 f"**{count} Episode**\n\n{lokaliti}",
-                                key=f"kekerapan2_{lokaliti}",
+                                key=f"kekerapan1_{lokaliti}",
                                 on_click=set_lokaliti_sahaja,
                                 args=(lokaliti,),
                                 use_container_width=True,
                             )
-            else:
-                st.info("Tiada rekod episode wabak dikesan buat masa ini.")
+
+                    if len(items) > 5:
+                        cols2 = st.columns(len(items) - 5)
+                        for i in range(5, len(items)):
+                            lokaliti, count = items[i]
+                            with cols2[i - 5]:
+                                st.button(
+                                    f"**{count} Episode**\n\n{lokaliti}",
+                                    key=f"kekerapan2_{lokaliti}",
+                                    on_click=set_lokaliti_sahaja,
+                                    args=(lokaliti,),
+                                    use_container_width=True,
+                                )
+                else:
+                    st.info("Tiada rekod episode wabak dikesan buat masa ini.")
+            except Exception as tab1_err:
+                st.error(f"Ralat pada paparan Status Harian / Peta: {tab1_err}")
 
         # =========================================================
         # TAB 2: ANALISIS LOKALITI, STRUKTUR BERTINGKAT & KLINIKAL
         # =========================================================
         with main_tab2:
-            if not df_lok.empty and pilihan_kategori:
-                if pilihan_kategori == "Satu Kes (Kes Terpencil)":
-                    df_filter = df_lok[df_lok["Jenis Kes"] == "Satu Kes"].copy()
-                    status_wabak_semasa = "Tiada (Satu Kes)"
-                    tempoh_wabak_hari = 1
-                    tarikh_mula_str = "N/A"
-                    tarikh_mula = today_my
-                else:
-                    w_no = float(pilihan_kategori.replace("Wabak No: ", ""))
-                    df_filter = df_lok[df_lok["Wabak No"] == w_no].copy()
-                    status_wabak_semasa = str(df_filter["Wabak Status"].iloc[0])
+            try:
+                if not df_lok.empty and pilihan_kategori:
+                    if pilihan_kategori == "Satu Kes (Kes Terpencil)":
+                        df_filter = df_lok[df_lok["Jenis Kes"] == "Satu Kes"].copy()
+                        status_wabak_semasa = "Tiada (Satu Kes)"
+                        tempoh_wabak_hari = 1
+                        tarikh_mula_str = "N/A"
+                        tarikh_mula = today_my
+                    else:
+                        w_no = float(pilihan_kategori.replace("Wabak No: ", ""))
+                        df_filter = df_lok[df_lok["Wabak No"] == w_no].copy()
+                        status_wabak_semasa = str(df_filter["Wabak Status"].iloc[0])
 
-                    t_ser_f = (
+                        t_ser_f = (
+                            df_filter["Tkh Notifikasi"].fillna(
+                                df_filter["Tarikh Daftar"]
+                            )
+                            if "Tkh Notifikasi" in df_filter.columns
+                            else df_filter["Tarikh Daftar"]
+                        )
+                        tarikh_kes = t_ser_f.dropna().sort_values().tolist()
+
+                        if len(tarikh_kes) >= 2:
+                            tarikh_mula = tarikh_kes[1]
+                        elif len(tarikh_kes) == 1:
+                            tarikh_mula = tarikh_kes[0]
+                        else:
+                            tarikh_mula = today_my
+
+                        tarikh_mula_str = tarikh_mula.strftime("%d-%m-%Y")
+
+                        if "Tamat" in status_wabak_semasa:
+                            tarikh_akhir = tarikh_kes[-1] + pd.Timedelta(days=14)
+                        else:
+                            tarikh_akhir = today_my
+
+                        tempoh_wabak_hari = max((tarikh_akhir - tarikh_mula).days, 1)
+
+                    jumlah_kes = len(df_filter)
+                    pentadbir_lokaliti = (
+                        df_filter["Pihak Pentadbir Lokaliti"].mode()[0]
+                        if not df_filter["Pihak Pentadbir Lokaliti"].empty
+                        else "Tidak Dinyatakan"
+                    )
+                    rekod_episode_lokaliti = episode_map.get(pilihan_lokaliti, 0)
+
+                    st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
+                    st.subheader(
+                        f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}"
+                    )
+                    st.markdown(
+                        f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*"
+                    )
+
+                    # --- SEMAKAN KESIAPSIAGAAN KAWALAN VEKTOR LAPANGAN (PTP, SRT, ULV) ---
+                    ptp_dt = (
+                        df_filter["Tkh PTP Aktiviti Pertama"].dropna().min()
+                        if "Tkh PTP Aktiviti Pertama" in df_filter.columns
+                        else pd.NaT
+                    )
+                    srt_dt = (
+                        df_filter["Tkh SRT Aktiviti Pertama"].dropna().min()
+                        if "Tkh SRT Aktiviti Pertama" in df_filter.columns
+                        else pd.NaT
+                    )
+                    ulv_dt = (
+                        df_filter["Tkh ULV Aktiviti Pertama"].dropna().min()
+                        if "Tkh ULV Aktiviti Pertama" in df_filter.columns
+                        else pd.NaT
+                    )
+
+                    ptp_badge = (
+                        f'<span class="ops-pill-ok">✅ PTP (Larviciding): {fmt_date_short(ptp_dt)}</span>'
+                        if pd.notna(ptp_dt)
+                        else '<span class="ops-pill-miss">⚠️ PTP (Larviciding): BELUM DIREKOD</span>'
+                    )
+                    srt_badge = (
+                        f'<span class="ops-pill-ok">✅ SRT (Fogging): {fmt_date_short(srt_dt)}</span>'
+                        if pd.notna(srt_dt)
+                        else '<span class="ops-pill-miss">⚠️ SRT (Fogging): BELUM DIREKOD</span>'
+                    )
+                    ulv_badge = (
+                        f'<span class="ops-pill-ok">✅ ULV: {fmt_date_short(ulv_dt)}</span>'
+                        if pd.notna(ulv_dt)
+                        else '<span class="ops-pill-miss">ℹ️ ULV: Tiada / Belum Perlu</span>'
+                    )
+                    st.markdown(
+                        f'<div style="display:flex; flex-wrap:wrap; gap:10px; margin: 6px 0 12px 0;">{ptp_badge}{srt_badge}{ulv_badge}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    if (
+                        "Tamat" not in status_wabak_semasa
+                        and "Satu Kes" not in status_wabak_semasa
+                        and (pd.isna(ptp_dt) or pd.isna(srt_dt))
+                    ):
+                        missing_acts = []
+                        if pd.isna(ptp_dt):
+                            missing_acts.append("PTP (Pemusnahan Tempat Pembiakan)")
+                        if pd.isna(srt_dt):
+                            missing_acts.append("SRT (Semburan Ruang Termal)")
+                        st.warning(
+                            f"🚨 **Amaran Jurang Kawalan Lapangan:** Wabak aktif ini masih belum merekodkan tarikh aktiviti pertama bagi **{', '.join(missing_acts)}**. Tindakan segera diperlukan untuk menyekat rantaian penularan."
+                        )
+
+                    # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (LEBAR BAR MENGIKUT TEMPOH HARI) ---
+                    if rekod_episode_lokaliti > 0:
+                        df_wabak_lok = df_lok[df_lok["Jenis Kes"] == "Wabak"].copy()
+
+                        if not df_wabak_lok.empty:
+                            wabak_summary = []
+
+                            df_wabak_lok["Wabak_Str"] = df_wabak_lok["Wabak No"].apply(
+                                format_wabak_no
+                            )
+                            unique_wabaks_str = sorted(
+                                df_wabak_lok["Wabak_Str"].unique(),
+                                key=lambda x: float(x)
+                                if x.replace(".", "", 1).isdigit()
+                                else 0,
+                            )
+                            theme_colors = (
+                                plotly.colors.qualitative.Plotly
+                                + plotly.colors.qualitative.D3
+                                + plotly.colors.qualitative.Set2
+                            )
+                            color_map = {
+                                w: theme_colors[i % len(theme_colors)]
+                                for i, w in enumerate(unique_wabaks_str)
+                            }
+
+                            for w_no_str, group in df_wabak_lok.groupby("Wabak_Str"):
+                                j_kes = len(group)
+                                t_ser_g = (
+                                    group["Tkh Notifikasi"].fillna(
+                                        group["Tarikh Daftar"]
+                                    )
+                                    if "Tkh Notifikasi" in group.columns
+                                    else group["Tarikh Daftar"]
+                                )
+                                t_kes = t_ser_g.dropna().sort_values().tolist()
+
+                                if len(t_kes) >= 2:
+                                    t_m = t_kes[1]
+                                elif len(t_kes) == 1:
+                                    t_m = t_kes[0]
+                                else:
+                                    t_m = today_my
+
+                                status_w = str(group["Wabak Status"].iloc[0])
+                                t_last = max(t_kes) if t_kes else t_m
+
+                                if "Tamat" in status_w:
+                                    t_a = t_last
+                                    t_a_str = t_a.strftime("%d-%m-%Y")
+                                    tempoh = max((t_a - t_m).days, 1)
+                                    lbl_tarikh = "Tarikh Notif Terakhir"
+                                    lbl_tempoh = "Tempoh Wabak"
+                                else:
+                                    t_anggaran_tamat = t_last + pd.Timedelta(days=14)
+                                    t_a_str = t_anggaran_tamat.strftime("%d-%m-%Y")
+                                    tempoh = max((today_my - t_m).days, 1)
+                                    lbl_tarikh = "Anggaran Tarikh Tamat"
+                                    lbl_tempoh = "Tempoh (Sehingga Kini)"
+
+                                width_ms = tempoh * MS_PER_DAY
+                                center_dt = t_m + pd.Timedelta(
+                                    milliseconds=width_ms / 2
+                                )
+                                end_dt_visual = t_m + pd.Timedelta(days=tempoh)
+
+                                m_val = group["Epid Minggu (Tkh Daftar)"].iloc[0]
+                                y_val = (
+                                    int(group["Epid Tahun (Tkh Daftar)"].iloc[0])
+                                    if "Epid Tahun (Tkh Daftar)" in group.columns
+                                    and pd.notnull(
+                                        group["Epid Tahun (Tkh Daftar)"].iloc[0]
+                                    )
+                                    else t_m.year
+                                )
+                                m_label = f"{y_val}-ME{int(m_val):02d}"
+
+                                wabak_summary.append(
+                                    {
+                                        "Wabak_Str": w_no_str,
+                                        "Tahun": y_val,
+                                        "Jumlah Kes": j_kes,
+                                        "Tarikh Mula": t_m,
+                                        "End_Dt_Visual": end_dt_visual,
+                                        "Center_Dt": center_dt,
+                                        "Width_Ms": width_ms,
+                                        "Tarikh Mula Str": t_m.strftime("%d-%m-%Y"),
+                                        "Tarikh Akhir Str": t_a_str,
+                                        "Tempoh (Hari)": tempoh,
+                                        "Status": status_w,
+                                        "Minggu_Label": m_label,
+                                        "Label Tarikh": lbl_tarikh,
+                                        "Label Tempoh": lbl_tempoh,
+                                    }
+                                )
+
+                            df_plot_all = pd.DataFrame(wabak_summary)
+
+                            if not df_plot_all.empty:
+                                global_min_yr = (
+                                    int(df["Tarikh Daftar"].dt.year.min())
+                                    if df["Tarikh Daftar"].notna().any()
+                                    else int(df_plot_all["Tahun"].min())
+                                )
+                                global_max_yr = (
+                                    int(df["Tarikh Daftar"].dt.year.max())
+                                    if df["Tarikh Daftar"].notna().any()
+                                    else int(df_plot_all["Tahun"].max())
+                                )
+                                min_yr_plot = min(
+                                    global_min_yr, int(df_plot_all["Tahun"].min())
+                                )
+                                max_yr_plot = max(
+                                    global_max_yr, int(df_plot_all["Tahun"].max())
+                                )
+
+                                yr_state_key = f"yr_slider_{pilihan_lokaliti}"
+                                if yr_state_key not in st.session_state:
+                                    st.session_state[yr_state_key] = (
+                                        min_yr_plot,
+                                        max_yr_plot,
+                                    )
+
+                                cur_s, cur_e = st.session_state[yr_state_key]
+                                if (
+                                    cur_s < min_yr_plot
+                                    or cur_e > max_yr_plot
+                                    or cur_s > cur_e
+                                ):
+                                    st.session_state[yr_state_key] = (
+                                        min_yr_plot,
+                                        max_yr_plot,
+                                    )
+
+                                if min_yr_plot < max_yr_plot:
+                                    st.markdown("**📅 Kawalan Paparan Tahun Graf:**")
+                                    avail_yrs = list(
+                                        range(min_yr_plot, max_yr_plot + 1)
+                                    )
+                                    btn_cols = st.columns(len(avail_yrs) + 1)
+                                    with btn_cols[0]:
+                                        st.button(
+                                            f"Semua ({min_yr_plot}–{max_yr_plot})",
+                                            key=f"btn_all_yr_{pilihan_lokaliti}",
+                                            on_click=set_chart_year_range,
+                                            args=(
+                                                yr_state_key,
+                                                min_yr_plot,
+                                                max_yr_plot,
+                                            ),
+                                            use_container_width=True,
+                                        )
+                                    for idx_y, y_opt in enumerate(avail_yrs):
+                                        with btn_cols[idx_y + 1]:
+                                            st.button(
+                                                f"{y_opt}",
+                                                key=f"btn_yr_{y_opt}_{pilihan_lokaliti}",
+                                                on_click=set_chart_year_range,
+                                                args=(yr_state_key, y_opt, y_opt),
+                                                use_container_width=True,
+                                            )
+
+                                    yr_start, yr_end = st.slider(
+                                        "Seret Julat Tahun (2021 hingga 2026):",
+                                        min_value=min_yr_plot,
+                                        max_value=max_yr_plot,
+                                        key=yr_state_key,
+                                    )
+                                else:
+                                    yr_start, yr_end = min_yr_plot, max_yr_plot
+
+                                df_plot = df_plot_all[
+                                    (df_plot_all["Tahun"] >= yr_start)
+                                    & (df_plot_all["Tahun"] <= yr_end)
+                                ].copy()
+
+                                start_date_axis = pd.Timestamp(
+                                    year=yr_start, month=1, day=1
+                                )
+                                if (
+                                    yr_end == global_max_yr
+                                    and df["Tarikh Daftar"].notna().any()
+                                ):
+                                    end_date_axis = max(
+                                        df["Tarikh Daftar"].max(),
+                                        df_plot_all["End_Dt_Visual"].max(),
+                                    ) + pd.Timedelta(days=7)
+                                else:
+                                    end_date_axis = pd.Timestamp(
+                                        year=yr_end, month=12, day=31
+                                    )
+
+                                all_periods = pd.period_range(
+                                    start=start_date_axis,
+                                    end=end_date_axis,
+                                    freq="W-SAT",
+                                )
+
+                                if not df_plot.empty:
+                                    df_plot["Period"] = df_plot[
+                                        "Tarikh Mula"
+                                    ].dt.to_period("W-SAT")
+                                    period_to_label = (
+                                        df_plot.drop_duplicates(subset=["Period"])
+                                        .set_index("Period")["Minggu_Label"]
+                                        .to_dict()
+                                    )
+                                else:
+                                    period_to_label = {}
+
+                                seen_labels = set()
+                                period_items = []
+                                for p in all_periods:
+                                    lbl = (
+                                        str(period_to_label[p])
+                                        if (
+                                            p in period_to_label
+                                            and pd.notnull(period_to_label[p])
+                                        )
+                                        else f"{p.end_time.year}-ME{p.week:02d}"
+                                    )
+                                    if lbl not in seen_labels:
+                                        seen_labels.add(lbl)
+                                        period_items.append(
+                                            {
+                                                "label": lbl,
+                                                "start_ms": int(
+                                                    p.start_time.timestamp() * 1000
+                                                ),
+                                                "end_ms": int(
+                                                    (
+                                                        p.end_time
+                                                        + pd.Timedelta(seconds=1)
+                                                    ).timestamp()
+                                                    * 1000
+                                                ),
+                                                "start_iso": p.start_time.strftime(
+                                                    "%Y-%m-%d"
+                                                ),
+                                                "end_iso": (
+                                                    p.end_time + pd.Timedelta(days=1)
+                                                ).strftime("%Y-%m-%d"),
+                                            }
+                                        )
+
+                                x_labels = [item["label"] for item in period_items]
+
+                                tajuk_tempoh = (
+                                    f"Tahun {yr_start}"
+                                    if yr_start == yr_end
+                                    else f"Tahun {yr_start} – {yr_end}"
+                                )
+
+                                if not df_plot.empty:
+                                    zoom_label = "🔍 Zoom / Skrol Garis Masa Minggu Epid (Gerakkan penanda kiri atau kanan):"
+                                    if len(x_labels) > 10:
+                                        wk_start, wk_end = st.select_slider(
+                                            zoom_label,
+                                            options=x_labels,
+                                            value=(x_labels[0], x_labels[-1]),
+                                            key=f"wk_zoom_{pilihan_lokaliti}_{yr_start}_{yr_end}",
+                                        )
+                                        idx_s = x_labels.index(wk_start)
+                                        idx_e = x_labels.index(wk_end)
+                                    else:
+                                        idx_s = 0
+                                        idx_e = len(x_labels) - 1
+
+                                    visible_count = max(idx_e - idx_s + 1, 1)
+                                    tick_step = max(1, visible_count // 42)
+                                    tick_vals = [
+                                        period_items[i]["start_iso"]
+                                        for i in range(0, len(period_items), tick_step)
+                                    ]
+                                    tick_texts = [
+                                        period_items[i]["label"]
+                                        for i in range(0, len(period_items), tick_step)
+                                    ]
+
+                                    fig_sejarah = go.Figure()
+                                    for _, row in df_plot.sort_values(
+                                        by=["Tarikh Mula", "Wabak_Str"]
+                                    ).iterrows():
+                                        w_str = row["Wabak_Str"]
+                                        fig_sejarah.add_trace(
+                                            go.Bar(
+                                                x=[row["Center_Dt"]],
+                                                y=[row["Jumlah Kes"]],
+                                                width=[row["Width_Ms"]],
+                                                name=w_str,
+                                                marker=dict(
+                                                    color=color_map[w_str],
+                                                    line=dict(
+                                                        width=0.8,
+                                                        color="rgba(0,0,0,0.55)",
+                                                    ),
+                                                ),
+                                                opacity=0.9,
+                                                selected=dict(marker=dict(opacity=1.0)),
+                                                unselected=dict(
+                                                    marker=dict(opacity=0.85)
+                                                ),
+                                                customdata=[
+                                                    [
+                                                        row["Tarikh Mula Str"],
+                                                        row["Tarikh Akhir Str"],
+                                                        row["Tempoh (Hari)"],
+                                                        w_str,
+                                                        row["Label Tarikh"],
+                                                        row["Label Tempoh"],
+                                                        row["Jumlah Kes"],
+                                                    ]
+                                                ],
+                                                hovertemplate="<br>".join(
+                                                    [
+                                                        "<b>Wabak No:</b> %{customdata[3]}",
+                                                        "<b>Jumlah Kes:</b> %{customdata[6]} Kes",
+                                                        "<b>Tarikh Mula:</b> %{customdata[0]}",
+                                                        "<b>%{customdata[4]}:</b> %{customdata[1]}",
+                                                        "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
+                                                        "<extra></extra>",
+                                                    ]
+                                                ),
+                                            )
+                                        )
+
+                                    for y_div in range(yr_start, yr_end + 1):
+                                        jan1_str = f"{y_div}-01-01"
+                                        fig_sejarah.add_vline(
+                                            x=jan1_str,
+                                            line_width=1,
+                                            line_dash="dot",
+                                            line_color="rgba(100, 116, 139, 0.45)",
+                                        )
+                                        fig_sejarah.add_annotation(
+                                            x=jan1_str,
+                                            y=1.02,
+                                            yref="paper",
+                                            text=str(y_div),
+                                            showarrow=False,
+                                            font=dict(
+                                                size=10,
+                                                color="rgba(71, 85, 105, 0.85)",
+                                            ),
+                                            xanchor="left",
+                                        )
+
+                                    fig_sejarah.update_xaxes(
+                                        type="date",
+                                        range=[
+                                            period_items[idx_s]["start_iso"],
+                                            period_items[idx_e]["end_iso"],
+                                        ],
+                                        tickmode="array",
+                                        tickvals=tick_vals,
+                                        ticktext=tick_texts,
+                                        tickangle=-90,
+                                        title="Tahun & Minggu Epid (Lebar Bar = Tempoh Hari Episod)",
+                                        rangeslider=dict(visible=False),
+                                    )
+                                    fig_sejarah.update_yaxes(
+                                        title="Jumlah Kes Terkumpul",
+                                        rangemode="tozero",
+                                    )
+                                    fig_sejarah.update_layout(
+                                        title=f"Garis Masa Kekerapan, Saiz & Tempoh Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
+                                        barmode="overlay",
+                                        height=450,
+                                        dragmode="pan",
+                                        paper_bgcolor="rgba(255,255,255,0.75)",
+                                        plot_bgcolor="rgba(255,255,255,0.55)",
+                                        legend=dict(
+                                            title="No. Wabak (Skrol ▲▼)",
+                                            orientation="v",
+                                            yanchor="top",
+                                            y=1.0,
+                                            xanchor="left",
+                                            x=1.01,
+                                            font=dict(size=11),
+                                            tracegroupgap=2,
+                                            itemsizing="constant",
+                                        ),
+                                    )
+
+                                    selected_data = st.plotly_chart(
+                                        fig_sejarah,
+                                        on_select="rerun",
+                                        selection_mode="points",
+                                        use_container_width=True,
+                                        key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
+                                    )
+
+                                    if len(x_labels) > 10:
+                                        period_items_json = json.dumps(period_items)
+                                        components.html(
+                                            f"""
+                                            <script>
+                                            (function() {{
+                                                const periodItems = {period_items_json};
+                                                const doc = window.parent.document;
+                                                const win = window.parent;
+                                                let rafId = null;
+
+                                                function findZoomSlider() {{
+                                                    const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
+                                                    for (const s of sliders) {{
+                                                        if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {{
+                                                            return s;
+                                                        }}
+                                                    }}
+                                                    return null;
+                                                }}
+
+                                                function findHistoryPlot(sliderEl) {{
+                                                    const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
+                                                    if (!charts.length) return null;
+                                                    if (!sliderEl) return charts[0];
+                                                    const sRect = sliderEl.getBoundingClientRect();
+                                                    let bestChart = charts[0];
+                                                    let minDist = Infinity;
+                                                    for (const c of charts) {{
+                                                        const cRect = c.getBoundingClientRect();
+                                                        const dist = Math.abs(cRect.top - sRect.bottom);
+                                                        if (cRect.top >= sRect.top - 20 && dist < minDist) {{
+                                                            minDist = dist;
+                                                            bestChart = c;
+                                                        }}
+                                                    }}
+                                                    return bestChart;
+                                                }}
+
+                                                function syncZoomLive() {{
+                                                    const sliderEl = findZoomSlider();
+                                                    if (!sliderEl || !periodItems.length) return;
+                                                    const thumbs = sliderEl.querySelectorAll('[role="slider"]');
+                                                    if (thumbs.length < 2) return;
+                                                    const v0 = parseInt(thumbs[0].getAttribute('aria-valuenow'), 10);
+                                                    const v1 = parseInt(thumbs[1].getAttribute('aria-valuenow'), 10);
+                                                    if (isNaN(v0) || isNaN(v1)) return;
+                                                    const minIdx = Math.max(0, Math.min(v0, v1));
+                                                    const maxIdx = Math.min(periodItems.length - 1, Math.max(v0, v1));
+                                                    const visibleCount = Math.max(maxIdx - minIdx + 1, 1);
+                                                    const tickStep = Math.max(1, Math.floor(visibleCount / 42));
+                                                    const tickVals = [];
+                                                    const tickTexts = [];
+                                                    for (let i = 0; i < periodItems.length; i += tickStep) {{
+                                                        tickVals.push(periodItems[i].start_iso);
+                                                        tickTexts.push(periodItems[i].label);
+                                                    }}
+                                                    const plotEl = findHistoryPlot(sliderEl);
+                                                    if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {{
+                                                        try {{
+                                                            win.Plotly.relayout(plotEl, {{
+                                                                'xaxis.range': [periodItems[minIdx].start_iso, periodItems[maxIdx].end_iso],
+                                                                'xaxis.tickvals': tickVals,
+                                                                'xaxis.ticktext': tickTexts,
+                                                                'xaxis.autorange': false
+                                                            }});
+                                                        }} catch (e) {{}}
+                                                    }}
+                                                }}
+
+                                                function bindRealtime() {{
+                                                    const sliderEl = findZoomSlider();
+                                                    if (!sliderEl || sliderEl.dataset.rtBound === '1') return;
+                                                    sliderEl.dataset.rtBound = '1';
+
+                                                    const triggerUpdate = () => {{
+                                                        if (rafId) cancelAnimationFrame(rafId);
+                                                        rafId = requestAnimationFrame(syncZoomLive);
+                                                    }};
+
+                                                    const observer = new MutationObserver(triggerUpdate);
+                                                    const thumbs = sliderEl.querySelectorAll('[role="slider"]');
+                                                    thumbs.forEach(t => {{
+                                                        observer.observe(t, {{ attributes: true, attributeFilter: ['aria-valuenow'] }});
+                                                    }});
+                                                    sliderEl.addEventListener('pointermove', triggerUpdate, {{ passive: true }});
+                                                    sliderEl.addEventListener('touchmove', triggerUpdate, {{ passive: true }});
+                                                    syncZoomLive();
+                                                }}
+
+                                                bindRealtime();
+                                                const retryTimer = setInterval(bindRealtime, 400);
+                                                setTimeout(() => clearInterval(retryTimer), 6000);
+                                            }})();
+                                            </script>
+                                            """,
+                                            height=0,
+                                        )
+
+                                    if selected_data and selected_data.selection.points:
+                                        pt = selected_data.selection.points[0]
+                                        cdata = pt.get("customdata")
+                                        if cdata and len(cdata) > 3:
+                                            clicked_w_no_str = str(cdata[3])
+                                        elif "curve_number" in pt:
+                                            sorted_df_plot = df_plot.sort_values(
+                                                by=["Tarikh Mula", "Wabak_Str"]
+                                            ).reset_index(drop=True)
+                                            clicked_w_no_str = str(
+                                                sorted_df_plot.iloc[pt["curve_number"]][
+                                                    "Wabak_Str"
+                                                ]
+                                            )
+                                        else:
+                                            clicked_w_no_str = None
+
+                                        if clicked_w_no_str:
+                                            target_w_str = (
+                                                f"Wabak No: {clicked_w_no_str}"
+                                            )
+                                            if (
+                                                st.session_state.selected_wabak
+                                                != target_w_str
+                                            ):
+                                                st.session_state.selected_wabak = (
+                                                    target_w_str
+                                                )
+                                                st.rerun()
+                                else:
+                                    st.info(
+                                        f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
+                                    )
+
+                                with st.expander(
+                                    f"📋 Senarai Ringkas Semua Episod Wabak di {pilihan_lokaliti} ({len(df_plot_all)} Episod)"
+                                ):
+                                    df_ep_table = df_plot_all.sort_values(
+                                        by="Tarikh Mula", ascending=False
+                                    )[
+                                        [
+                                            "Wabak_Str",
+                                            "Minggu_Label",
+                                            "Tarikh Mula Str",
+                                            "Tarikh Akhir Str",
+                                            "Tempoh (Hari)",
+                                            "Jumlah Kes",
+                                            "Status",
+                                        ]
+                                    ].rename(
+                                        columns={
+                                            "Wabak_Str": "No. Wabak",
+                                            "Minggu_Label": "Minggu Mula",
+                                            "Tarikh Mula Str": "Tarikh Mula",
+                                            "Tarikh Akhir Str": "Tarikh Tamat / Anggaran",
+                                        }
+                                    )
+                                    st.dataframe(
+                                        df_ep_table,
+                                        use_container_width=True,
+                                        hide_index=True,
+                                    )
+
+                                if (
+                                    st.session_state.selected_wabak
+                                    and "Wabak No:" in st.session_state.selected_wabak
+                                ):
+                                    current_w_str = (
+                                        st.session_state.selected_wabak.replace(
+                                            "Wabak No: ", ""
+                                        ).strip()
+                                    )
+                                    if current_w_str in color_map:
+                                        bg_hex = color_map[current_w_str]
+                                        st.markdown(
+                                            f"""
+                                        <style>
+                                        .stApp {{
+                                            background-color: {bg_hex}1A !important;
+                                        }}
+                                        </style>
+                                        """,
+                                            unsafe_allow_html=True,
+                                        )
+
+                    # --- 4 KAD METRIK LOKALITI LIQUID-GLASS (DISERAGAMKAN + MOMENTUM 7-HARI) ---
+                    kadar_velocity = jumlah_kes / tempoh_wabak_hari
+                    t_ref_lok = (
                         df_filter["Tkh Notifikasi"].fillna(df_filter["Tarikh Daftar"])
                         if "Tkh Notifikasi" in df_filter.columns
                         else df_filter["Tarikh Daftar"]
                     )
-                    tarikh_kes = t_ser_f.dropna().sort_values().tolist()
-
-                    if len(tarikh_kes) >= 2:
-                        tarikh_mula = tarikh_kes[1]
-                    elif len(tarikh_kes) == 1:
-                        tarikh_mula = tarikh_kes[0]
-                    else:
-                        tarikh_mula = today_my
-
-                    tarikh_mula_str = tarikh_mula.strftime("%d-%m-%Y")
-
-                    if "Tamat" in status_wabak_semasa:
-                        tarikh_akhir = tarikh_kes[-1] + pd.Timedelta(days=14)
-                    else:
-                        tarikh_akhir = today_my
-
-                    tempoh_wabak_hari = max((tarikh_akhir - tarikh_mula).days, 1)
-
-                jumlah_kes = len(df_filter)
-                pentadbir_lokaliti = (
-                    df_filter["Pihak Pentadbir Lokaliti"].mode()[0]
-                    if not df_filter["Pihak Pentadbir Lokaliti"].empty
-                    else "Tidak Dinyatakan"
-                )
-                rekod_episode_lokaliti = episode_map.get(pilihan_lokaliti, 0)
-
-                st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
-                st.subheader(
-                    f"Wabak: {pilihan_kategori} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}"
-                )
-                st.markdown(
-                    f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*"
-                )
-
-                # --- SEMAKAN KESIAPSIAGAAN KAWALAN VEKTOR LAPANGAN (PTP, SRT, ULV) ---
-                ptp_dt = (
-                    df_filter["Tkh PTP Aktiviti Pertama"].dropna().min()
-                    if "Tkh PTP Aktiviti Pertama" in df_filter.columns
-                    else pd.NaT
-                )
-                srt_dt = (
-                    df_filter["Tkh SRT Aktiviti Pertama"].dropna().min()
-                    if "Tkh SRT Aktiviti Pertama" in df_filter.columns
-                    else pd.NaT
-                )
-                ulv_dt = (
-                    df_filter["Tkh ULV Aktiviti Pertama"].dropna().min()
-                    if "Tkh ULV Aktiviti Pertama" in df_filter.columns
-                    else pd.NaT
-                )
-
-                ptp_badge = (
-                    f'<span class="ops-pill-ok">✅ PTP (Larviciding): {fmt_date_short(ptp_dt)}</span>'
-                    if pd.notna(ptp_dt)
-                    else '<span class="ops-pill-miss">⚠️ PTP (Larviciding): BELUM DIREKOD</span>'
-                )
-                srt_badge = (
-                    f'<span class="ops-pill-ok">✅ SRT (Fogging): {fmt_date_short(srt_dt)}</span>'
-                    if pd.notna(srt_dt)
-                    else '<span class="ops-pill-miss">⚠️ SRT (Fogging): BELUM DIREKOD</span>'
-                )
-                ulv_badge = (
-                    f'<span class="ops-pill-ok">✅ ULV: {fmt_date_short(ulv_dt)}</span>'
-                    if pd.notna(ulv_dt)
-                    else '<span class="ops-pill-miss">ℹ️ ULV: Tiada / Belum Perlu</span>'
-                )
-                st.markdown(
-                    f'<div style="display:flex; flex-wrap:wrap; gap:10px; margin: 6px 0 12px 0;">{ptp_badge}{srt_badge}{ulv_badge}</div>',
-                    unsafe_allow_html=True,
-                )
-
-                if (
-                    "Tamat" not in status_wabak_semasa
-                    and "Satu Kes" not in status_wabak_semasa
-                    and (pd.isna(ptp_dt) or pd.isna(srt_dt))
-                ):
-                    missing_acts = []
-                    if pd.isna(ptp_dt):
-                        missing_acts.append("PTP (Pemusnahan Tempat Pembiakan)")
-                    if pd.isna(srt_dt):
-                        missing_acts.append("SRT (Semburan Ruang Termal)")
-                    st.warning(
-                        f"🚨 **Amaran Jurang Kawalan Lapangan:** Wabak aktif ini masih belum merekodkan tarikh aktiviti pertama bagi **{', '.join(missing_acts)}**. Tindakan segera diperlukan untuk menyekat rantaian penularan."
+                    lok_c7 = int(
+                        (
+                            (t_ref_lok >= (today_my - pd.Timedelta(days=6)))
+                            & (t_ref_lok <= today_my)
+                        ).sum()
+                    )
+                    lok_prev7 = int(
+                        (
+                            (t_ref_lok >= (today_my - pd.Timedelta(days=13)))
+                            & (t_ref_lok <= (today_my - pd.Timedelta(days=7)))
+                        ).sum()
+                    )
+                    lok_mom_pct = ((lok_c7 - lok_prev7) / max(lok_prev7, 1)) * 100
+                    lok_mom_disp = (
+                        f"+{lok_c7} kes baharu"
+                        if (lok_prev7 == 0 and lok_c7 > 0)
+                        else f"{lok_mom_pct:+.1f}%"
                     )
 
-                # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (LEBAR BAR MENGIKUT TEMPOH HARI) ---
-                if rekod_episode_lokaliti > 0:
-                    df_wabak_lok = df_lok[df_lok["Jenis Kes"] == "Wabak"].copy()
+                    safe_lokaliti = html.escape(str(pilihan_lokaliti))
+                    safe_kategori = html.escape(str(pilihan_kategori))
 
-                    if not df_wabak_lok.empty:
-                        wabak_summary = []
-
-                        df_wabak_lok["Wabak_Str"] = df_wabak_lok["Wabak No"].apply(
-                            format_wabak_no
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Jumlah Kes",
+                                value_str=str(jumlah_kes),
+                                sub_str=f"Rekod Sejarah: <b>{rekod_episode_lokaliti} episod</b>",
+                                tooltip_title="📋 Jumlah Kes Terkumpul",
+                                relevance_html="Jumlah keseluruhan kes disahkan yang didaftarkan di bawah episod wabak atau kategori yang dipilih.",
+                                formula_html="Count(Notifikasi No) bagi pilihan semasa",
+                                current_calc_html=f"<b>Lokaliti ({safe_lokaliti}):</b> <b>{jumlah_kes} kes</b> direkodkan bagi {safe_kategori}.",
+                            ),
+                            unsafe_allow_html=True,
                         )
-                        unique_wabaks_str = sorted(
-                            df_wabak_lok["Wabak_Str"].unique(),
-                            key=lambda x: float(x)
-                            if x.replace(".", "", 1).isdigit()
-                            else 0,
+                    with col2:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Tempoh Wabak (Hari)",
+                                value_str=f"{tempoh_wabak_hari} hari",
+                                sub_str=f"Mula (Notif Kes ke-2): <b>{tarikh_mula_str}</b>",
+                                tooltip_title="⏳ Tempoh Penularan Wabak",
+                                relevance_html="Tempoh masa wabak berlangsung bermula dari tarikh notifikasi kes ke-2 (pencetus rasmi wabak) sehingga tarikh semasa atau tarikh tamat.",
+                                formula_html="Tarikh Akhir / Semasa − Tkh Notifikasi Kes ke-2",
+                                current_calc_html=f"<b>Pengiraan Semasa:</b> Bermula <b>{tarikh_mula_str}</b> = <b>{tempoh_wabak_hari} hari</b>.",
+                            ),
+                            unsafe_allow_html=True,
                         )
-                        theme_colors = (
-                            plotly.colors.qualitative.Plotly
-                            + plotly.colors.qualitative.D3
-                            + plotly.colors.qualitative.Set2
+                    with col3:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Velocity (Kes/Hari)",
+                                value_str=f"{kadar_velocity:.2f}",
+                                sub_str="Purata kes baharu setiap hari",
+                                tooltip_title="🚀 Velocity (Kes/Hari)",
+                                relevance_html="Mengukur kelajuan penularan wabak (purata kes baharu sehari). Nilai tinggi (> 1.0 kes/hari) menandakan penularan agresif yang memerlukan kawalan kecemasan segera.",
+                                formula_html="Jumlah Kes ÷ Tempoh Wabak (Hari)",
+                                current_calc_html=f"<b>Pengiraan Semasa ({safe_lokaliti} — {safe_kategori}):</b><br>{jumlah_kes} kes ÷ {tempoh_wabak_hari} hari = <b>{kadar_velocity:.2f} kes/hari</b>",
+                            ),
+                            unsafe_allow_html=True,
                         )
-                        color_map = {
-                            w: theme_colors[i % len(theme_colors)]
-                            for i, w in enumerate(unique_wabaks_str)
-                        }
+                    with col4:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Momentum 7-Hari",
+                                value_str=lok_mom_disp,
+                                sub_str=f"7H Kini: <b>{lok_c7}</b> vs 7H Lalu: <b>{lok_prev7}</b>",
+                                tooltip_title="📈 Momentum 7-Hari (7-Day Acceleration)",
+                                relevance_html="Mengukur perubahan kes baharu dalam 7 hari terakhir berbanding 7 hari sebelumnya untuk menilai sama ada penularan di lokaliti ini sedang memecut atau mereda.",
+                                formula_html="((Kes<sub>7H Kini</sub> − Kes<sub>7H Lalu</sub>) ÷ max(Kes<sub>7H Lalu</sub>, 1)) × 100",
+                                current_calc_html=f"<b>Pengiraan Semasa ({safe_lokaliti}):</b><br>7H Terkini = <b>{lok_c7} kes</b> vs 7H Lalu = <b>{lok_prev7} kes</b> (<b>{lok_mom_disp}</b>)",
+                                accent_color="#e11d48"
+                                if lok_c7 > lok_prev7
+                                else "#059669",
+                            ),
+                            unsafe_allow_html=True,
+                        )
 
-                        for w_no_str, group in df_wabak_lok.groupby("Wabak_Str"):
-                            j_kes = len(group)
-                            t_ser_g = (
-                                group["Tkh Notifikasi"].fillna(group["Tarikh Daftar"])
-                                if "Tkh Notifikasi" in group.columns
-                                else group["Tarikh Daftar"]
+                    st.markdown("---")
+
+                    minggu_puncak_txt = "Tiada"
+                    kes_puncak = 0
+                    status_arah_txt = "tidak dapat dipastikan"
+
+                    max_val_specific = -1
+                    max_b_specific = "Tidak Dinyatakan"
+                    max_t_specific = "Tidak Dinyatakan"
+                    blok_masalah_txt = "Tidak Dinyatakan"
+                    tingkat_masalah_txt = "Tidak Dinyatakan"
+
+                    # --- KELUK EPIDEMIK DWI-SIRI (MINGGU ONSET VS MINGGU DAFTAR) ---
+                    st.subheader(
+                        f"📈 Keluk Epidemik Dwi-Siri: Minggu Onset vs Minggu Daftar ({pilihan_kategori})"
+                    )
+                    kes_epid = (
+                        df_filter["Epid Minggu (Tkh Daftar)"]
+                        .value_counts()
+                        .sort_index()
+                    )
+                    kes_onset_epid = (
+                        df_filter["Epid Minggu (Tkh Onset)"]
+                        .dropna()
+                        .value_counts()
+                        .sort_index()
+                        if "Epid Minggu (Tkh Onset)" in df_filter.columns
+                        else pd.Series(dtype=int)
+                    )
+
+                    if not kes_epid.empty:
+                        all_wks = sorted(
+                            list(
+                                set(kes_epid.index.dropna().astype(int)).union(
+                                    set(kes_onset_epid.index.dropna().astype(int))
+                                )
                             )
-                            t_kes = t_ser_g.dropna().sort_values().tolist()
+                        )
+                        df_dual_ep = pd.DataFrame(
+                            {
+                                "Minggu Epid": [f"ME {int(w):02d}" for w in all_wks],
+                                "Kes Mengikut Minggu Daftar": [
+                                    int(kes_epid.get(w, 0)) for w in all_wks
+                                ],
+                                "Kes Mengikut Minggu Onset (Gejala)": [
+                                    int(kes_onset_epid.get(w, 0)) for w in all_wks
+                                ],
+                            }
+                        )
 
-                            if len(t_kes) >= 2:
-                                t_m = t_kes[1]
-                            elif len(t_kes) == 1:
-                                t_m = t_kes[0]
-                            else:
-                                t_m = today_my
-
-                            status_w = str(group["Wabak Status"].iloc[0])
-                            t_last = max(t_kes) if t_kes else t_m
-
-                            if "Tamat" in status_w:
-                                t_a = t_last
-                                t_a_str = t_a.strftime("%d-%m-%Y")
-                                tempoh = max((t_a - t_m).days, 1)
-                                lbl_tarikh = "Tarikh Notif Terakhir"
-                                lbl_tempoh = "Tempoh Wabak"
-                            else:
-                                t_anggaran_tamat = t_last + pd.Timedelta(days=14)
-                                t_a_str = t_anggaran_tamat.strftime("%d-%m-%Y")
-                                tempoh = max((today_my - t_m).days, 1)
-                                lbl_tarikh = "Anggaran Tarikh Tamat"
-                                lbl_tempoh = "Tempoh (Sehingga Kini)"
-
-                            width_ms = tempoh * MS_PER_DAY
-                            center_dt = t_m + pd.Timedelta(milliseconds=width_ms / 2)
-                            end_dt_visual = t_m + pd.Timedelta(days=tempoh)
-
-                            m_val = group["Epid Minggu (Tkh Daftar)"].iloc[0]
-                            y_val = (
-                                int(group["Epid Tahun (Tkh Daftar)"].iloc[0])
-                                if "Epid Tahun (Tkh Daftar)" in group.columns
-                                and pd.notnull(group["Epid Tahun (Tkh Daftar)"].iloc[0])
-                                else t_m.year
+                        fig_epid = go.Figure()
+                        fig_epid.add_trace(
+                            go.Bar(
+                                x=df_dual_ep["Minggu Epid"],
+                                y=df_dual_ep["Kes Mengikut Minggu Daftar"],
+                                name="Minggu Daftar",
+                                marker_color="rgba(244, 63, 94, 0.78)",
+                                text=df_dual_ep["Kes Mengikut Minggu Daftar"],
+                                textposition="outside",
                             )
-                            m_label = f"{y_val}-ME{int(m_val):02d}"
+                        )
+                        fig_epid.add_trace(
+                            go.Scatter(
+                                x=df_dual_ep["Minggu Epid"],
+                                y=df_dual_ep["Kes Mengikut Minggu Onset (Gejala)"],
+                                name="Minggu Onset (Mula Gejala)",
+                                mode="lines+markers",
+                                line=dict(color="#0284c7", width=3),
+                                marker=dict(size=8, symbol="circle"),
+                            )
+                        )
+                        fig_epid.update_xaxes(type="category")
+                        fig_epid.update_layout(
+                            xaxis_title="Minggu Epid",
+                            yaxis_title="Jumlah Kes",
+                            height=360,
+                            paper_bgcolor="rgba(255,255,255,0.75)",
+                            plot_bgcolor="rgba(255,255,255,0.55)",
+                            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+                        )
 
-                            wabak_summary.append(
-                                {
-                                    "Wabak_Str": w_no_str,
-                                    "Tahun": y_val,
-                                    "Jumlah Kes": j_kes,
-                                    "Tarikh Mula": t_m,
-                                    "End_Dt_Visual": end_dt_visual,
-                                    "Center_Dt": center_dt,
-                                    "Width_Ms": width_ms,
-                                    "Tarikh Mula Str": t_m.strftime("%d-%m-%Y"),
-                                    "Tarikh Akhir Str": t_a_str,
-                                    "Tempoh (Hari)": tempoh,
-                                    "Status": status_w,
-                                    "Minggu_Label": m_label,
-                                    "Label Tarikh": lbl_tarikh,
-                                    "Label Tempoh": lbl_tempoh,
-                                }
+                        st.plotly_chart(
+                            fig_epid, use_container_width=True, key="graf_minggu_epid"
+                        )
+
+                        minggu_puncak_txt = str(int(kes_epid.idxmax()))
+                        kes_puncak = int(kes_epid.max())
+                        purata_mingguan = kes_epid.mean()
+
+                        ulasan_epid = "**Analisis Terperinci Keluk Epidemik:**\n"
+                        ulasan_epid += f"- Secara purata, terdapat **{purata_mingguan:.1f} kes** didaftarkan setiap minggu.\n"
+                        ulasan_epid += f"- Minggu puncak pendaftaran adalah pada **Minggu Epid {minggu_puncak_txt}** (**{kes_puncak} kes**).\n"
+
+                        if len(kes_epid) >= 2:
+                            m_kini = kes_epid.iloc[-1]
+                            m_lalu = kes_epid.iloc[-2]
+                            perbezaan = m_kini - m_lalu
+                            status_arah_txt = (
+                                "meningkat"
+                                if perbezaan > 0
+                                else "menurun"
+                                if perbezaan < 0
+                                else "mendatar"
+                            )
+                            ulasan_epid += f"- Perbandingan minggu daftar terkini menunjukkan trend **{status_arah_txt}** ({m_kini} kes vs {m_lalu} kes minggu sebelumnya)."
+                        if not kes_onset_epid.empty:
+                            last_onset_wk = int(kes_onset_epid.index.max())
+                            last_onset_cnt = int(kes_onset_epid.iloc[-1])
+                            ulasan_epid += f"\n- **Petunjuk Penularan Sebenar (Onset):** Episod gejala (onset) terbaharu dikesan pada **Minggu Epid {last_onset_wk}** ({last_onset_cnt} kes)."
+                        st.info(ulasan_epid)
+
+                    st.markdown("---")
+
+                    # --- TABURAN BLOK & TINGKAT + PERINCIAN ---
+                    st.subheader("🏢 Taburan Kes Mengikut Blok dan Tingkat")
+                    df_filter[["Blok", "Tingkat"]] = df_filter["No Rumah"].apply(
+                        parse_address
+                    )
+
+                    if (
+                        len(df_filter["Blok"].unique()) > 1
+                        or "TIDAK PASTI" not in df_filter["Blok"].values
+                    ):
+                        crosstab_bt = pd.crosstab(
+                            df_filter["Tingkat"],
+                            df_filter["Blok"],
+                            margins=True,
+                            margins_name="JUMLAH",
+                        )
+
+                        def pad_for_sort(s):
+                            return re.sub(r"\d+", lambda m: m.group(0).zfill(5), str(s))
+
+                        tingkat_list = list(crosstab_bt.index[:-1])
+                        blok_list = list(crosstab_bt.columns[:-1])
+
+                        tingkat_sorted = sorted(
+                            tingkat_list, key=pad_for_sort, reverse=True
+                        )
+                        blok_sorted = sorted(blok_list, key=pad_for_sort)
+
+                        crosstab_bt = crosstab_bt.loc[
+                            tingkat_sorted + ["JUMLAH"], blok_sorted + ["JUMLAH"]
+                        ]
+
+                        idx_slice = pd.IndexSlice[
+                            crosstab_bt.index[:-1], crosstab_bt.columns[:-1]
+                        ]
+                        styled_ct = crosstab_bt.style.background_gradient(
+                            cmap="Reds", subset=idx_slice
+                        )
+                        st.markdown(styled_ct.to_html(), unsafe_allow_html=True)
+
+                        st.markdown("<br>", unsafe_allow_html=True)
+
+                        for t in crosstab_bt.index[:-1]:
+                            for b in crosstab_bt.columns[:-1]:
+                                if crosstab_bt.loc[t, b] > max_val_specific:
+                                    max_val_specific = crosstab_bt.loc[t, b]
+                                    max_b_specific = str(b)
+                                    max_t_specific = str(t)
+
+                        blok_totals = crosstab_bt.loc["JUMLAH"][:-1]
+                        if not blok_totals.empty and blok_totals.max() > 0:
+                            blok_masalah_txt = str(blok_totals.idxmax())
+
+                        tingkat_totals = crosstab_bt.iloc[:-1]["JUMLAH"]
+                        if not tingkat_totals.empty and tingkat_totals.max() > 0:
+                            tingkat_masalah_txt = str(tingkat_totals.idxmax())
+
+                        if max_val_specific > 0:
+                            st.warning(
+                                f"⚠️ **Sarang Penularan Spesifik:** Takungan vektor berjangkit (hotspot selular) dipercayai tertumpu secara spesifik di kediaman **Blok {max_b_specific}, Tingkat {max_t_specific}** yang menyumbang **{max_val_specific} kes**. Operasi pemusnahan sumber (S&D) dan semburan ruang disarankan untuk difokuskan bermula dari struktur radius ini terlebih dahulu sebelum diperluas ke tempat lain."
                             )
 
-                        df_plot_all = pd.DataFrame(wabak_summary)
+                        st.markdown(
+                            "##### **Perincian Struktur (Keseluruhan Blok & Tingkat):**"
+                        )
 
-                        if not df_plot_all.empty:
-                            global_min_yr = (
-                                int(df["Tarikh Daftar"].dt.year.min())
-                                if df["Tarikh Daftar"].notna().any()
-                                else int(df_plot_all["Tahun"].min())
-                            )
-                            global_max_yr = (
-                                int(df["Tarikh Daftar"].dt.year.max())
-                                if df["Tarikh Daftar"].notna().any()
-                                else int(df_plot_all["Tahun"].max())
-                            )
-                            min_yr_plot = min(
-                                global_min_yr, int(df_plot_all["Tahun"].min())
-                            )
-                            max_yr_plot = max(
-                                global_max_yr, int(df_plot_all["Tahun"].max())
-                            )
+                        blok_group_raw = (
+                            df_filter[df_filter["Blok"] != "TIDAK PASTI"]
+                            .groupby("Blok")
+                            .size()
+                        )
 
-                            yr_state_key = f"yr_slider_{pilihan_lokaliti}"
-                            if yr_state_key not in st.session_state:
-                                st.session_state[yr_state_key] = (
-                                    min_yr_plot,
-                                    max_yr_plot,
+                        if not blok_group_raw.empty:
+                            sorted_blok_keys = sorted(
+                                blok_group_raw.index, key=pad_for_sort
+                            )
+                            for blok_name in sorted_blok_keys:
+                                b_count = blok_group_raw[blok_name]
+                                b_pct = (b_count / jumlah_kes) * 100
+                                st.markdown(
+                                    f"**🔹 Blok {blok_name}: {b_count} kes ({b_pct:.1f}% dari keseluruhan wabak)**"
                                 )
 
-                            cur_s, cur_e = st.session_state[yr_state_key]
-                            if (
-                                cur_s < min_yr_plot
-                                or cur_e > max_yr_plot
-                                or cur_s > cur_e
-                            ):
-                                st.session_state[yr_state_key] = (
-                                    min_yr_plot,
-                                    max_yr_plot,
-                                )
-
-                            if min_yr_plot < max_yr_plot:
-                                st.markdown("**📅 Kawalan Paparan Tahun Graf:**")
-                                avail_yrs = list(range(min_yr_plot, max_yr_plot + 1))
-                                btn_cols = st.columns(len(avail_yrs) + 1)
-                                with btn_cols[0]:
-                                    st.button(
-                                        f"Semua ({min_yr_plot}–{max_yr_plot})",
-                                        key=f"btn_all_yr_{pilihan_lokaliti}",
-                                        on_click=set_chart_year_range,
-                                        args=(yr_state_key, min_yr_plot, max_yr_plot),
-                                        use_container_width=True,
-                                    )
-                                for idx_y, y_opt in enumerate(avail_yrs):
-                                    with btn_cols[idx_y + 1]:
-                                        st.button(
-                                            f"{y_opt}",
-                                            key=f"btn_yr_{y_opt}_{pilihan_lokaliti}",
-                                            on_click=set_chart_year_range,
-                                            args=(yr_state_key, y_opt, y_opt),
-                                            use_container_width=True,
-                                        )
-
-                                yr_start, yr_end = st.slider(
-                                    "Seret Julat Tahun (2021 hingga 2026):",
-                                    min_value=min_yr_plot,
-                                    max_value=max_yr_plot,
-                                    key=yr_state_key,
-                                )
-                            else:
-                                yr_start, yr_end = min_yr_plot, max_yr_plot
-
-                            df_plot = df_plot_all[
-                                (df_plot_all["Tahun"] >= yr_start)
-                                & (df_plot_all["Tahun"] <= yr_end)
-                            ].copy()
-
-                            start_date_axis = pd.Timestamp(
-                                year=yr_start, month=1, day=1
-                            )
-                            if (
-                                yr_end == global_max_yr
-                                and df["Tarikh Daftar"].notna().any()
-                            ):
-                                end_date_axis = max(
-                                    df["Tarikh Daftar"].max(),
-                                    df_plot_all["End_Dt_Visual"].max(),
-                                ) + pd.Timedelta(days=7)
-                            else:
-                                end_date_axis = pd.Timestamp(
-                                    year=yr_end, month=12, day=31
-                                )
-
-                            all_periods = pd.period_range(
-                                start=start_date_axis, end=end_date_axis, freq="W-SAT"
-                            )
-
-                            if not df_plot.empty:
-                                df_plot["Period"] = df_plot[
-                                    "Tarikh Mula"
-                                ].dt.to_period("W-SAT")
-                                period_to_label = (
-                                    df_plot.drop_duplicates(subset=["Period"])
-                                    .set_index("Period")["Minggu_Label"]
-                                    .to_dict()
-                                )
-                            else:
-                                period_to_label = {}
-
-                            seen_labels = set()
-                            period_items = []
-                            for p in all_periods:
-                                lbl = (
-                                    str(period_to_label[p])
-                                    if (
-                                        p in period_to_label
-                                        and pd.notnull(period_to_label[p])
-                                    )
-                                    else f"{p.end_time.year}-ME{p.week:02d}"
-                                )
-                                if lbl not in seen_labels:
-                                    seen_labels.add(lbl)
-                                    period_items.append(
-                                        {
-                                            "label": lbl,
-                                            "start_ms": int(
-                                                p.start_time.timestamp() * 1000
-                                            ),
-                                            "end_ms": int(
-                                                (
-                                                    p.end_time
-                                                    + pd.Timedelta(seconds=1)
-                                                ).timestamp()
-                                                * 1000
-                                            ),
-                                            "start_iso": p.start_time.strftime(
-                                                "%Y-%m-%d"
-                                            ),
-                                            "end_iso": (
-                                                p.end_time + pd.Timedelta(days=1)
-                                            ).strftime("%Y-%m-%d"),
-                                        }
-                                    )
-
-                            x_labels = [item["label"] for item in period_items]
-
-                            tajuk_tempoh = (
-                                f"Tahun {yr_start}"
-                                if yr_start == yr_end
-                                else f"Tahun {yr_start} – {yr_end}"
-                            )
-
-                            if not df_plot.empty:
-                                zoom_label = "🔍 Zoom / Skrol Garis Masa Minggu Epid (Gerakkan penanda kiri atau kanan):"
-                                if len(x_labels) > 10:
-                                    wk_start, wk_end = st.select_slider(
-                                        zoom_label,
-                                        options=x_labels,
-                                        value=(x_labels[0], x_labels[-1]),
-                                        key=f"wk_zoom_{pilihan_lokaliti}_{yr_start}_{yr_end}",
-                                    )
-                                    idx_s = x_labels.index(wk_start)
-                                    idx_e = x_labels.index(wk_end)
-                                else:
-                                    idx_s = 0
-                                    idx_e = len(x_labels) - 1
-
-                                visible_count = max(idx_e - idx_s + 1, 1)
-                                tick_step = max(1, visible_count // 42)
-                                tick_vals = [
-                                    period_items[i]["start_iso"]
-                                    for i in range(0, len(period_items), tick_step)
+                                df_blok_ini = df_filter[
+                                    (df_filter["Blok"] == blok_name)
+                                    & (df_filter["Tingkat"] != "TIDAK PASTI")
                                 ]
-                                tick_texts = [
-                                    period_items[i]["label"]
-                                    for i in range(0, len(period_items), tick_step)
-                                ]
+                                if not df_blok_ini.empty:
+                                    tingkat_group_raw = df_blok_ini.groupby(
+                                        "Tingkat"
+                                    ).size()
+                                    sorted_tingkat_keys = sorted(
+                                        tingkat_group_raw.index,
+                                        key=pad_for_sort,
+                                        reverse=True,
+                                    )
 
-                                fig_sejarah = go.Figure()
-                                for _, row in df_plot.sort_values(
-                                    by=["Tarikh Mula", "Wabak_Str"]
-                                ).iterrows():
-                                    w_str = row["Wabak_Str"]
-                                    fig_sejarah.add_trace(
-                                        go.Bar(
-                                            x=[row["Center_Dt"]],
-                                            y=[row["Jumlah Kes"]],
-                                            width=[row["Width_Ms"]],
-                                            name=w_str,
-                                            marker=dict(
-                                                color=color_map[w_str],
-                                                line=dict(
-                                                    width=0.8, color="rgba(0,0,0,0.55)"
-                                                ),
-                                            ),
-                                            opacity=0.9,
-                                            selected=dict(marker=dict(opacity=1.0)),
-                                            unselected=dict(marker=dict(opacity=0.85)),
-                                            customdata=[
-                                                [
-                                                    row["Tarikh Mula Str"],
-                                                    row["Tarikh Akhir Str"],
-                                                    row["Tempoh (Hari)"],
-                                                    w_str,
-                                                    row["Label Tarikh"],
-                                                    row["Label Tempoh"],
-                                                    row["Jumlah Kes"],
-                                                ]
-                                            ],
-                                            hovertemplate="<br>".join(
-                                                [
-                                                    "<b>Wabak No:</b> %{customdata[3]}",
-                                                    "<b>Jumlah Kes:</b> %{customdata[6]} Kes",
-                                                    "<b>Tarikh Mula:</b> %{customdata[0]}",
-                                                    "<b>%{customdata[4]}:</b> %{customdata[1]}",
-                                                    "<b>%{customdata[5]}:</b> %{customdata[2]} Hari",
-                                                    "<extra></extra>",
-                                                ]
-                                            ),
+                                    for tk_name in sorted_tingkat_keys:
+                                        t_count = tingkat_group_raw[tk_name]
+                                        t_pct_overall = (t_count / jumlah_kes) * 100
+                                        st.write(
+                                            f"    🔸 Tingkat {tk_name}: {t_count} kes ({t_pct_overall:.1f}%)"
                                         )
-                                    )
+                        else:
+                            st.write("Maklumat blok tidak cukup berstruktur.")
+                    else:
+                        st.info(
+                            "Tiada struktur blok/tingkat yang jelas ditemui pada 'No Rumah'."
+                        )
 
-                                # Penanda sempadan 1 Januari setiap tahun supaya kitaran bermusim jelas dilihat
-                                for y_div in range(yr_start, yr_end + 1):
-                                    jan1_str = f"{y_div}-01-01"
-                                    fig_sejarah.add_vline(
-                                        x=jan1_str,
-                                        line_width=1,
-                                        line_dash="dot",
-                                        line_color="rgba(100, 116, 139, 0.45)",
-                                    )
-                                    fig_sejarah.add_annotation(
-                                        x=jan1_str,
-                                        y=1.02,
-                                        yref="paper",
-                                        text=str(y_div),
-                                        showarrow=False,
-                                        font=dict(
-                                            size=10, color="rgba(71, 85, 105, 0.85)"
-                                        ),
-                                        xanchor="left",
-                                    )
+                    st.markdown("---")
 
-                                fig_sejarah.update_xaxes(
-                                    type="date",
-                                    range=[
-                                        period_items[idx_s]["start_iso"],
-                                        period_items[idx_e]["end_iso"],
-                                    ],
-                                    tickmode="array",
-                                    tickvals=tick_vals,
-                                    ticktext=tick_texts,
-                                    tickangle=-90,
-                                    title="Tahun & Minggu Epid (Lebar Bar = Tempoh Hari Episod)",
-                                    rangeslider=dict(visible=False),
-                                )
-                                fig_sejarah.update_yaxes(
-                                    title="Jumlah Kes Terkumpul",
-                                    rangemode="tozero",
-                                )
-                                fig_sejarah.update_layout(
-                                    title=f"Garis Masa Kekerapan, Saiz & Tempoh Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
-                                    barmode="overlay",
-                                    height=450,
-                                    dragmode="pan",
-                                    paper_bgcolor="rgba(255,255,255,0.75)",
-                                    plot_bgcolor="rgba(255,255,255,0.55)",
-                                    legend=dict(
-                                        title="No. Wabak (Skrol ▲▼)",
-                                        orientation="v",
-                                        yanchor="top",
-                                        y=1.0,
-                                        xanchor="left",
-                                        x=1.01,
-                                        font=dict(size=11),
-                                        tracegroupgap=2,
-                                        itemsizing="constant",
-                                    ),
-                                )
+                    # --- 5 KES TERKINI DENGAN LOKASI (BLOK & TINGKAT) ---
+                    st.subheader("📍 Analisis 5 Kes Terkini")
 
-                                selected_data = st.plotly_chart(
-                                    fig_sejarah,
-                                    on_select="rerun",
-                                    selection_mode="points",
-                                    use_container_width=True,
-                                    key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
-                                )
-
-                                if len(x_labels) > 10:
-                                    period_items_json = json.dumps(period_items)
-                                    components.html(
-                                        f"""
-                                        <script>
-                                        (function() {{
-                                            const periodItems = {period_items_json};
-                                            const doc = window.parent.document;
-                                            const win = window.parent;
-                                            let rafId = null;
-
-                                            function findZoomSlider() {{
-                                                const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
-                                                for (const s of sliders) {{
-                                                    if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {{
-                                                        return s;
-                                                    }}
-                                                }}
-                                                return null;
-                                            }}
-
-                                            function findHistoryPlot(sliderEl) {{
-                                                const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
-                                                if (!charts.length) return null;
-                                                if (!sliderEl) return charts[0];
-                                                const sRect = sliderEl.getBoundingClientRect();
-                                                let bestChart = charts[0];
-                                                let minDist = Infinity;
-                                                for (const c of charts) {{
-                                                    const cRect = c.getBoundingClientRect();
-                                                    const dist = Math.abs(cRect.top - sRect.bottom);
-                                                    if (cRect.top >= sRect.top - 20 && dist < minDist) {{
-                                                        minDist = dist;
-                                                        bestChart = c;
-                                                    }}
-                                                }}
-                                                return bestChart;
-                                            }}
-
-                                            function syncZoomLive() {{
-                                                const sliderEl = findZoomSlider();
-                                                if (!sliderEl || !periodItems.length) return;
-                                                const thumbs = sliderEl.querySelectorAll('[role="slider"]');
-                                                if (thumbs.length < 2) return;
-                                                const v0 = parseInt(thumbs[0].getAttribute('aria-valuenow'), 10);
-                                                const v1 = parseInt(thumbs[1].getAttribute('aria-valuenow'), 10);
-                                                if (isNaN(v0) || isNaN(v1)) return;
-                                                const minIdx = Math.max(0, Math.min(v0, v1));
-                                                const maxIdx = Math.min(periodItems.length - 1, Math.max(v0, v1));
-                                                const visibleCount = Math.max(maxIdx - minIdx + 1, 1);
-                                                const tickStep = Math.max(1, Math.floor(visibleCount / 42));
-                                                const tickVals = [];
-                                                const tickTexts = [];
-                                                for (let i = 0; i < periodItems.length; i += tickStep) {{
-                                                    tickVals.push(periodItems[i].start_iso);
-                                                    tickTexts.push(periodItems[i].label);
-                                                }}
-                                                const plotEl = findHistoryPlot(sliderEl);
-                                                if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {{
-                                                    try {{
-                                                        win.Plotly.relayout(plotEl, {{
-                                                            'xaxis.range': [periodItems[minIdx].start_iso, periodItems[maxIdx].end_iso],
-                                                            'xaxis.tickvals': tickVals,
-                                                            'xaxis.ticktext': tickTexts,
-                                                            'xaxis.autorange': false
-                                                        }});
-                                                    }} catch (e) {{}}
-                                                }}
-                                            }}
-
-                                            function bindRealtime() {{
-                                                const sliderEl = findZoomSlider();
-                                                if (!sliderEl || sliderEl.dataset.rtBound === '1') return;
-                                                sliderEl.dataset.rtBound = '1';
-
-                                                const triggerUpdate = () => {{
-                                                    if (rafId) cancelAnimationFrame(rafId);
-                                                    rafId = requestAnimationFrame(syncZoomLive);
-                                                }};
-
-                                                const observer = new MutationObserver(triggerUpdate);
-                                                const thumbs = sliderEl.querySelectorAll('[role="slider"]');
-                                                thumbs.forEach(t => {{
-                                                    observer.observe(t, {{ attributes: true, attributeFilter: ['aria-valuenow'] }});
-                                                }});
-                                                sliderEl.addEventListener('pointermove', triggerUpdate, {{ passive: true }});
-                                                sliderEl.addEventListener('touchmove', triggerUpdate, {{ passive: true }});
-                                                syncZoomLive();
-                                            }}
-
-                                            bindRealtime();
-                                            const retryTimer = setInterval(bindRealtime, 400);
-                                            setTimeout(() => clearInterval(retryTimer), 6000);
-                                        }})();
-                                        </script>
-                                        """,
-                                        height=0,
-                                    )
-
-                                if selected_data and selected_data.selection.points:
-                                    pt = selected_data.selection.points[0]
-                                    cdata = pt.get("customdata")
-                                    if cdata and len(cdata) > 3:
-                                        clicked_w_no_str = str(cdata[3])
-                                    elif "curve_number" in pt:
-                                        sorted_df_plot = df_plot.sort_values(
-                                            by=["Tarikh Mula", "Wabak_Str"]
-                                        ).reset_index(drop=True)
-                                        clicked_w_no_str = str(
-                                            sorted_df_plot.iloc[pt["curve_number"]][
-                                                "Wabak_Str"
-                                            ]
-                                        )
-                                    else:
-                                        clicked_w_no_str = None
-
-                                    if clicked_w_no_str:
-                                        target_w_str = f"Wabak No: {clicked_w_no_str}"
-                                        if (
-                                            st.session_state.selected_wabak
-                                            != target_w_str
-                                        ):
-                                            st.session_state.selected_wabak = (
-                                                target_w_str
-                                            )
-                                            st.rerun()
-                            else:
-                                st.info(
-                                    f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
-                                )
-
-                            with st.expander(
-                                f"📋 Senarai Ringkas Semua Episod Wabak di {pilihan_lokaliti} ({len(df_plot_all)} Episod)"
-                            ):
-                                df_ep_table = df_plot_all.sort_values(
-                                    by="Tarikh Mula", ascending=False
-                                )[
-                                    [
-                                        "Wabak_Str",
-                                        "Minggu_Label",
-                                        "Tarikh Mula Str",
-                                        "Tarikh Akhir Str",
-                                        "Tempoh (Hari)",
-                                        "Jumlah Kes",
-                                        "Status",
-                                    ]
-                                ].rename(
-                                    columns={
-                                        "Wabak_Str": "No. Wabak",
-                                        "Minggu_Label": "Minggu Mula",
-                                        "Tarikh Mula Str": "Tarikh Mula",
-                                        "Tarikh Akhir Str": "Tarikh Tamat / Anggaran",
-                                    }
-                                )
-                                st.dataframe(
-                                    df_ep_table,
-                                    use_container_width=True,
-                                    hide_index=True,
-                                )
-
-                            if (
-                                st.session_state.selected_wabak
-                                and "Wabak No:" in st.session_state.selected_wabak
-                            ):
-                                current_w_str = st.session_state.selected_wabak.replace(
-                                    "Wabak No: ", ""
-                                ).strip()
-                                if current_w_str in color_map:
-                                    bg_hex = color_map[current_w_str]
-                                    st.markdown(
-                                        f"""
-                                    <style>
-                                    .stApp {{
-                                        background-color: {bg_hex}1A !important;
-                                    }}
-                                    </style>
-                                    """,
-                                        unsafe_allow_html=True,
-                                    )
-
-                # --- 4 KAD METRIK LOKALITI LIQUID-GLASS (DISERAGAMKAN + MOMENTUM 7-HARI) ---
-                kadar_velocity = jumlah_kes / tempoh_wabak_hari
-                t_ref_lok = (
-                    df_filter["Tkh Notifikasi"].fillna(df_filter["Tarikh Daftar"])
-                    if "Tkh Notifikasi" in df_filter.columns
-                    else df_filter["Tarikh Daftar"]
-                )
-                lok_c7 = int(
-                    (
-                        (t_ref_lok >= (today_my - pd.Timedelta(days=6)))
-                        & (t_ref_lok <= today_my)
-                    ).sum()
-                )
-                lok_prev7 = int(
-                    (
-                        (t_ref_lok >= (today_my - pd.Timedelta(days=13)))
-                        & (t_ref_lok <= (today_my - pd.Timedelta(days=7)))
-                    ).sum()
-                )
-                lok_mom_pct = ((lok_c7 - lok_prev7) / max(lok_prev7, 1)) * 100
-                lok_mom_disp = (
-                    f"+{lok_c7} kes baharu"
-                    if (lok_prev7 == 0 and lok_c7 > 0)
-                    else f"{lok_mom_pct:+.1f}%"
-                )
-
-                safe_lokaliti = html.escape(str(pilihan_lokaliti))
-                safe_kategori = html.escape(str(pilihan_kategori))
-
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.markdown(
-                        build_glass_kpi_html(
-                            label="Jumlah Kes",
-                            value_str=str(jumlah_kes),
-                            sub_str=f"Rekod Sejarah: <b>{rekod_episode_lokaliti} episod</b>",
-                            tooltip_title="📋 Jumlah Kes Terkumpul",
-                            relevance_html="Jumlah keseluruhan kes disahkan yang didaftarkan di bawah episod wabak atau kategori yang dipilih.",
-                            formula_html="Count(Notifikasi No) bagi pilihan semasa",
-                            current_calc_html=f"<b>Lokaliti ({safe_lokaliti}):</b> <b>{jumlah_kes} kes</b> direkodkan bagi {safe_kategori}.",
-                        ),
-                        unsafe_allow_html=True,
-                    )
-                with col2:
-                    st.markdown(
-                        build_glass_kpi_html(
-                            label="Tempoh Wabak (Hari)",
-                            value_str=f"{tempoh_wabak_hari} hari",
-                            sub_str=f"Mula (Notif Kes ke-2): <b>{tarikh_mula_str}</b>",
-                            tooltip_title="⏳ Tempoh Penularan Wabak",
-                            relevance_html="Tempoh masa wabak berlangsung bermula dari tarikh notifikasi kes ke-2 (pencetus rasmi wabak) sehingga tarikh semasa atau tarikh tamat.",
-                            formula_html="Tarikh Akhir / Semasa − Tkh Notifikasi Kes ke-2",
-                            current_calc_html=f"<b>Pengiraan Semasa:</b> Bermula <b>{tarikh_mula_str}</b> = <b>{tempoh_wabak_hari} hari</b>.",
-                        ),
-                        unsafe_allow_html=True,
-                    )
-                with col3:
-                    st.markdown(
-                        build_glass_kpi_html(
-                            label="Velocity (Kes/Hari)",
-                            value_str=f"{kadar_velocity:.2f}",
-                            sub_str="Purata kes baharu setiap hari",
-                            tooltip_title="🚀 Velocity (Kes/Hari)",
-                            relevance_html="Mengukur kelajuan penularan wabak (purata kes baharu sehari). Nilai tinggi (> 1.0 kes/hari) menandakan penularan agresif yang memerlukan kawalan kecemasan segera.",
-                            formula_html="Jumlah Kes ÷ Tempoh Wabak (Hari)",
-                            current_calc_html=f"<b>Pengiraan Semasa ({safe_lokaliti} — {safe_kategori}):</b><br>{jumlah_kes} kes ÷ {tempoh_wabak_hari} hari = <b>{kadar_velocity:.2f} kes/hari</b>",
-                            align_right=True,
-                        ),
-                        unsafe_allow_html=True,
-                    )
-                with col4:
-                    st.markdown(
-                        build_glass_kpi_html(
-                            label="Momentum 7-Hari",
-                            value_str=lok_mom_disp,
-                            sub_str=f"7H Kini: <b>{lok_c7}</b> vs 7H Lalu: <b>{lok_prev7}</b>",
-                            tooltip_title="📈 Momentum 7-Hari (7-Day Acceleration)",
-                            relevance_html="Mengukur perubahan kes baharu dalam 7 hari terakhir berbanding 7 hari sebelumnya untuk menilai sama ada penularan di lokaliti ini sedang memecut atau mereda.",
-                            formula_html="((Kes<sub>7H Kini</sub> − Kes<sub>7H Lalu</sub>) ÷ max(Kes<sub>7H Lalu</sub>, 1)) × 100",
-                            current_calc_html=f"<b>Pengiraan Semasa ({safe_lokaliti}):</b><br>7H Terkini = <b>{lok_c7} kes</b> vs 7H Lalu = <b>{lok_prev7} kes</b> (<b>{lok_mom_disp}</b>)",
-                            align_right=True,
-                            accent_color="#e11d48"
-                            if lok_c7 > lok_prev7
-                            else "#059669",
-                        ),
-                        unsafe_allow_html=True,
+                    top5_daftar = df_filter.sort_values(
+                        by="Tarikh Daftar", ascending=False
+                    ).head(5)
+                    top5_onset = df_filter.sort_values(
+                        by="Tarikh Onset", ascending=False
+                    ).head(5)
+                    common_indices = set(top5_daftar.index).intersection(
+                        set(top5_onset.index)
                     )
 
-                st.markdown("---")
+                    def highlight_common(row):
+                        return [
+                            "background-color: #ffd700; color: black"
+                            if row.name in common_indices
+                            else ""
+                            for _ in row
+                        ]
 
-                minggu_puncak_txt = "Tiada"
-                kes_puncak = 0
-                status_arah_txt = "tidak dapat dipastikan"
+                    col_t1, col_t2 = st.columns(2)
 
-                max_val_specific = -1
-                max_b_specific = "Tidak Dinyatakan"
-                max_t_specific = "Tidak Dinyatakan"
-                blok_masalah_txt = "Tidak Dinyatakan"
-                tingkat_masalah_txt = "Tidak Dinyatakan"
+                    with col_t1:
+                        st.markdown("**Berdasarkan Tarikh Daftar (Terkini)**")
+                        st.markdown(
+                            top5_daftar[["Tarikh Daftar", "No Rumah", "Blok", "Tingkat"]]
+                            .style.apply(highlight_common, axis=1)
+                            .to_html(),
+                            unsafe_allow_html=True,
+                        )
 
-                # --- KELUK EPIDEMIK DWI-SIRI (MINGGU ONSET VS MINGGU DAFTAR) ---
-                st.subheader(
-                    f"📈 Keluk Epidemik Dwi-Siri: Minggu Onset vs Minggu Daftar ({pilihan_kategori})"
-                )
-                kes_epid = (
-                    df_filter["Epid Minggu (Tkh Daftar)"].value_counts().sort_index()
-                )
-                kes_onset_epid = (
-                    df_filter["Epid Minggu (Tkh Onset)"].dropna().value_counts().sort_index()
-                    if "Epid Minggu (Tkh Onset)" in df_filter.columns
-                    else pd.Series(dtype=int)
-                )
+                    with col_t2:
+                        st.markdown("**Berdasarkan Tarikh Onset (Terkini)**")
+                        st.markdown(
+                            top5_onset[["Tarikh Onset", "No Rumah", "Blok", "Tingkat"]]
+                            .style.apply(highlight_common, axis=1)
+                            .to_html(),
+                            unsafe_allow_html=True,
+                        )
 
-                if not kes_epid.empty:
-                    all_wks = sorted(
-                        list(
-                            set(kes_epid.index.dropna().astype(int)).union(
-                                set(kes_onset_epid.index.dropna().astype(int))
+                    st.markdown(
+                        "<br>**Ulasan Terperinci Kes Terkini:**", unsafe_allow_html=True
+                    )
+
+                    daftar_locs = top5_daftar.apply(
+                        lambda x: f"Blok {x['Blok']} Tingkat {x['Tingkat']}", axis=1
+                    ).tolist()
+                    onset_locs = top5_onset.apply(
+                        lambda x: f"Blok {x['Blok']} Tingkat {x['Tingkat']}", axis=1
+                    ).tolist()
+
+                    st.write(
+                        f"- **Pendaftaran Terkini:** 5 kes terakhir bertumpu di **{', '.join(daftar_locs)}**."
+                    )
+                    st.write(
+                        f"- **Gejala (Onset) Terbaharu:** 5 pesakit terbaharu dikesan menetap di **{', '.join(onset_locs)}**."
+                    )
+
+                    if common_indices:
+                        st.info(
+                            f"💡 Terdapat **{len(common_indices)} kes (diwarnakan kuning)** yang saling bertindih di antara Pendaftaran Terkini dan Onset Terkini, menandakan penularan sangat aktif dan baru (fresh outbreak) sedang berlaku."
+                        )
+                    else:
+                        st.info(
+                            "💡 Tiada pertindihan ketara dikesan di antara kes onset terkini dan pendaftaran terkini. Pendaftaran terkini berkemungkinan melibatkan kes tertangguh dari minggu sebelumnya."
+                        )
+
+                    st.markdown("---")
+
+                    # --- PROFIL KLINIKAL, UJIAN MAKMAL & DEMOGRAFI ---
+                    st.subheader("🩺 Profil Klinikal, Makmal & Demografi Pesakit")
+                    c_clin1, c_clin2 = st.columns(2)
+
+                    with c_clin1:
+                        st.markdown("**🏥 Tempat Rawatan & Diagnosis Klinikal**")
+                        if "Tempat Rawatan(Maklumat Pemberitahu)" in df_filter.columns:
+                            rawat_cnt = df_filter[
+                                "Tempat Rawatan(Maklumat Pemberitahu)"
+                            ].value_counts()
+                            for r_place, cnt in rawat_cnt.items():
+                                st.write(
+                                    f"- **{r_place}**: {cnt} ({(cnt / jumlah_kes) * 100:.1f}%)"
+                                )
+                        if "Sub Diagnosis" in df_filter.columns:
+                            diag_cnt = df_filter["Sub Diagnosis"].value_counts()
+                            diag_str = ", ".join(
+                                f"{d}: {c}" for d, c in diag_cnt.items()
                             )
+                            st.write(f"- **Sub Diagnosis:** {diag_str}")
+
+                    with c_clin2:
+                        st.markdown("**🧪 Pengesanan Makmal (NS1 / IgM / IgG)**")
+                        ns1_r = (
+                            df_filter["Ujian Rapid"]
+                            .astype(str)
+                            .str.contains("NS1 Positif", case=False, na=False)
+                            if "Ujian Rapid" in df_filter.columns
+                            else pd.Series(False, index=df_filter.index)
                         )
-                    )
-                    df_dual_ep = pd.DataFrame(
-                        {
-                            "Minggu Epid": [f"ME {int(w):02d}" for w in all_wks],
-                            "Kes Mengikut Minggu Daftar": [
-                                int(kes_epid.get(w, 0)) for w in all_wks
-                            ],
-                            "Kes Mengikut Minggu Onset (Gejala)": [
-                                int(kes_onset_epid.get(w, 0)) for w in all_wks
-                            ],
-                        }
-                    )
-
-                    fig_epid = go.Figure()
-                    fig_epid.add_trace(
-                        go.Bar(
-                            x=df_dual_ep["Minggu Epid"],
-                            y=df_dual_ep["Kes Mengikut Minggu Daftar"],
-                            name="Minggu Daftar",
-                            marker_color="rgba(244, 63, 94, 0.78)",
-                            text=df_dual_ep["Kes Mengikut Minggu Daftar"],
-                            textposition="outside",
+                        ns1_e = (
+                            df_filter["Ujian ELISA"]
+                            .astype(str)
+                            .str.contains("NS1 Positif", case=False, na=False)
+                            if "Ujian ELISA" in df_filter.columns
+                            else pd.Series(False, index=df_filter.index)
                         )
-                    )
-                    fig_epid.add_trace(
-                        go.Scatter(
-                            x=df_dual_ep["Minggu Epid"],
-                            y=df_dual_ep["Kes Mengikut Minggu Onset (Gejala)"],
-                            name="Minggu Onset (Mula Gejala)",
-                            mode="lines+markers",
-                            line=dict(color="#0284c7", width=3),
-                            marker=dict(size=8, symbol="circle"),
+                        ns1_tot = int((ns1_r | ns1_e).sum())
+                        ns1_pct = (ns1_tot / jumlah_kes) * 100 if jumlah_kes > 0 else 0
+                        st.write(
+                            f"- **NS1 Antigen Positif (Viremia Aktif):** **{ns1_tot}/{jumlah_kes} kes ({ns1_pct:.1f}%)**"
                         )
-                    )
-                    fig_epid.update_xaxes(type="category")
-                    fig_epid.update_layout(
-                        xaxis_title="Minggu Epid",
-                        yaxis_title="Jumlah Kes",
-                        height=360,
-                        paper_bgcolor="rgba(255,255,255,0.75)",
-                        plot_bgcolor="rgba(255,255,255,0.55)",
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                    )
-
-                    st.plotly_chart(
-                        fig_epid, use_container_width=True, key="graf_minggu_epid"
-                    )
-
-                    minggu_puncak_txt = str(int(kes_epid.idxmax()))
-                    kes_puncak = int(kes_epid.max())
-                    purata_mingguan = kes_epid.mean()
-
-                    ulasan_epid = "**Analisis Terperinci Keluk Epidemik:**\n"
-                    ulasan_epid += f"- Secara purata, terdapat **{purata_mingguan:.1f} kes** didaftarkan setiap minggu.\n"
-                    ulasan_epid += f"- Minggu puncak pendaftaran adalah pada **Minggu Epid {minggu_puncak_txt}** (**{kes_puncak} kes**).\n"
-
-                    if len(kes_epid) >= 2:
-                        m_kini = kes_epid.iloc[-1]
-                        m_lalu = kes_epid.iloc[-2]
-                        perbezaan = m_kini - m_lalu
-                        status_arah_txt = (
-                            "meningkat"
-                            if perbezaan > 0
-                            else "menurun"
-                            if perbezaan < 0
-                            else "mendatar"
-                        )
-                        ulasan_epid += f"- Perbandingan minggu daftar terkini menunjukkan trend **{status_arah_txt}** ({m_kini} kes vs {m_lalu} kes minggu sebelumnya)."
-                    if not kes_onset_epid.empty:
-                        last_onset_wk = int(kes_onset_epid.index.max())
-                        last_onset_cnt = int(kes_onset_epid.iloc[-1])
-                        ulasan_epid += f"\n- **Petunjuk Penularan Sebenar (Onset):** Episod gejala (onset) terbaharu dikesan pada **Minggu Epid {last_onset_wk}** ({last_onset_cnt} kes)."
-                    st.info(ulasan_epid)
-
-                st.markdown("---")
-
-                # --- TABURAN BLOK & TINGKAT + PERINCIAN ---
-                st.subheader("🏢 Taburan Kes Mengikut Blok dan Tingkat")
-                df_filter[["Blok", "Tingkat"]] = df_filter["No Rumah"].apply(
-                    parse_address
-                )
-
-                if (
-                    len(df_filter["Blok"].unique()) > 1
-                    or "TIDAK PASTI" not in df_filter["Blok"].values
-                ):
-                    crosstab_bt = pd.crosstab(
-                        df_filter["Tingkat"],
-                        df_filter["Blok"],
-                        margins=True,
-                        margins_name="JUMLAH",
-                    )
-
-                    def pad_for_sort(s):
-                        return re.sub(r"\d+", lambda m: m.group(0).zfill(5), str(s))
-
-                    tingkat_list = list(crosstab_bt.index[:-1])
-                    blok_list = list(crosstab_bt.columns[:-1])
-
-                    tingkat_sorted = sorted(
-                        tingkat_list, key=pad_for_sort, reverse=True
-                    )
-                    blok_sorted = sorted(blok_list, key=pad_for_sort)
-
-                    crosstab_bt = crosstab_bt.loc[
-                        tingkat_sorted + ["JUMLAH"], blok_sorted + ["JUMLAH"]
-                    ]
-
-                    idx_slice = pd.IndexSlice[
-                        crosstab_bt.index[:-1], crosstab_bt.columns[:-1]
-                    ]
-                    styled_ct = crosstab_bt.style.background_gradient(
-                        cmap="Reds", subset=idx_slice
-                    )
-                    st.markdown(styled_ct.to_html(), unsafe_allow_html=True)
+                        if "Umur (Tahun)" in df_filter.columns:
+                            ages = pd.to_numeric(
+                                df_filter["Umur (Tahun)"], errors="coerce"
+                            ).dropna()
+                            if not ages.empty:
+                                st.write(
+                                    f"- **Julat Umur Pesakit:** Median **{ages.median():.0f} tahun** (Min {ages.min():.0f} – Maks {ages.max():.0f} tahun)"
+                                )
 
                     st.markdown("<br>", unsafe_allow_html=True)
+                    c_info1, c_info2, c_info3 = st.columns(3)
 
-                    for t in crosstab_bt.index[:-1]:
-                        for b in crosstab_bt.columns[:-1]:
-                            if crosstab_bt.loc[t, b] > max_val_specific:
-                                max_val_specific = crosstab_bt.loc[t, b]
-                                max_b_specific = str(b)
-                                max_t_specific = str(t)
+                    fasiliti_utama_txt = "Tidak Dinyatakan"
+                    top_warga = "Tidak Dinyatakan"
+                    top_pekerjaan = "Tidak Dinyatakan"
 
-                    blok_totals = crosstab_bt.loc["JUMLAH"][:-1]
-                    if not blok_totals.empty and blok_totals.max() > 0:
-                        blok_masalah_txt = str(blok_totals.idxmax())
-
-                    tingkat_totals = crosstab_bt.iloc[:-1]["JUMLAH"]
-                    if not tingkat_totals.empty and tingkat_totals.max() > 0:
-                        tingkat_masalah_txt = str(tingkat_totals.idxmax())
-
-                    if max_val_specific > 0:
-                        st.warning(
-                            f"⚠️ **Sarang Penularan Spesifik:** Takungan vektor berjangkit (hotspot selular) dipercayai tertumpu secara spesifik di kediaman **Blok {max_b_specific}, Tingkat {max_t_specific}** yang menyumbang **{max_val_specific} kes**. Operasi pemusnahan sumber (S&D) dan semburan ruang disarankan untuk difokuskan bermula dari struktur radius ini terlebih dahulu sebelum diperluas ke tempat lain."
-                        )
-
-                    st.markdown(
-                        "##### **Perincian Struktur (Keseluruhan Blok & Tingkat):**"
-                    )
-
-                    blok_group_raw = (
-                        df_filter[df_filter["Blok"] != "TIDAK PASTI"]
-                        .groupby("Blok")
-                        .size()
-                    )
-
-                    if not blok_group_raw.empty:
-                        sorted_blok_keys = sorted(
-                            blok_group_raw.index, key=pad_for_sort
-                        )
-                        for blok_name in sorted_blok_keys:
-                            b_count = blok_group_raw[blok_name]
-                            b_pct = (b_count / jumlah_kes) * 100
-                            st.markdown(
-                                f"**🔹 Blok {blok_name}: {b_count} kes ({b_pct:.1f}% dari keseluruhan wabak)**"
-                            )
-
-                            df_blok_ini = df_filter[
-                                (df_filter["Blok"] == blok_name)
-                                & (df_filter["Tingkat"] != "TIDAK PASTI")
-                            ]
-                            if not df_blok_ini.empty:
-                                tingkat_group_raw = df_blok_ini.groupby(
-                                    "Tingkat"
-                                ).size()
-                                sorted_tingkat_keys = sorted(
-                                    tingkat_group_raw.index,
-                                    key=pad_for_sort,
-                                    reverse=True,
-                                )
-
-                                for tk_name in sorted_tingkat_keys:
-                                    t_count = tingkat_group_raw[tk_name]
-                                    t_pct_overall = (t_count / jumlah_kes) * 100
-                                    st.write(
-                                        f"    🔸 Tingkat {tk_name}: {t_count} kes ({t_pct_overall:.1f}%)"
-                                    )
-                    else:
-                        st.write("Maklumat blok tidak cukup berstruktur.")
-                else:
-                    st.info(
-                        "Tiada struktur blok/tingkat yang jelas ditemui pada 'No Rumah'."
-                    )
-
-                st.markdown("---")
-
-                # --- 5 KES TERKINI DENGAN LOKASI (BLOK & TINGKAT) ---
-                st.subheader("📍 Analisis 5 Kes Terkini")
-
-                top5_daftar = df_filter.sort_values(
-                    by="Tarikh Daftar", ascending=False
-                ).head(5)
-                top5_onset = df_filter.sort_values(
-                    by="Tarikh Onset", ascending=False
-                ).head(5)
-                common_indices = set(top5_daftar.index).intersection(
-                    set(top5_onset.index)
-                )
-
-                def highlight_common(row):
-                    return [
-                        "background-color: #ffd700; color: black"
-                        if row.name in common_indices
-                        else ""
-                        for _ in row
-                    ]
-
-                col_t1, col_t2 = st.columns(2)
-
-                with col_t1:
-                    st.markdown("**Berdasarkan Tarikh Daftar (Terkini)**")
-                    st.markdown(
-                        top5_daftar[["Tarikh Daftar", "No Rumah", "Blok", "Tingkat"]]
-                        .style.apply(highlight_common, axis=1)
-                        .to_html(),
-                        unsafe_allow_html=True,
-                    )
-
-                with col_t2:
-                    st.markdown("**Berdasarkan Tarikh Onset (Terkini)**")
-                    st.markdown(
-                        top5_onset[["Tarikh Onset", "No Rumah", "Blok", "Tingkat"]]
-                        .style.apply(highlight_common, axis=1)
-                        .to_html(),
-                        unsafe_allow_html=True,
-                    )
-
-                st.markdown(
-                    "<br>**Ulasan Terperinci Kes Terkini:**", unsafe_allow_html=True
-                )
-
-                daftar_locs = top5_daftar.apply(
-                    lambda x: f"Blok {x['Blok']} Tingkat {x['Tingkat']}", axis=1
-                ).tolist()
-                onset_locs = top5_onset.apply(
-                    lambda x: f"Blok {x['Blok']} Tingkat {x['Tingkat']}", axis=1
-                ).tolist()
-
-                st.write(
-                    f"- **Pendaftaran Terkini:** 5 kes terakhir bertumpu di **{', '.join(daftar_locs)}**."
-                )
-                st.write(
-                    f"- **Gejala (Onset) Terbaharu:** 5 pesakit terbaharu dikesan menetap di **{', '.join(onset_locs)}**."
-                )
-
-                if common_indices:
-                    st.info(
-                        f"💡 Terdapat **{len(common_indices)} kes (diwarnakan kuning)** yang saling bertindih di antara Pendaftaran Terkini dan Onset Terkini, menandakan penularan sangat aktif dan baru (fresh outbreak) sedang berlaku."
-                    )
-                else:
-                    st.info(
-                        "💡 Tiada pertindihan ketara dikesan di antara kes onset terkini dan pendaftaran terkini. Pendaftaran terkini berkemungkinan melibatkan kes tertangguh dari minggu sebelumnya."
-                    )
-
-                st.markdown("---")
-
-                # --- PROFIL KLINIKAL, UJIAN MAKMAL & DEMOGRAFI ---
-                st.subheader("🩺 Profil Klinikal, Makmal & Demografi Pesakit")
-                c_clin1, c_clin2 = st.columns(2)
-
-                with c_clin1:
-                    st.markdown("**🏥 Tempat Rawatan & Diagnosis Klinikal**")
-                    if "Tempat Rawatan(Maklumat Pemberitahu)" in df_filter.columns:
-                        rawat_cnt = df_filter[
-                            "Tempat Rawatan(Maklumat Pemberitahu)"
+                    with c_info1:
+                        st.markdown("**Kemudahan Kesihatan**")
+                        fasiliti_count = df_filter[
+                            "Kemudahan Kesihatan(Maklumat Pemberitahu)"
                         ].value_counts()
-                        for r_place, cnt in rawat_cnt.items():
-                            st.write(
-                                f"- **{r_place}**: {cnt} ({(cnt / jumlah_kes) * 100:.1f}%)"
-                            )
-                    if "Sub Diagnosis" in df_filter.columns:
-                        diag_cnt = df_filter["Sub Diagnosis"].value_counts()
-                        diag_str = ", ".join(
-                            f"{d}: {c}" for d, c in diag_cnt.items()
-                        )
-                        st.write(f"- **Sub Diagnosis:** {diag_str}")
+                        if not fasiliti_count.empty:
+                            fasiliti_utama_txt = fasiliti_count.index[0]
+                        for f, count in fasiliti_count.items():
+                            pct = (count / jumlah_kes) * 100
+                            st.write(f"- **{f}**: {count} ({pct:.1f}%)")
 
-                with c_clin2:
-                    st.markdown("**🧪 Pengesanan Makmal (NS1 / IgM / IgG)**")
-                    ns1_r = (
-                        df_filter["Ujian Rapid"]
-                        .astype(str)
-                        .str.contains("NS1 Positif", case=False, na=False)
-                        if "Ujian Rapid" in df_filter.columns
-                        else pd.Series(False, index=df_filter.index)
+                    with c_info2:
+                        st.markdown("**Kewarganegaraan**")
+                        warga_count = df_filter["Status Kewarganegaraan"].value_counts()
+                        if not warga_count.empty:
+                            top_warga = warga_count.index[0]
+                        for w, count in warga_count.items():
+                            pct = (count / jumlah_kes) * 100
+                            st.write(f"- **{w}**: {count} ({pct:.1f}%)")
+
+                    with c_info3:
+                        st.markdown("**Pekerjaan**")
+                        kerja_count = df_filter["Pekerjaan"].value_counts()
+                        if not kerja_count.empty:
+                            top_pekerjaan = kerja_count.index[0]
+                        for k, count in kerja_count.items():
+                            pct = (count / jumlah_kes) * 100
+                            st.write(f"- **{k}**: {count} ({pct:.1f}%)")
+
+                    st.markdown("---")
+
+                    # --- KESIMPULAN & RUMUSAN AI KESELURUHAN ---
+                    st.header("📝 Kesimpulan & Rumusan Eksekutif Lokaliti")
+
+                    zon_bahaya_semasa = list(set(onset_locs))
+                    zon_str = (
+                        ", ".join(zon_bahaya_semasa)
+                        if zon_bahaya_semasa
+                        else "Tidak Dinyatakan"
                     )
-                    ns1_e = (
-                        df_filter["Ujian ELISA"]
-                        .astype(str)
-                        .str.contains("NS1 Positif", case=False, na=False)
-                        if "Ujian ELISA" in df_filter.columns
-                        else pd.Series(False, index=df_filter.index)
+
+                    ayat_hotspot = (
+                        f"Titik jangkitan tertumpu secara kritikal disahkan berada pada Blok {max_b_specific} Tingkat {max_t_specific}."
+                        if max_b_specific != "Tidak Dinyatakan"
+                        else ""
                     )
-                    ns1_tot = int((ns1_r | ns1_e).sum())
-                    ns1_pct = (ns1_tot / jumlah_kes) * 100 if jumlah_kes > 0 else 0
-                    st.write(
-                        f"- **NS1 Antigen Positif (Viremia Aktif):** **{ns1_tot}/{jumlah_kes} kes ({ns1_pct:.1f}%)**"
-                    )
-                    if "Umur (Tahun)" in df_filter.columns:
-                        ages = pd.to_numeric(
-                            df_filter["Umur (Tahun)"], errors="coerce"
-                        ).dropna()
-                        if not ages.empty:
-                            st.write(
-                                f"- **Julat Umur Pesakit:** Median **{ages.median():.0f} tahun** (Min {ages.min():.0f} – Maks {ages.max():.0f} tahun)"
-                            )
 
-                st.markdown("<br>", unsafe_allow_html=True)
-                c_info1, c_info2, c_info3 = st.columns(3)
+                    kesimpulan_ai = f"""
+                    Berdasarkan data harian terkini bagi **{pilihan_lokaliti}** ({pilihan_kategori} - **{status_wabak_semasa}**):
+                    
+                    *   **Keterukan Wabak:** Secara teknikal, rantaian penularan ini mula tercetus pada **{tarikh_mula_str}** (notifikasi kes ke-2), bertahan selama **{tempoh_wabak_hari} hari**, dan telah merekodkan sejumlah **{jumlah_kes} kes**. Kelajuan penularan berada pada tahap **{kadar_velocity:.2f} kes sehari** dengan momentum 7-hari **{lok_mom_disp}**. Secara kumulatif, lokaliti ini merekodkan sejarah **{rekod_episode_lokaliti} episode wabak**.
+                    *   **Trend Epidemiologi:** Jumlah kes memuncak pada **Minggu Epid {minggu_puncak_txt}** ({kes_puncak} kes). Analisis menunjukkan trend kes mingguan terkini sedang **{status_arah_txt}**.
+                    *   **Tumpuan Struktur (Hotspot Dalaman):** Secara kumulatif, **Blok {blok_masalah_txt}** adalah kawasan yang mencatatkan jumlah pesakit teramai manakala takungan penyakit paling banyak dikesan berkumpul di **Tingkat {tingkat_masalah_txt}**. {ayat_hotspot}
+                    *   **Zon Jangkitan Aktif Terkini:** Mangsa-mangsa dengan episod gejala (onset) paling baharu (newly active vectors) mendiami kawasan **{zon_str}**. 
+                    *   **Demografi Klinikal:** Kes paling banyak melibatkan kumpulan **{top_warga}** berkerjaya **{top_pekerjaan}**. Fasiliti yang paling banyak menotifikasikan kes dari wabak ini ialah **{fasiliti_utama_txt}**.
+                    
+                    **🎯 Rumusan Tindakan:** Fokus S&D dan kawalan semburan nyamuk dewasa wajar dihalakan secara spesifik ke zon jangkitan aktif terkini di **{zon_str}** serta saringan menyeluruh ke atas keseluruhan **Blok {blok_masalah_txt}** sebagai kawasan risiko tertinggi.
+                    """
 
-                fasiliti_utama_txt = "Tidak Dinyatakan"
-                top_warga = "Tidak Dinyatakan"
-                top_pekerjaan = "Tidak Dinyatakan"
-
-                with c_info1:
-                    st.markdown("**Kemudahan Kesihatan**")
-                    fasiliti_count = df_filter[
-                        "Kemudahan Kesihatan(Maklumat Pemberitahu)"
-                    ].value_counts()
-                    if not fasiliti_count.empty:
-                        fasiliti_utama_txt = fasiliti_count.index[0]
-                    for f, count in fasiliti_count.items():
-                        pct = (count / jumlah_kes) * 100
-                        st.write(f"- **{f}**: {count} ({pct:.1f}%)")
-
-                with c_info2:
-                    st.markdown("**Kewarganegaraan**")
-                    warga_count = df_filter["Status Kewarganegaraan"].value_counts()
-                    if not warga_count.empty:
-                        top_warga = warga_count.index[0]
-                    for w, count in warga_count.items():
-                        pct = (count / jumlah_kes) * 100
-                        st.write(f"- **{w}**: {count} ({pct:.1f}%)")
-
-                with c_info3:
-                    st.markdown("**Pekerjaan**")
-                    kerja_count = df_filter["Pekerjaan"].value_counts()
-                    if not kerja_count.empty:
-                        top_pekerjaan = kerja_count.index[0]
-                    for k, count in kerja_count.items():
-                        pct = (count / jumlah_kes) * 100
-                        st.write(f"- **{k}**: {count} ({pct:.1f}%)")
-
-                st.markdown("---")
-
-                # --- KESIMPULAN & RUMUSAN AI KESELURUHAN ---
-                st.header("📝 Kesimpulan & Rumusan Eksekutif Lokaliti")
-
-                zon_bahaya_semasa = list(set(onset_locs))
-                zon_str = (
-                    ", ".join(zon_bahaya_semasa)
-                    if zon_bahaya_semasa
-                    else "Tidak Dinyatakan"
-                )
-
-                ayat_hotspot = (
-                    f"Titik jangkitan tertumpu secara kritikal disahkan berada pada Blok {max_b_specific} Tingkat {max_t_specific}."
-                    if max_b_specific != "Tidak Dinyatakan"
-                    else ""
-                )
-
-                kesimpulan_ai = f"""
-                Berdasarkan data harian terkini bagi **{pilihan_lokaliti}** ({pilihan_kategori} - **{status_wabak_semasa}**):
-                
-                *   **Keterukan Wabak:** Secara teknikal, rantaian penularan ini mula tercetus pada **{tarikh_mula_str}** (notifikasi kes ke-2), bertahan selama **{tempoh_wabak_hari} hari**, dan telah merekodkan sejumlah **{jumlah_kes} kes**. Kelajuan penularan berada pada tahap **{kadar_velocity:.2f} kes sehari** dengan momentum 7-hari **{lok_mom_disp}**. Secara kumulatif, lokaliti ini merekodkan sejarah **{rekod_episode_lokaliti} episode wabak**.
-                *   **Trend Epidemiologi:** Jumlah kes memuncak pada **Minggu Epid {minggu_puncak_txt}** ({kes_puncak} kes). Analisis menunjukkan trend kes mingguan terkini sedang **{status_arah_txt}**.
-                *   **Tumpuan Struktur (Hotspot Dalaman):** Secara kumulatif, **Blok {blok_masalah_txt}** adalah kawasan yang mencatatkan jumlah pesakit teramai manakala takungan penyakit paling banyak dikesan berkumpul di **Tingkat {tingkat_masalah_txt}**. {ayat_hotspot}
-                *   **Zon Jangkitan Aktif Terkini:** Mangsa-mangsa dengan episod gejala (onset) paling baharu (newly active vectors) mendiami kawasan **{zon_str}**. 
-                *   **Demografi Klinikal:** Kes paling banyak melibatkan kumpulan **{top_warga}** berkerjaya **{top_pekerjaan}**. Fasiliti yang paling banyak menotifikasikan kes dari wabak ini ialah **{fasiliti_utama_txt}**.
-                
-                **🎯 Rumusan Tindakan:** Fokus S&D dan kawalan semburan nyamuk dewasa wajar dihalakan secara spesifik ke zon jangkitan aktif terkini di **{zon_str}** serta saringan menyeluruh ke atas keseluruhan **Blok {blok_masalah_txt}** sebagai kawasan risiko tertinggi.
-                """
-
-                st.success(kesimpulan_ai)
+                    st.success(kesimpulan_ai)
+            except Exception as tab2_err:
+                st.error(f"Ralat pada paparan Analisis Lokaliti: {tab2_err}")
 
         # =========================================================
         # TAB 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI)
         # =========================================================
         with main_tab3:
-            st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
-            st.caption(
-                "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data serta gelembung info formula apabila kursor diarahkan."
-            )
-
-            ai_analytics = compute_ai_epidemiological_analytics(
-                df, df_lok, pilihan_lokaliti, today_my
-            )
-
-            ai_tab1, ai_tab2, ai_tab3 = st.tabs(
-                [
-                    "📈 Ramalan Trend & 95% Confidence Interval",
-                    "🔗 Korelasi Data & Kelewatan Operasi",
-                    "🎯 Soal Jawab AI & Pelan Tindakan",
-                ]
-            )
-
-            with ai_tab1:
-                col_ai_f1, col_ai_f2 = st.columns([1.45, 1.0])
-
-                with col_ai_f1:
-                    weekly_df = ai_analytics["weekly_df"]
-                    df_forecast = ai_analytics["df_forecast"]
-                    slope_val = ai_analytics["slope_per_week"]
-                    s_err_val = ai_analytics["s_err"]
-                    r_sq_val = ai_analytics["r_squared"]
-                    n_fit_val = ai_analytics["n_fit_weeks"]
-
-                    if not weekly_df.empty and not df_forecast.empty:
-                        hist_tail = weekly_df.tail(16)
-                        fig_fc = go.Figure()
-                        fig_fc.add_trace(
-                            go.Scatter(
-                                x=hist_tail["Minggu"],
-                                y=hist_tail["Kes"],
-                                mode="lines+markers",
-                                name="Kes Sebenar (Mingguan)",
-                                line=dict(color="#2563eb", width=2.5),
-                                marker=dict(size=7),
-                            )
-                        )
-                        conn_x = [hist_tail["Minggu"].iloc[-1]] + df_forecast[
-                            "Minggu"
-                        ].tolist()
-                        conn_y = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
-                            "Unjuran Kes"
-                        ].tolist()
-                        conn_hi = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
-                            "95% CI Atas"
-                        ].tolist()
-                        conn_lo = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
-                            "95% CI Bawah"
-                        ].tolist()
-
-                        fig_fc.add_trace(
-                            go.Scatter(
-                                x=conn_x + conn_x[::-1],
-                                y=conn_hi + conn_lo[::-1],
-                                fill="toself",
-                                fillcolor="rgba(239, 68, 68, 0.16)",
-                                line=dict(color="rgba(255,255,255,0)"),
-                                hoverinfo="skip",
-                                name="Selang Keyakinan 95% (95% CI)",
-                            )
-                        )
-                        fig_fc.add_trace(
-                            go.Scatter(
-                                x=conn_x,
-                                y=conn_y,
-                                mode="lines+markers",
-                                name="Unjuran AI (4 Minggu)",
-                                line=dict(color="#dc2626", width=2.5, dash="dash"),
-                                marker=dict(size=8, symbol="diamond"),
-                            )
-                        )
-                        fig_fc.update_layout(
-                            title="Unjuran Kes Mingguan (4 Minggu Hadapan dengan 95% CI)",
-                            xaxis_title="Minggu Epid",
-                            yaxis_title="Jumlah Kes",
-                            height=380,
-                            paper_bgcolor="rgba(255,255,255,0.75)",
-                            plot_bgcolor="rgba(255,255,255,0.55)",
-                            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                        )
-                        st.plotly_chart(
-                            fig_fc, use_container_width=True, key="ai_forecast_chart"
-                        )
-
-                        last_wk_lbl = str(hist_tail["Minggu"].iloc[-1])
-                        last_wk_kes = int(hist_tail["Kes"].iloc[-1])
-                        peak_pt = hist_tail.loc[hist_tail["Kes"].idxmax()]
-                        low_pt = hist_tail.loc[hist_tail["Kes"].idxmin()]
-                        next_fc = df_forecast.iloc[0]
-                        end_fc = df_forecast.iloc[-1]
-                        arah_fc = (
-                            "menurun"
-                            if slope_val < -0.2
-                            else ("meningkat" if slope_val > 0.2 else "mendatar")
-                        )
-
-                        st.markdown(
-                            render_ai_conclusion_box(
-                                "Kesimpulan Graf & Titik Plot Ramalan Mingguan",
-                                f"Sepanjang <b>{len(hist_tail)} minggu</b> titik plot sebenar, kes memuncak pada "
-                                f"<b>{html.escape(str(peak_pt['Minggu']))} ({int(peak_pt['Kes'])} kes)</b> dan menyusut ke titik terendah pada "
-                                f"<b>{html.escape(str(low_pt['Minggu']))} ({int(low_pt['Kes'])} kes)</b>. Garis regresi ({n_fit_val} minggu terkini) "
-                                f"menunjukkan arah <b>{arah_fc} ({slope_val:+.2f} kes/minggu, R² = {r_sq_val:.3f})</b>, dengan titik unjuran bergerak "
-                                f"daripada <b>{last_wk_kes} kes ({html.escape(last_wk_lbl)})</b> kepada <b>{end_fc['Unjuran Kes']} kes</b> "
-                                f"menjelang <b>{html.escape(str(end_fc['Minggu']))}</b> (95% CI: <b>{end_fc['95% CI Bawah']} – {end_fc['95% CI Atas']} kes</b>).",
-                            ),
-                            unsafe_allow_html=True,
-                        )
-
-                        tot_4w_fc = round(float(df_forecast["Unjuran Kes"].sum()), 1)
-                        avg_4w_fc = round(float(df_forecast["Unjuran Kes"].mean()), 1)
-                        tot_4w_lo = round(float(df_forecast["95% CI Bawah"].sum()), 1)
-                        tot_4w_hi = round(float(df_forecast["95% CI Atas"].sum()), 1)
-
-                        fc_tbl_html = df_to_styled_html_table(df_forecast)
-                        fc_table_conc = (
-                            f"<b>📌 Kesimpulan Jadual Ramalan 4 Minggu:</b> Jumlah kumulatif kes yang dijangka bagi 4 minggu hadapan ialah "
-                            f"<b>{tot_4w_fc} kes</b> (purata <b>{avg_4w_fc} kes/minggu</b>), dengan julat keyakinan 95% keseluruhan antara "
-                            f"<b>{tot_4w_lo} hingga {tot_4w_hi} kes</b> sebagai panduan perancangan kapasiti logistik & kawalan vektor."
-                        )
-                        card_fc_html = build_ai_hover_card_html(
-                            zone_id="ai_zone_forecast",
-                            card_title="📅 Jadual Ramalan Kes 4 Minggu Hadapan (95% CI)",
-                            body_html=fc_tbl_html,
-                            tooltip_title="📈 Ramalan Trend Mingguan & 95% CI",
-                            relevance_html="Mengunjurkan trajektori kes denggi mingguan untuk 4 minggu epid hadapan menggunakan regresi linear pada data terkini bagi mengesan awal gelombang peningkatan kes serta julat ketidakpastian statistik pada tahap keyakinan 95%.",
-                            formula_html="ŷ<sub>t+k</sub> = a + b(x<sub>n</sub> + k)  |  95% CI = ŷ<sub>t+k</sub> ± t<sub>α/2, n−2</sub> · s<sub>e</sub>√(1 + 1/n + (x<sub>n+k</sub>−x̄)²/S<sub>xx</sub>)",
-                            current_calc_html=(
-                                f"<b>Pengiraan Semasa ({n_fit_val} minggu terkini):</b><br>"
-                                f"Minggu Terkini ({html.escape(last_wk_lbl)}) = <b>{last_wk_kes} kes</b> | Kecerunan (b) = <b>{slope_val:+.2f} kes/minggu</b><br>"
-                                f"Ralat Piawai (s<sub>e</sub>) = <b>{s_err_val:.2f}</b> | R² = <b>{r_sq_val:.3f}</b><br>"
-                                f"Unjuran Minggu {html.escape(str(next_fc['Minggu']))}: <b>{next_fc['Unjuran Kes']} kes</b> (95% CI: <b>{next_fc['95% CI Bawah']} – {next_fc['95% CI Atas']}</b>)"
-                            ),
-                            conclusion_html=fc_table_conc,
-                            align_right=False,
-                        )
-                        st.markdown(card_fc_html, unsafe_allow_html=True)
-                    else:
-                        st.info(
-                            "Data mingguan tidak mencukupi untuk menjana unjuran 4 minggu."
-                        )
-
-                with col_ai_f2:
-                    df_ar = ai_analytics["df_active_risk"]
-                    if not df_ar.empty:
-                        fig_risk = px.scatter(
-                            df_ar,
-                            x="Tempoh (Hari)",
-                            y="Velocity (Kes/Hari)",
-                            size="Unjuran +14 Hari",
-                            color="Status Semasa",
-                            hover_name="Lokaliti",
-                            hover_data={
-                                "No. Wabak": True,
-                                "Jumlah Kes": True,
-                                "Unjuran +14 Hari": True,
-                                "95% CI (+14 Hari)": True,
-                                "Skor Risiko": True,
-                            },
-                            color_discrete_map={
-                                "Wabak Terkawal": "#e06666",
-                                "Wabak Tak Terkawal": "#3e85c7",
-                                "Hotspot": "#fe0000",
-                            },
-                            title="Matriks Risiko Eskalasi Wabak Aktif",
-                        )
-                        fig_risk.update_layout(
-                            height=380,
-                            paper_bgcolor="rgba(255,255,255,0.75)",
-                            plot_bgcolor="rgba(255,255,255,0.55)",
-                            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                        )
-                        st.plotly_chart(
-                            fig_risk, use_container_width=True, key="ai_risk_scatter"
-                        )
-
-                        max_vel_pt = df_ar.loc[df_ar["Velocity (Kes/Hari)"].idxmax()]
-                        max_dur_pt = df_ar.loc[df_ar["Tempoh (Hari)"].idxmax()]
-                        max_proj_pt = df_ar.loc[df_ar["Unjuran +14 Hari"].idxmax()]
-                        avg_vel_all = round(
-                            float(df_ar["Velocity (Kes/Hari)"].mean()), 2
-                        )
-                        avg_dur_all = round(float(df_ar["Tempoh (Hari)"].mean()), 1)
-
-                        st.markdown(
-                            render_ai_conclusion_box(
-                                "Kesimpulan Plot Taburan Matriks Risiko Eskalasi",
-                                f"Daripada <b>{len(df_ar)} titik plot wabak aktif</b> (purata halaju <b>{avg_vel_all} kes/hari</b>, "
-                                f"purata tempoh <b>{avg_dur_all} hari</b>), titik halaju tertinggi ialah <b>{html.escape(str(max_vel_pt['Lokaliti']))}</b> "
-                                f"(<b>{max_vel_pt['Velocity (Kes/Hari)']} kes/hari</b>), tempoh terlama ialah <b>{html.escape(str(max_dur_pt['Lokaliti']))}</b> "
-                                f"(<b>{int(max_dur_pt['Tempoh (Hari)'])} hari</b>), manakala gelembung unjuran +14 hari terbesar tertumpu di "
-                                f"<b>{html.escape(str(max_proj_pt['Lokaliti']))}</b> (<b>{max_proj_pt['Unjuran +14 Hari']} kes</b>; 95% CI: <b>{max_proj_pt['95% CI (+14 Hari)']}</b>).",
-                            ),
-                            unsafe_allow_html=True,
-                        )
-
-                        risk_display_df = df_ar[
-                            [
-                                "Lokaliti",
-                                "Tahap Risiko",
-                                "Skor Risiko",
-                                "Unjuran +14 Hari",
-                                "95% CI (+14 Hari)",
-                            ]
-                        ]
-                        risk_badges = {
-                            "Tahap Risiko": {
-                                "KRITIKAL": ("#fee2e2", "#991b1b"),
-                                "TINGGI": ("#fef3c7", "#92400e"),
-                                "SEDERHANA": ("#e0f2fe", "#075985"),
-                            }
-                        }
-                        risk_tbl_html = df_to_styled_html_table(
-                            risk_display_df, badge_cols=risk_badges
-                        )
-                        top_r = df_ar.iloc[0]
-                        n_krit = int((df_ar["Tahap Risiko"] == "KRITIKAL").sum())
-                        n_tinggi = int((df_ar["Tahap Risiko"] == "TINGGI").sum())
-                        n_sed = int((df_ar["Tahap Risiko"] == "SEDERHANA").sum())
-                        tot_14d = round(float(df_ar["Unjuran +14 Hari"].sum()), 1)
-                        tot_14d_lo = round(float(df_ar["CI Bawah"].sum()), 1)
-                        tot_14d_hi = round(float(df_ar["CI Atas"].sum()), 1)
-
-                        risk_table_conc = (
-                            f"<b>📌 Kesimpulan Jadual Skor Risiko:</b> Pecahan tahap risiko wabak aktif ialah "
-                            f"<b>{n_krit} Kritikal</b>, <b>{n_tinggi} Tinggi</b>, dan <b>{n_sed} Sederhana</b>. "
-                            f"Keseluruhan wabak aktif diunjurkan menjana <b>{tot_14d} kes baharu</b> dalam +14 hari "
-                            f"(julat 95% CI: <b>{tot_14d_lo} – {tot_14d_hi} kes</b>), dengan keutamaan #1 di <b>{html.escape(str(top_r['Lokaliti']))}</b>."
-                        )
-                        card_risk_html = build_ai_hover_card_html(
-                            zone_id="ai_zone_risk",
-                            card_title="🚨 Jadual Skor Risiko Eskalasi & Unjuran +14 Hari",
-                            body_html=risk_tbl_html,
-                            tooltip_title="🎯 Matriks Risiko Eskalasi & Unjuran Poisson +14 Hari",
-                            relevance_html="Mengenal pasti wabak aktif yang berisiko tinggi meningkat kepada Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari akan datang berdasarkan halaju kes semasa dan kes baharu 7 hari terkini.",
-                            formula_html="Skor = min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status<br>Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)",
-                            current_calc_html=(
-                                f"<b>Lokaliti Risiko #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
-                                f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
-                                f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
-                            ),
-                            conclusion_html=risk_table_conc,
-                            align_right=True,
-                        )
-                        st.markdown(card_risk_html, unsafe_allow_html=True)
-                    else:
-                        st.success("Tiada wabak aktif semasa untuk pemodelan risiko.")
-
-            with ai_tab2:
-                c_corr1, c_corr2 = st.columns(2)
-                with c_corr1:
-                    df_lags = ai_analytics["df_lags"]
-                    if not df_lags.empty:
-                        fig_lag = px.bar(
-                            df_lags,
-                            x="Metrik Kelewatan",
-                            y=["Median (Hari)", "Purata (Hari)"],
-                            barmode="group",
-                            text_auto=True,
-                            color_discrete_sequence=["#0ea5e9", "#f59e0b"],
-                            title="Kelengahan Operasi Kawalan Vektor (Median vs Purata)",
-                        )
-                        fig_lag.update_layout(
-                            height=340,
-                            xaxis_title="",
-                            yaxis_title="Bilangan Hari",
-                            legend_title="",
-                            paper_bgcolor="rgba(255,255,255,0.75)",
-                            plot_bgcolor="rgba(255,255,255,0.55)",
-                        )
-                        st.plotly_chart(
-                            fig_lag, use_container_width=True, key="ai_lag_chart"
-                        )
-
-                        slow_lag = df_lags.loc[df_lags["Median (Hari)"].idxmax()]
-                        fast_lag = df_lags.loc[df_lags["Median (Hari)"].idxmin()]
-                        skewed_stages = df_lags[
-                            (df_lags["Purata (Hari)"] - df_lags["Median (Hari)"]) >= 1.0
-                        ]["Metrik Kelewatan"].tolist()
-                        skew_note = (
-                            f"Terdapat pencongan kes tertangguh (Purata jauh melebihi Median) pada <b>{html.escape(', '.join(skewed_stages))}</b>."
-                            if skewed_stages
-                            else "Taburan masa tindak balas adalah konsisten antara nilai Median dan Purata."
-                        )
-
-                        st.markdown(
-                            render_ai_conclusion_box(
-                                "Kesimpulan Graf Kelengahan Operasi Kawalan Vektor",
-                                f"Fasa paling panjang ialah <b>{html.escape(str(slow_lag['Metrik Kelewatan']))}</b> "
-                                f"(Median <b>{slow_lag['Median (Hari)']} hari</b>, Purata <b>{slow_lag['Purata (Hari)']} hari</b>), manakala "
-                                f"tindak balas terpantas ialah <b>{html.escape(str(fast_lag['Metrik Kelewatan']))}</b> "
-                                f"(Median <b>{fast_lag['Median (Hari)']} hari</b>). {skew_note}",
-                            ),
-                            unsafe_allow_html=True,
-                        )
-
-                        lag_badges = {
-                            "Status Prestasi": {
-                                "PATUH KPI": ("#dcfce7", "#166534"),
-                                "MELEBIHI KPI": ("#fee2e2", "#991b1b"),
-                            }
-                        }
-                        lag_tbl_html = df_to_styled_html_table(
-                            df_lags, badge_cols=lag_badges
-                        )
-                        lag_lines = "<br>".join(
-                            f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
-                            for _, r in df_lags.iterrows()
-                        )
-                        n_patuh = int((df_lags["Status Prestasi"] == "PATUH KPI").sum())
-                        exceed_stages = df_lags[
-                            df_lags["Status Prestasi"] == "MELEBIHI KPI"
-                        ]["Metrik Kelewatan"].tolist()
-                        exceed_txt = (
-                            f"Tindakan penambahbaikan perlu difokuskan kepada <b>{html.escape(', '.join(exceed_stages))}</b> yang melebihi sasaran KPI."
-                            if exceed_stages
-                            else "Kesemua peringkat rantaian kawalan vektor mematuhi sasaran KPI."
-                        )
-                        lag_table_conc = (
-                            f"<b>📌 Kesimpulan Jadual Prestasi KPI:</b> Sebanyak <b>{n_patuh} daripada {len(df_lags)} metrik</b> "
-                            f"mematuhi sasaran KPI median. {exceed_txt}"
-                        )
-                        card_lag_html = build_ai_hover_card_html(
-                            zone_id="ai_zone_lags",
-                            card_title="⏱️ Jadual Analisis Kelengahan Operasi Kawalan Vektor",
-                            body_html=lag_tbl_html,
-                            tooltip_title="⏱️ Kelengahan Rantaian Notifikasi & Kawalan Vektor",
-                            relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
-                            formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
-                            current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
-                            conclusion_html=lag_table_conc,
-                            align_right=False,
-                        )
-                        st.markdown(card_lag_html, unsafe_allow_html=True)
-                    else:
-                        st.info("Kolum tarikh aktiviti PTP/SRT/ULV tidak lengkap.")
-
-                with c_corr2:
-                    df_sc = ai_analytics["df_status_corr"]
-                    df_pearson = ai_analytics["df_pearson"]
-                    if not df_sc.empty:
-                        fig_sc = px.bar(
-                            df_sc,
-                            x="Status Wabak",
-                            y=[
-                                "Purata Kes / Episod",
-                                "Purata Lengah Onset→Notif (Hari)",
-                                "Purata Lengah Notif→SRT (Hari)",
-                            ],
-                            barmode="group",
-                            text_auto=True,
-                            color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
-                            title="Korelasi Status Wabak vs Saiz Kes & Kelengahan",
-                        )
-                        fig_sc.update_layout(
-                            height=340,
-                            xaxis_title="",
-                            yaxis_title="Nilai Purata",
-                            legend_title="",
-                            paper_bgcolor="rgba(255,255,255,0.75)",
-                            plot_bgcolor="rgba(255,255,255,0.55)",
-                        )
-                        st.plotly_chart(
-                            fig_sc, use_container_width=True, key="ai_status_corr_chart"
-                        )
-
-                        max_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmax()]
-                        min_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmin()]
-                        ratio_sz = round(
-                            float(max_sz["Purata Kes / Episod"])
-                            / max(float(min_sz["Purata Kes / Episod"]), 0.1),
-                            1,
-                        )
-
-                        st.markdown(
-                            render_ai_conclusion_box(
-                                "Kesimpulan Graf Status Wabak vs Saiz & Kelengahan",
-                                f"Episod berstatus <b>{html.escape(str(max_sz['Status Wabak']))}</b> merekodkan purata saiz kes "
-                                f"<b>{ratio_sz}× lebih besar</b> (<b>{max_sz['Purata Kes / Episod']} kes/episod</b>) berbanding "
-                                f"<b>{html.escape(str(min_sz['Status Wabak']))}</b> (<b>{min_sz['Purata Kes / Episod']} kes/episod</b>). "
-                                f"Pengesanan awal kes sebelum melepasi 2 minggu penularan adalah penentu utama mengelakkan eskalasi.",
-                            ),
-                            unsafe_allow_html=True,
-                        )
-
-                        sc_tbl_html = df_to_styled_html_table(df_sc)
-                        pearson_section_html = (
-                            "<div style='margin-top:8px; font-weight:700; font-size:0.84rem;'>Pekali Korelasi Pearson (r):</div>"
-                            + df_to_styled_html_table(df_pearson)
-                            if not df_pearson.empty
-                            else ""
-                        )
-                        p_summary_lines = (
-                            "<br>".join(
-                                f"• {html.escape(str(r['Pasangan Pembolehubah']))}: <b>r = {r['Pekali Korelasi (r)']}</b> ({r['Kekuatan Hubungan']}, n={r['Bil. Episod (n)']})"
-                                for _, r in df_pearson.iterrows()
-                            )
-                            if not df_pearson.empty
-                            else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
-                        )
-                        if not df_pearson.empty:
-                            best_p = df_pearson.loc[
-                                df_pearson["Pekali Korelasi (r)"].abs().idxmax()
-                            ]
-                            corr_table_conc = (
-                                f"<b>📌 Kesimpulan Jadual Korelasi Pearson (r):</b> Hubungan linear tertinggi antara kelewatan dan saiz wabak "
-                                f"ialah <b>{html.escape(str(best_p['Pasangan Pembolehubah']))}</b> dengan pekali "
-                                f"<b>r = {best_p['Pekali Korelasi (r)']} ({best_p['Kekuatan Hubungan']}, n={best_p['Bil. Episod (n)']})</b>. "
-                                f"Ini menunjukkan saiz wabak turut dipengaruhi kuat oleh kepadatan penduduk, struktur bangunan & takungan pembiakan setempat."
-                            )
-                        else:
-                            corr_table_conc = (
-                                f"<b>📌 Kesimpulan Jadual Status Wabak:</b> Sebanyak <b>{int(df_sc['Bil. Episod'].sum())} episod wabak</b> "
-                                f"telah dibandingkan merentas <b>{len(df_sc)} kategori status</b>."
-                            )
-                        card_corr_html = build_ai_hover_card_html(
-                            zone_id="ai_zone_corr",
-                            card_title="📊 Jadual Korelasi Status Wabak & Pekali Pearson (r)",
-                            body_html=sc_tbl_html + pearson_section_html,
-                            tooltip_title="🔗 Korelasi Status Wabak & Pekali Pearson (r)",
-                            relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
-                            formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
-                            current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
-                            conclusion_html=corr_table_conc,
-                            align_right=True,
-                        )
-                        st.markdown(card_corr_html, unsafe_allow_html=True)
-                    else:
-                        st.info("Tiada rekod wabak untuk perbandingan status.")
-
-            with ai_tab3:
-                q_cols = st.columns(3)
-                with q_cols[0]:
-                    st.button(
-                        "📈 Ramalan 4 Minggu & 95% CI",
-                        key="btn_ai_q1",
-                        on_click=set_ai_prompt,
-                        args=(
-                            "Berikan ramalan trend kes 4 minggu hadapan berserta Selang Keyakinan 95% (95% CI) dan lokaliti aktif paling berisiko.",
-                        ),
-                        use_container_width=True,
-                    )
-                with q_cols[1]:
-                    st.button(
-                        "🔗 Korelasi Kelewatan & Eskalasi",
-                        key="btn_ai_q2",
-                        on_click=set_ai_prompt,
-                        args=(
-                            "Apakah korelasi antara kelengahan notifikasi/kawalan vektor (PTP, SRT, ULV) dengan status wabak tidak terkawal?",
-                        ),
-                        use_container_width=True,
-                    )
-                with q_cols[2]:
-                    st.button(
-                        "🎯 Pelan Tindakan Lokaliti Ini",
-                        key="btn_ai_q3",
-                        on_click=set_ai_prompt,
-                        args=(
-                            f"Jana pelan tindakan operasi terperinci berdasarkan data bagi lokaliti {pilihan_lokaliti}.",
-                        ),
-                        use_container_width=True,
-                    )
-
-                user_ai_q = st.text_input(
-                    "Tanya AI tentang data, korelasi, ramalan (95% CI) atau pelan tindakan:",
-                    key="ai_custom_question",
+            try:
+                st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
+                st.caption(
+                    "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data serta gelembung info formula apabila kursor diarahkan."
                 )
-                if user_ai_q:
-                    render_ai_qa_visuals_and_response(
-                        user_ai_q, ai_analytics, today_my, embedded_gemini_key
+
+                ai_analytics = compute_ai_epidemiological_analytics(
+                    df, df_lok, pilihan_lokaliti, today_my
+                )
+
+                ai_tab1, ai_tab2, ai_tab3 = st.tabs(
+                    [
+                        "📈 Ramalan Trend & 95% Confidence Interval",
+                        "🔗 Korelasi Data & Kelewatan Operasi",
+                        "🎯 Soal Jawab AI & Pelan Tindakan",
+                    ]
+                )
+
+                with ai_tab1:
+                    col_ai_f1, col_ai_f2 = st.columns([1.45, 1.0])
+
+                    with col_ai_f1:
+                        weekly_df = ai_analytics["weekly_df"]
+                        df_forecast = ai_analytics["df_forecast"]
+                        slope_val = ai_analytics["slope_per_week"]
+                        s_err_val = ai_analytics["s_err"]
+                        r_sq_val = ai_analytics["r_squared"]
+                        n_fit_val = ai_analytics["n_fit_weeks"]
+
+                        if not weekly_df.empty and not df_forecast.empty:
+                            hist_tail = weekly_df.tail(16)
+                            fig_fc = go.Figure()
+                            fig_fc.add_trace(
+                                go.Scatter(
+                                    x=hist_tail["Minggu"],
+                                    y=hist_tail["Kes"],
+                                    mode="lines+markers",
+                                    name="Kes Sebenar (Mingguan)",
+                                    line=dict(color="#2563eb", width=2.5),
+                                    marker=dict(size=7),
+                                )
+                            )
+                            conn_x = [hist_tail["Minggu"].iloc[-1]] + df_forecast[
+                                "Minggu"
+                            ].tolist()
+                            conn_y = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                                "Unjuran Kes"
+                            ].tolist()
+                            conn_hi = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                                "95% CI Atas"
+                            ].tolist()
+                            conn_lo = [float(hist_tail["Kes"].iloc[-1])] + df_forecast[
+                                "95% CI Bawah"
+                            ].tolist()
+
+                            fig_fc.add_trace(
+                                go.Scatter(
+                                    x=conn_x + conn_x[::-1],
+                                    y=conn_hi + conn_lo[::-1],
+                                    fill="toself",
+                                    fillcolor="rgba(239, 68, 68, 0.16)",
+                                    line=dict(color="rgba(255,255,255,0)"),
+                                    hoverinfo="skip",
+                                    name="Selang Keyakinan 95% (95% CI)",
+                                )
+                            )
+                            fig_fc.add_trace(
+                                go.Scatter(
+                                    x=conn_x,
+                                    y=conn_y,
+                                    mode="lines+markers",
+                                    name="Unjuran AI (4 Minggu)",
+                                    line=dict(color="#dc2626", width=2.5, dash="dash"),
+                                    marker=dict(size=8, symbol="diamond"),
+                                )
+                            )
+                            fig_fc.update_layout(
+                                title="Unjuran Kes Mingguan (4 Minggu Hadapan dengan 95% CI)",
+                                xaxis_title="Minggu Epid",
+                                yaxis_title="Jumlah Kes",
+                                height=380,
+                                paper_bgcolor="rgba(255,255,255,0.75)",
+                                plot_bgcolor="rgba(255,255,255,0.55)",
+                                legend=dict(
+                                    orientation="h", yanchor="bottom", y=1.02, x=0
+                                ),
+                            )
+                            st.plotly_chart(
+                                fig_fc, use_container_width=True, key="ai_forecast_chart"
+                            )
+
+                            last_wk_lbl = str(hist_tail["Minggu"].iloc[-1])
+                            last_wk_kes = int(hist_tail["Kes"].iloc[-1])
+                            peak_pt = hist_tail.loc[hist_tail["Kes"].idxmax()]
+                            low_pt = hist_tail.loc[hist_tail["Kes"].idxmin()]
+                            next_fc = df_forecast.iloc[0]
+                            end_fc = df_forecast.iloc[-1]
+                            arah_fc = (
+                                "menurun"
+                                if slope_val < -0.2
+                                else ("meningkat" if slope_val > 0.2 else "mendatar")
+                            )
+
+                            st.markdown(
+                                render_ai_conclusion_box(
+                                    "Kesimpulan Graf & Titik Plot Ramalan Mingguan",
+                                    f"Sepanjang <b>{len(hist_tail)} minggu</b> titik plot sebenar, kes memuncak pada "
+                                    f"<b>{html.escape(str(peak_pt['Minggu']))} ({int(peak_pt['Kes'])} kes)</b> dan menyusut ke titik terendah pada "
+                                    f"<b>{html.escape(str(low_pt['Minggu']))} ({int(low_pt['Kes'])} kes)</b>. Garis regresi ({n_fit_val} minggu terkini) "
+                                    f"menunjukkan arah <b>{arah_fc} ({slope_val:+.2f} kes/minggu, R² = {r_sq_val:.3f})</b>, dengan titik unjuran bergerak "
+                                    f"daripada <b>{last_wk_kes} kes ({html.escape(last_wk_lbl)})</b> kepada <b>{end_fc['Unjuran Kes']} kes</b> "
+                                    f"menjelang <b>{html.escape(str(end_fc['Minggu']))}</b> (95% CI: <b>{end_fc['95% CI Bawah']} – {end_fc['95% CI Atas']} kes</b>).",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
+                            tot_4w_fc = round(float(df_forecast["Unjuran Kes"].sum()), 1)
+                            avg_4w_fc = round(float(df_forecast["Unjuran Kes"].mean()), 1)
+                            tot_4w_lo = round(float(df_forecast["95% CI Bawah"].sum()), 1)
+                            tot_4w_hi = round(float(df_forecast["95% CI Atas"].sum()), 1)
+
+                            fc_tbl_html = df_to_styled_html_table(df_forecast)
+                            fc_table_conc = (
+                                f"<b>📌 Kesimpulan Jadual Ramalan 4 Minggu:</b> Jumlah kumulatif kes yang dijangka bagi 4 minggu hadapan ialah "
+                                f"<b>{tot_4w_fc} kes</b> (purata <b>{avg_4w_fc} kes/minggu</b>), dengan julat keyakinan 95% keseluruhan antara "
+                                f"<b>{tot_4w_lo} hingga {tot_4w_hi} kes</b> sebagai panduan perancangan kapasiti logistik & kawalan vektor."
+                            )
+                            card_fc_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_forecast",
+                                card_title="📅 Jadual Ramalan Kes 4 Minggu Hadapan (95% CI)",
+                                body_html=fc_tbl_html,
+                                tooltip_title="📈 Ramalan Trend Mingguan & 95% CI",
+                                relevance_html="Mengunjurkan trajektori kes denggi mingguan untuk 4 minggu epid hadapan menggunakan regresi linear pada data terkini bagi mengesan awal gelombang peningkatan kes serta julat ketidakpastian statistik pada tahap keyakinan 95%.",
+                                formula_html="ŷ<sub>t+k</sub> = a + b(x<sub>n</sub> + k)  |  95% CI = ŷ<sub>t+k</sub> ± t<sub>α/2, n−2</sub> · s<sub>e</sub>√(1 + 1/n + (x<sub>n+k</sub>−x̄)²/S<sub>xx</sub>)",
+                                current_calc_html=(
+                                    f"<b>Pengiraan Semasa ({n_fit_val} minggu terkini):</b><br>"
+                                    f"Minggu Terkini ({html.escape(last_wk_lbl)}) = <b>{last_wk_kes} kes</b> | Kecerunan (b) = <b>{slope_val:+.2f} kes/minggu</b><br>"
+                                    f"Ralat Piawai (s<sub>e</sub>) = <b>{s_err_val:.2f}</b> | R² = <b>{r_sq_val:.3f}</b><br>"
+                                    f"Unjuran Minggu {html.escape(str(next_fc['Minggu']))}: <b>{next_fc['Unjuran Kes']} kes</b> (95% CI: <b>{next_fc['95% CI Bawah']} – {next_fc['95% CI Atas']}</b>)"
+                                ),
+                                conclusion_html=fc_table_conc,
+                            )
+                            st.markdown(card_fc_html, unsafe_allow_html=True)
+                        else:
+                            st.info(
+                                "Data mingguan tidak mencukupi untuk menjana unjuran 4 minggu."
+                            )
+
+                    with col_ai_f2:
+                        df_ar = ai_analytics["df_active_risk"]
+                        if not df_ar.empty:
+                            fig_risk = px.scatter(
+                                df_ar,
+                                x="Tempoh (Hari)",
+                                y="Velocity (Kes/Hari)",
+                                size="Unjuran +14 Hari",
+                                color="Status Semasa",
+                                hover_name="Lokaliti",
+                                hover_data={
+                                    "No. Wabak": True,
+                                    "Jumlah Kes": True,
+                                    "Unjuran +14 Hari": True,
+                                    "95% CI (+14 Hari)": True,
+                                    "Skor Risiko": True,
+                                },
+                                color_discrete_map={
+                                    "Wabak Terkawal": "#e06666",
+                                    "Wabak Tak Terkawal": "#3e85c7",
+                                    "Hotspot": "#fe0000",
+                                },
+                                title="Matriks Risiko Eskalasi Wabak Aktif",
+                            )
+                            fig_risk.update_layout(
+                                height=380,
+                                paper_bgcolor="rgba(255,255,255,0.75)",
+                                plot_bgcolor="rgba(255,255,255,0.55)",
+                                legend=dict(
+                                    orientation="h", yanchor="bottom", y=1.02, x=0
+                                ),
+                            )
+                            st.plotly_chart(
+                                fig_risk, use_container_width=True, key="ai_risk_scatter"
+                            )
+
+                            max_vel_pt = df_ar.loc[
+                                df_ar["Velocity (Kes/Hari)"].idxmax()
+                            ]
+                            max_dur_pt = df_ar.loc[df_ar["Tempoh (Hari)"].idxmax()]
+                            max_proj_pt = df_ar.loc[df_ar["Unjuran +14 Hari"].idxmax()]
+                            avg_vel_all = round(
+                                float(df_ar["Velocity (Kes/Hari)"].mean()), 2
+                            )
+                            avg_dur_all = round(
+                                float(df_ar["Tempoh (Hari)"].mean()), 1
+                            )
+
+                            st.markdown(
+                                render_ai_conclusion_box(
+                                    "Kesimpulan Plot Taburan Matriks Risiko Eskalasi",
+                                    f"Daripada <b>{len(df_ar)} titik plot wabak aktif</b> (purata halaju <b>{avg_vel_all} kes/hari</b>, "
+                                    f"purata tempoh <b>{avg_dur_all} hari</b>), titik halaju tertinggi ialah <b>{html.escape(str(max_vel_pt['Lokaliti']))}</b> "
+                                    f"(<b>{max_vel_pt['Velocity (Kes/Hari)']} kes/hari</b>), tempoh terlama ialah <b>{html.escape(str(max_dur_pt['Lokaliti']))}</b> "
+                                    f"(<b>{int(max_dur_pt['Tempoh (Hari)'])} hari</b>), manakala gelembung unjuran +14 hari terbesar tertumpu di "
+                                    f"<b>{html.escape(str(max_proj_pt['Lokaliti']))}</b> (<b>{max_proj_pt['Unjuran +14 Hari']} kes</b>; 95% CI: <b>{max_proj_pt['95% CI (+14 Hari)']}</b>).",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
+                            risk_display_df = df_ar[
+                                [
+                                    "Lokaliti",
+                                    "Tahap Risiko",
+                                    "Skor Risiko",
+                                    "Unjuran +14 Hari",
+                                    "95% CI (+14 Hari)",
+                                ]
+                            ]
+                            risk_badges = {
+                                "Tahap Risiko": {
+                                    "KRITIKAL": ("#fee2e2", "#991b1b"),
+                                    "TINGGI": ("#fef3c7", "#92400e"),
+                                    "SEDERHANA": ("#e0f2fe", "#075985"),
+                                }
+                            }
+                            risk_tbl_html = df_to_styled_html_table(
+                                risk_display_df, badge_cols=risk_badges
+                            )
+                            top_r = df_ar.iloc[0]
+                            n_krit = int((df_ar["Tahap Risiko"] == "KRITIKAL").sum())
+                            n_tinggi = int((df_ar["Tahap Risiko"] == "TINGGI").sum())
+                            n_sed = int((df_ar["Tahap Risiko"] == "SEDERHANA").sum())
+                            tot_14d = round(float(df_ar["Unjuran +14 Hari"].sum()), 1)
+                            tot_14d_lo = round(float(df_ar["CI Bawah"].sum()), 1)
+                            tot_14d_hi = round(float(df_ar["CI Atas"].sum()), 1)
+
+                            risk_table_conc = (
+                                f"<b>📌 Kesimpulan Jadual Skor Risiko:</b> Pecahan tahap risiko wabak aktif ialah "
+                                f"<b>{n_krit} Kritikal</b>, <b>{n_tinggi} Tinggi</b>, dan <b>{n_sed} Sederhana</b>. "
+                                f"Keseluruhan wabak aktif diunjurkan menjana <b>{tot_14d} kes baharu</b> dalam +14 hari "
+                                f"(julat 95% CI: <b>{tot_14d_lo} – {tot_14d_hi} kes</b>), dengan keutamaan #1 di <b>{html.escape(str(top_r['Lokaliti']))}</b>."
+                            )
+                            card_risk_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_risk",
+                                card_title="🚨 Jadual Skor Risiko Eskalasi & Unjuran +14 Hari",
+                                body_html=risk_tbl_html,
+                                tooltip_title="🎯 Matriks Risiko Eskalasi & Unjuran Poisson +14 Hari",
+                                relevance_html="Mengenal pasti wabak aktif yang berisiko tinggi meningkat kepada Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari akan datang berdasarkan halaju kes semasa dan kes baharu 7 hari terkini.",
+                                formula_html="Skor = min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status<br>Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)",
+                                current_calc_html=(
+                                    f"<b>Lokaliti Risiko #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
+                                    f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
+                                    f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
+                                ),
+                                conclusion_html=risk_table_conc,
+                            )
+                            st.markdown(card_risk_html, unsafe_allow_html=True)
+                        else:
+                            st.success("Tiada wabak aktif semasa untuk pemodelan risiko.")
+
+                with ai_tab2:
+                    c_corr1, c_corr2 = st.columns(2)
+                    with c_corr1:
+                        df_lags = ai_analytics["df_lags"]
+                        if not df_lags.empty:
+                            fig_lag = px.bar(
+                                df_lags,
+                                x="Metrik Kelewatan",
+                                y=["Median (Hari)", "Purata (Hari)"],
+                                barmode="group",
+                                text_auto=True,
+                                color_discrete_sequence=["#0ea5e9", "#f59e0b"],
+                                title="Kelengahan Operasi Kawalan Vektor (Median vs Purata)",
+                            )
+                            fig_lag.update_layout(
+                                height=340,
+                                xaxis_title="",
+                                yaxis_title="Bilangan Hari",
+                                legend_title="",
+                                paper_bgcolor="rgba(255,255,255,0.75)",
+                                plot_bgcolor="rgba(255,255,255,0.55)",
+                            )
+                            st.plotly_chart(
+                                fig_lag, use_container_width=True, key="ai_lag_chart"
+                            )
+
+                            slow_lag = df_lags.loc[df_lags["Median (Hari)"].idxmax()]
+                            fast_lag = df_lags.loc[df_lags["Median (Hari)"].idxmin()]
+                            skewed_stages = df_lags[
+                                (df_lags["Purata (Hari)"] - df_lags["Median (Hari)"])
+                                >= 1.0
+                            ]["Metrik Kelewatan"].tolist()
+                            skew_note = (
+                                f"Terdapat pencongan kes tertangguh (Purata jauh melebihi Median) pada <b>{html.escape(', '.join(skewed_stages))}</b>."
+                                if skewed_stages
+                                else "Taburan masa tindak balas adalah konsisten antara nilai Median dan Purata."
+                            )
+
+                            st.markdown(
+                                render_ai_conclusion_box(
+                                    "Kesimpulan Graf Kelengahan Operasi Kawalan Vektor",
+                                    f"Fasa paling panjang ialah <b>{html.escape(str(slow_lag['Metrik Kelewatan']))}</b> "
+                                    f"(Median <b>{slow_lag['Median (Hari)']} hari</b>, Purata <b>{slow_lag['Purata (Hari)']} hari</b>), manakala "
+                                    f"tindak balas terpantas ialah <b>{html.escape(str(fast_lag['Metrik Kelewatan']))}</b> "
+                                    f"(Median <b>{fast_lag['Median (Hari)']} hari</b>). {skew_note}",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
+                            lag_badges = {
+                                "Status Prestasi": {
+                                    "PATUH KPI": ("#dcfce7", "#166534"),
+                                    "MELEBIHI KPI": ("#fee2e2", "#991b1b"),
+                                }
+                            }
+                            lag_tbl_html = df_to_styled_html_table(
+                                df_lags, badge_cols=lag_badges
+                            )
+                            lag_lines = "<br>".join(
+                                f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
+                                for _, r in df_lags.iterrows()
+                            )
+                            n_patuh = int(
+                                (df_lags["Status Prestasi"] == "PATUH KPI").sum()
+                            )
+                            exceed_stages = df_lags[
+                                df_lags["Status Prestasi"] == "MELEBIHI KPI"
+                            ]["Metrik Kelewatan"].tolist()
+                            exceed_txt = (
+                                f"Tindakan penambahbaikan perlu difokuskan kepada <b>{html.escape(', '.join(exceed_stages))}</b> yang melebihi sasaran KPI."
+                                if exceed_stages
+                                else "Kesemua peringkat rantaian kawalan vektor mematuhi sasaran KPI."
+                            )
+                            lag_table_conc = (
+                                f"<b>📌 Kesimpulan Jadual Prestasi KPI:</b> Sebanyak <b>{n_patuh} daripada {len(df_lags)} metrik</b> "
+                                f"mematuhi sasaran KPI median. {exceed_txt}"
+                            )
+                            card_lag_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_lags",
+                                card_title="⏱️ Jadual Analisis Kelengahan Operasi Kawalan Vektor",
+                                body_html=lag_tbl_html,
+                                tooltip_title="⏱️ Kelengahan Rantaian Notifikasi & Kawalan Vektor",
+                                relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
+                                formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
+                                current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
+                                conclusion_html=lag_table_conc,
+                            )
+                            st.markdown(card_lag_html, unsafe_allow_html=True)
+                        else:
+                            st.info("Kolum tarikh aktiviti PTP/SRT/ULV tidak lengkap.")
+
+                    with c_corr2:
+                        df_sc = ai_analytics["df_status_corr"]
+                        df_pearson = ai_analytics["df_pearson"]
+                        if not df_sc.empty:
+                            fig_sc = px.bar(
+                                df_sc,
+                                x="Status Wabak",
+                                y=[
+                                    "Purata Kes / Episod",
+                                    "Purata Lengah Onset→Notif (Hari)",
+                                    "Purata Lengah Notif→SRT (Hari)",
+                                ],
+                                barmode="group",
+                                text_auto=True,
+                                color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
+                                title="Korelasi Status Wabak vs Saiz Kes & Kelengahan",
+                            )
+                            fig_sc.update_layout(
+                                height=340,
+                                xaxis_title="",
+                                yaxis_title="Nilai Purata",
+                                legend_title="",
+                                paper_bgcolor="rgba(255,255,255,0.75)",
+                                plot_bgcolor="rgba(255,255,255,0.55)",
+                            )
+                            st.plotly_chart(
+                                fig_sc,
+                                use_container_width=True,
+                                key="ai_status_corr_chart",
+                            )
+
+                            max_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmax()]
+                            min_sz = df_sc.loc[df_sc["Purata Kes / Episod"].idxmin()]
+                            ratio_sz = round(
+                                float(max_sz["Purata Kes / Episod"])
+                                / max(float(min_sz["Purata Kes / Episod"]), 0.1),
+                                1,
+                            )
+
+                            st.markdown(
+                                render_ai_conclusion_box(
+                                    "Kesimpulan Graf Status Wabak vs Saiz & Kelengahan",
+                                    f"Episod berstatus <b>{html.escape(str(max_sz['Status Wabak']))}</b> merekodkan purata saiz kes "
+                                    f"<b>{ratio_sz}× lebih besar</b> (<b>{max_sz['Purata Kes / Episod']} kes/episod</b>) berbanding "
+                                    f"<b>{html.escape(str(min_sz['Status Wabak']))}</b> (<b>{min_sz['Purata Kes / Episod']} kes/episod</b>). "
+                                    f"Pengesanan awal kes sebelum melepasi 2 minggu penularan adalah penentu utama mengelakkan eskalasi.",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
+                            sc_tbl_html = df_to_styled_html_table(df_sc)
+                            pearson_section_html = (
+                                "<div style='margin-top:8px; font-weight:700; font-size:0.84rem;'>Pekali Korelasi Pearson (r):</div>"
+                                + df_to_styled_html_table(df_pearson)
+                                if not df_pearson.empty
+                                else ""
+                            )
+                            p_summary_lines = (
+                                "<br>".join(
+                                    f"• {html.escape(str(r['Pasangan Pembolehubah']))}: <b>r = {r['Pekali Korelasi (r)']}</b> ({r['Kekuatan Hubungan']}, n={r['Bil. Episod (n)']})"
+                                    for _, r in df_pearson.iterrows()
+                                )
+                                if not df_pearson.empty
+                                else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
+                            )
+                            if not df_pearson.empty:
+                                best_p = df_pearson.loc[
+                                    df_pearson["Pekali Korelasi (r)"].abs().idxmax()
+                                ]
+                                corr_table_conc = (
+                                    f"<b>📌 Kesimpulan Jadual Korelasi Pearson (r):</b> Hubungan linear tertinggi antara kelewatan dan saiz wabak "
+                                    f"ialah <b>{html.escape(str(best_p['Pasangan Pembolehubah']))}</b> dengan pekali "
+                                    f"<b>r = {best_p['Pekali Korelasi (r)']} ({best_p['Kekuatan Hubungan']}, n={best_p['Bil. Episod (n)']})</b>. "
+                                    f"Ini menunjukkan saiz wabak turut dipengaruhi kuat oleh kepadatan penduduk, struktur bangunan & takungan pembiakan setempat."
+                                )
+                            else:
+                                corr_table_conc = (
+                                    f"<b>📌 Kesimpulan Jadual Status Wabak:</b> Sebanyak <b>{int(df_sc['Bil. Episod'].sum())} episod wabak</b> "
+                                    f"telah dibandingkan merentas <b>{len(df_sc)} kategori status</b>."
+                                )
+                            card_corr_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_corr",
+                                card_title="📊 Jadual Korelasi Status Wabak & Pekali Pearson (r)",
+                                body_html=sc_tbl_html + pearson_section_html,
+                                tooltip_title="🔗 Korelasi Status Wabak & Pekali Pearson (r)",
+                                relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
+                                formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
+                                current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
+                                conclusion_html=corr_table_conc,
+                            )
+                            st.markdown(card_corr_html, unsafe_allow_html=True)
+                        else:
+                            st.info("Tiada rekod wabak untuk perbandingan status.")
+
+                with ai_tab3:
+                    q_cols = st.columns(3)
+                    with q_cols[0]:
+                        st.button(
+                            "📈 Ramalan 4 Minggu & 95% CI",
+                            key="btn_ai_q1",
+                            on_click=set_ai_prompt,
+                            args=(
+                                "Berikan ramalan trend kes 4 minggu hadapan berserta Selang Keyakinan 95% (95% CI) dan lokaliti aktif paling berisiko.",
+                            ),
+                            use_container_width=True,
+                        )
+                    with q_cols[1]:
+                        st.button(
+                            "🔗 Korelasi Kelewatan & Eskalasi",
+                            key="btn_ai_q2",
+                            on_click=set_ai_prompt,
+                            args=(
+                                "Apakah korelasi antara kelengahan notifikasi/kawalan vektor (PTP, SRT, ULV) dengan status wabak tidak terkawal?",
+                            ),
+                            use_container_width=True,
+                        )
+                    with q_cols[2]:
+                        st.button(
+                            "🎯 Pelan Tindakan Lokaliti Ini",
+                            key="btn_ai_q3",
+                            on_click=set_ai_prompt,
+                            args=(
+                                f"Jana pelan tindakan operasi terperinci berdasarkan data bagi lokaliti {pilihan_lokaliti}.",
+                            ),
+                            use_container_width=True,
+                        )
+
+                    user_ai_q = st.text_input(
+                        "Tanya AI tentang data, korelasi, ramalan (95% CI) atau pelan tindakan:",
+                        key="ai_custom_question",
                     )
-
-            # Jambatan JS untuk menyambungkan kesan tonasi & gelembung info apabila kursor berada di atas graf Plotly AI
-            components.html(
-                """
-                <script>
-                (function() {
-                    const doc = window.parent.document;
-
-                    function bindAiChartHover() {
-                        const tabPanels = doc.querySelectorAll('[data-testid="stTabPanel"]');
-                        tabPanels.forEach(panel => {
-                            const cards = panel.querySelectorAll('.ai-hover-card[data-ai-zone]');
-                            cards.forEach(card => {
-                                const colContainer = card.closest('[data-testid="column"], [data-testid="stColumn"]');
-                                if (!colContainer) return;
-                                const plotEl = colContainer.querySelector('[data-testid="stPlotlyChart"]');
-                                if (!plotEl || plotEl.dataset.aiHoverBound === '1') return;
-                                plotEl.dataset.aiHoverBound = '1';
-
-                                plotEl.addEventListener('mouseenter', function() {
-                                    card.classList.add('ai-zone-active');
-                                    plotEl.classList.add('ai-chart-plot-active');
-                                });
-                                plotEl.addEventListener('mouseleave', function() {
-                                    card.classList.remove('ai-zone-active');
-                                    plotEl.classList.remove('ai-chart-plot-active');
-                                });
-                            });
-                        });
-                    }
-
-                    bindAiChartHover();
-                    const timer = setInterval(bindAiChartHover, 400);
-                    setTimeout(() => clearInterval(timer), 8000);
-                })();
-                </script>
-                """,
-                height=0,
-            )
+                    if user_ai_q:
+                        render_ai_qa_visuals_and_response(
+                            user_ai_q, ai_analytics, today_my, embedded_gemini_key
+                        )
+            except Exception as tab3_err:
+                st.error(f"Ralat pada Pusat Analisis AI: {tab3_err}")
 
     except Exception as e:
         st.error(f"Ralat sistem: {e}")
