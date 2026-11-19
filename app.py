@@ -44,20 +44,34 @@ st.markdown(
         --text-muted: #475569;
     }
 
-    /* Sembunyikan menu pembangun Streamlit sahaja, kekalkan butang buka/tutup Sidebar */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton, [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
+    /* Sembunyikan semua butang pembangun di penjuru kanan atas (Share, Star, Edit, GitHub) */
+    #MainMenu,
+    footer,
+    .stDeployButton,
+    [data-testid="stToolbar"],
+    [data-testid="stAppToolbar"],
+    .stAppToolbar,
+    [data-testid="stHeaderActionElements"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"] {
         display: none !important;
+        visibility: hidden !important;
     }
     header[data-testid="stHeader"] {
         background: transparent !important;
         box-shadow: none !important;
     }
-    [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {
+    header[data-testid="stHeader"] [data-testid="stToolbar"],
+    header[data-testid="stHeader"] [data-testid="stHeaderActionElements"] {
+        display: none !important;
+    }
+    /* Kekalkan butang buka/tutup Sidebar di penjuru kiri atas */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stExpandSidebarButton"] {
+        display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background: rgba(255, 255, 255, 0.88) !important;
+        background: rgba(255, 255, 255, 0.90) !important;
         backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(14, 165, 233, 0.4) !important;
         border-radius: 12px !important;
@@ -164,6 +178,25 @@ st.markdown(
         margin: 0;
     }
 
+    /* Sepanduk Penunjuk Episod Aktif yang Dipilih */
+    .ep-active-banner {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, rgba(2, 132, 199, 0.14), rgba(79, 70, 229, 0.12));
+        backdrop-filter: blur(18px);
+        border: 1.5px solid rgba(2, 132, 199, 0.45);
+        border-left: 5px solid #0284c7;
+        border-radius: 14px;
+        padding: 11px 16px;
+        margin: 8px 0 14px 0;
+        font-size: 0.88rem;
+        color: #0f172a;
+        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.10);
+    }
+
     /* Landing Hero Stage (Sebelum Fail Dimuat Naik) */
     .lg-landing-stage {
         background: rgba(255, 255, 255, 0.74);
@@ -268,7 +301,6 @@ st.markdown(
         section[data-testid="stSidebar"] {display: none;}
         .stButton > button {display: none;}
         footer {visibility: hidden;}
-        .stAlert {page-break-inside: avoid;}
         .metric-tooltip-bubble, .ai-tooltip-bubble, #dw-global-tooltip-portal {display: none !important;}
         .metric-hover-card, .ai-hover-card {padding: 0 !important; box-shadow: none !important; background: transparent !important;}
         .no-print {display: none !important;}
@@ -366,8 +398,9 @@ st.markdown(
         text-decoration: underline;
     }
 
-    /* Sembunyikan butang pencetus navigasi SW_JUMP_* sepenuhnya */
-    [class*="st-key-sw_jump_trigger_"] {
+    /* Sembunyikan butang pencetus navigasi SW_JUMP_* dan EP_JUMP_* sepenuhnya */
+    [class*="st-key-sw_jump_trigger_"],
+    [class*="st-key-ep_jump_trigger_"] {
         position: fixed !important;
         left: -9999px !important;
         top: -9999px !important;
@@ -435,7 +468,7 @@ st.markdown(
         margin-top: 4px;
     }
 
-    /* Kad interaktif bagi graf, jadual & data dalam Pusat Analisis AI */
+    /* Kad interaktif bagi jadual & lencana metodologi graf dalam Pusat Analisis AI */
     .ai-hover-card {
         position: relative;
         padding: 12px 14px;
@@ -447,10 +480,30 @@ st.markdown(
         cursor: help;
         margin-bottom: 10px;
     }
-    .ai-hover-card:hover, .ai-hover-card.ai-zone-active {
+    .ai-hover-card:hover {
         background: rgba(240, 249, 255, 0.96);
         border-color: rgba(14, 165, 233, 0.65);
         box-shadow: var(--glass-shadow-hover);
+    }
+    .ai-graph-info-strip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(14, 165, 233, 0.32);
+        background: rgba(255, 255, 255, 0.84);
+        margin-bottom: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #0f172a;
+        cursor: help;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .ai-graph-info-strip:hover {
+        background: rgba(224, 242, 254, 0.95);
+        border-color: #0284c7;
     }
     .ai-card-header {
         display: flex;
@@ -503,12 +556,6 @@ st.markdown(
     .ai-data-table tr:nth-child(even) td {
         background-color: #f8fafc;
     }
-    .ai-chart-plot-active {
-        border-radius: 14px;
-        box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.55), 0 10px 26px rgba(14, 165, 233, 0.18);
-        background-color: rgba(56, 189, 248, 0.06);
-        transition: box-shadow 0.25s ease, background-color 0.25s ease;
-    }
     .ai-conclusion-box {
         background: rgba(255, 255, 255, 0.82);
         border-left: 4px solid #0284c7;
@@ -542,34 +589,6 @@ st.markdown(
         font-size: 0.81rem;
         line-height: 1.48;
     }
-    .tooltip-title {
-        font-size: 0.92rem;
-        font-weight: 700;
-        color: #7dd3fc;
-        margin-bottom: 6px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-        padding-bottom: 5px;
-    }
-    .tooltip-section {
-        margin-bottom: 7px;
-    }
-    .tooltip-formula {
-        background-color: rgba(255, 255, 255, 0.09);
-        padding: 6px 9px;
-        border-radius: 7px;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.78rem;
-        color: #fde68a;
-        margin: 4px 0 6px 0;
-    }
-    .tooltip-current {
-        background-color: rgba(56, 189, 248, 0.18);
-        border-left: 3px solid #38bdf8;
-        padding: 7px 9px;
-        border-radius: 5px;
-        margin-top: 6px;
-        color: #e0f2fe;
-    }
 
     /* Lencana Kesiapsiagaan Kawalan Lapangan (PTP / SRT / ULV) */
     .ops-pill-ok {
@@ -602,7 +621,7 @@ st.markdown(
 )
 
 # =========================================================
-# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (SENTIASA DI HADAPAN)
+# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (TANPA MENGHALANG PLOT GRAF)
 # =========================================================
 components.html(
     """
@@ -670,15 +689,6 @@ components.html(
                     margin-top: 6px;
                     color: #e0f2fe;
                 }
-                .ai-chart-plot-active {
-                    border-radius: 14px;
-                    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.55), 0 10px 26px rgba(14, 165, 233, 0.18) !important;
-                    background-color: rgba(56, 189, 248, 0.06) !important;
-                }
-                .ai-zone-active {
-                    background: rgba(240, 249, 255, 0.96) !important;
-                    border-color: rgba(14, 165, 233, 0.65) !important;
-                }
             `;
             doc.head.appendChild(st);
         }
@@ -691,16 +701,10 @@ components.html(
         }
 
         let activeHost = null;
-        let activePlot = null;
-        let activeCard = null;
 
         function hidePortal() {
             if (portal) portal.classList.remove('dw-visible');
-            if (activePlot) activePlot.classList.remove('ai-chart-plot-active');
-            if (activeCard) activeCard.classList.remove('ai-zone-active');
             activeHost = null;
-            activePlot = null;
-            activeCard = null;
         }
 
         function positionPortal(anchorRect) {
@@ -728,46 +732,19 @@ components.html(
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
-            const card = target.closest('.metric-hover-card, .ai-hover-card');
+            // Hanya aktifkan gelembung formula pada kad metrik, kad jadual AI, atau jalur info di atas graf
+            // supaya titik plot dalam graf sentiasa bebas dibaca tanpa halangan
+            const card = target.closest('.metric-hover-card, .ai-hover-card, .ai-graph-info-strip');
             if (card) {
                 const bubble = card.querySelector('.metric-tooltip-bubble, .ai-tooltip-bubble');
                 if (bubble) {
                     if (activeHost !== card) {
-                        hidePortal();
                         activeHost = card;
-                        activeCard = card;
-                        card.classList.add('ai-zone-active');
                         portal.innerHTML = bubble.innerHTML;
                         portal.classList.add('dw-visible');
                     }
                     positionPortal(card.getBoundingClientRect());
                     return;
-                }
-            }
-
-            const plotEl = target.closest('[data-testid="stPlotlyChart"]');
-            if (plotEl) {
-                const tabPanel = plotEl.closest('[data-testid="stTabPanel"]');
-                const colContainer = plotEl.closest('[data-testid="column"], [data-testid="stColumn"]');
-                if (tabPanel && colContainer) {
-                    const pairedCard = colContainer.querySelector('.ai-hover-card[data-ai-zone]');
-                    if (pairedCard) {
-                        const bubble = pairedCard.querySelector('.ai-tooltip-bubble');
-                        if (bubble) {
-                            if (activeHost !== plotEl) {
-                                hidePortal();
-                                activeHost = plotEl;
-                                activePlot = plotEl;
-                                activeCard = pairedCard;
-                                plotEl.classList.add('ai-chart-plot-active');
-                                pairedCard.classList.add('ai-zone-active');
-                                portal.innerHTML = bubble.innerHTML;
-                                portal.classList.add('dw-visible');
-                            }
-                            positionPortal(plotEl.getBoundingClientRect());
-                            return;
-                        }
-                    }
                 }
             }
 
@@ -909,6 +886,29 @@ def build_glass_kpi_html(
         f'<div class="metric-hover-value" style="color:{accent_color};">{html.escape(str(value_str))}</div>'
         f'<div class="metric-hover-sub">{sub_str}</div>'
         f'<div class="metric-tooltip-bubble">'
+        f'<div class="tooltip-title">{tooltip_title}</div>'
+        f'<div class="tooltip-section"><b>Maksud & Relevansi:</b> {relevance_html}</div>'
+        f'<div class="tooltip-section"><b>Formula & Cara Kira:</b>'
+        f'<div class="tooltip-formula">{formula_html}</div></div>'
+        f'<div class="tooltip-current">{current_calc_html}</div>'
+        f"</div>"
+        f"</div>"
+    )
+
+
+def build_graph_info_strip_html(
+    strip_title,
+    tooltip_title,
+    relevance_html,
+    formula_html,
+    current_calc_html,
+):
+    """Jalur lencana metodologi & formula di bahagian atas graf AI supaya tidak menghalang titik plot."""
+    return (
+        f'<div class="ai-graph-info-strip">'
+        f"<span>{html.escape(strip_title)}</span>"
+        f'<span class="ai-card-pill">? Formula & Relevansi</span>'
+        f'<div class="ai-tooltip-bubble">'
         f'<div class="tooltip-title">{tooltip_title}</div>'
         f'<div class="tooltip-section"><b>Maksud & Relevansi:</b> {relevance_html}</div>'
         f'<div class="tooltip-section"><b>Formula & Cara Kira:</b>'
@@ -1915,7 +1915,7 @@ def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
 
 
 def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_api_key):
-    """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan kesimpulan data di bahagian bawah & hover tooltip) serta jawapan AI."""
+    """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan kesimpulan data & jalur info) serta jawapan AI."""
     q_lower = question.lower().strip()
     df_forecast = analytics["df_forecast"]
     df_lags = analytics["df_lags"]
@@ -1983,6 +1983,20 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         with c_qa2:
             if not df_active_risk.empty:
                 top_proj = df_active_risk.head(8).copy()
+                top1 = top_proj.iloc[0]
+                st.markdown(
+                    build_graph_info_strip_html(
+                        strip_title="📊 Graf Unjuran Kes Baharu (+14 Hari) & Julat 95% CI",
+                        tooltip_title="🎯 Unjuran Poisson +14 Hari (95% CI)",
+                        relevance_html="Mengira jangkaan pertambahan kes baharu bagi setiap lokaliti aktif dalam tempoh 14 hari akan datang berdasarkan kadar kes 7 hari terakhir dan halaju penularan.",
+                        formula_html="λ<sub>harian</sub> = max(Kes<sub>7h</sub>/7, Velocity×0.5)  |  Unjuran = 14λ ± 1.96√(14λ)",
+                        current_calc_html=(
+                            f"<b>Tertinggi Semasa — {html.escape(top1['Lokaliti'])}:</b><br>"
+                            f"Kes 7h = <b>{top1['Kes 7 Hari Terkini']}</b> | Unjuran +14h = <b>{top1['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top1['95% CI (+14 Hari)']}</b>)"
+                        ),
+                    ),
+                    unsafe_allow_html=True,
+                )
                 fig_qa_fc = go.Figure()
                 fig_qa_fc.add_trace(
                     go.Bar(
@@ -2006,18 +2020,16 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     )
                 )
                 fig_qa_fc.update_layout(
-                    title="Unjuran Kes Baharu (+14 Hari) & Julat 95% CI Mengikut Lokaliti Aktif",
                     xaxis_title="",
                     yaxis_title="Unjuran Kes (+14 Hari)",
                     height=330,
-                    margin=dict(t=42, b=10, l=10, r=10),
+                    margin=dict(t=16, b=10, l=10, r=10),
                     paper_bgcolor="rgba(255,255,255,0.75)",
                     plot_bgcolor="rgba(255,255,255,0.55)",
                 )
                 st.plotly_chart(
                     fig_qa_fc, use_container_width=True, key="qa_forecast_bar"
                 )
-                top1 = top_proj.iloc[0]
                 tot_top_proj = round(float(top_proj["Unjuran +14 Hari"].sum()), 1)
                 st.markdown(
                     render_ai_conclusion_box(
@@ -2029,19 +2041,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     ),
                     unsafe_allow_html=True,
                 )
-                card_qa_fc_g = build_ai_hover_card_html(
-                    zone_id="ai_qa_right",
-                    card_title="ℹ️ Metodologi Graf Ralat Unjuran +14 Hari (95% CI)",
-                    body_html='<div style="font-size:0.8rem; opacity:0.85;">Garis menegak hitam pada setiap bar menunjukkan julat <b>Selang Keyakinan 95% (95% CI)</b> bagi jangkaan pertambahan kes 14 hari akan datang.</div>',
-                    tooltip_title="🎯 Unjuran Poisson +14 Hari (95% CI)",
-                    relevance_html="Mengira jangkaan pertambahan kes baharu bagi setiap lokaliti aktif dalam tempoh 14 hari akan datang berdasarkan kadar kes 7 hari terakhir dan halaju penularan.",
-                    formula_html="λ<sub>harian</sub> = max(Kes<sub>7h</sub>/7, Velocity×0.5)  |  Unjuran = 14λ ± 1.96√(14λ)",
-                    current_calc_html=(
-                        f"<b>Tertinggi Semasa — {html.escape(top1['Lokaliti'])}:</b><br>"
-                        f"Kes 7h = <b>{top1['Kes 7 Hari Terkini']}</b> | Unjuran +14h = <b>{top1['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top1['95% CI (+14 Hari)']}</b>)"
-                    ),
-                )
-                st.markdown(card_qa_fc_g, unsafe_allow_html=True)
 
     # MODE 2: KORELASI KELEWATAN & ESKALASI
     elif is_corr_q:
@@ -2103,6 +2102,18 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
 
         with c_qa2:
             if not df_status_corr.empty:
+                st.markdown(
+                    build_graph_info_strip_html(
+                        strip_title="📊 Graf Perbandingan Status Wabak vs Saiz & Kelengahan",
+                        tooltip_title="📊 Korelasi Status Wabak & Kelengahan",
+                        relevance_html="Mengenal pasti sama ada wabak yang bertukar menjadi Tak Terkawal atau Hotspot mempunyai kelengahan notifikasi pesakit atau tindakan kawalan yang lebih panjang.",
+                        formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod  |  Purata Lengah = ΣΔt ÷ n",
+                        current_calc_html=(
+                            f"<b>Kategori Dianalisis:</b> {len(df_status_corr)} status wabak daripada <b>{int(df_status_corr['Bil. Episod'].sum())} episod</b> keseluruhan."
+                        ),
+                    ),
+                    unsafe_allow_html=True,
+                )
                 fig_qa_corr = px.bar(
                     df_status_corr,
                     x="Status Wabak",
@@ -2114,14 +2125,13 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     barmode="group",
                     text_auto=True,
                     color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
-                    title="Perbandingan Saiz Kes & Kelengahan Mengikut Status Wabak",
                 )
                 fig_qa_corr.update_layout(
                     height=330,
                     xaxis_title="",
                     yaxis_title="Nilai Purata",
                     legend_title="",
-                    margin=dict(t=42, b=10, l=10, r=10),
+                    margin=dict(t=16, b=10, l=10, r=10),
                     paper_bgcolor="rgba(255,255,255,0.75)",
                     plot_bgcolor="rgba(255,255,255,0.55)",
                 )
@@ -2144,18 +2154,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     ),
                     unsafe_allow_html=True,
                 )
-                card_qa_corr_g = build_ai_hover_card_html(
-                    zone_id="ai_qa_right",
-                    card_title="ℹ️ Metodologi Graf Status Wabak vs Kelengahan",
-                    body_html='<div style="font-size:0.8rem; opacity:0.85;">Membandingkan purata bilangan kes per episod dengan purata hari lengah notifikasi dan semburan SRT bagi setiap kategori status wabak.</div>',
-                    tooltip_title="📊 Korelasi Status Wabak & Kelengahan",
-                    relevance_html="Mengenal pasti sama ada wabak yang bertukar menjadi Tak Terkawal atau Hotspot mempunyai kelengahan notifikasi pesakit atau tindakan kawalan yang lebih panjang.",
-                    formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod  |  Purata Lengah = ΣΔt ÷ n",
-                    current_calc_html=(
-                        f"<b>Kategori Dianalisis:</b> {len(df_status_corr)} status wabak daripada <b>{int(df_status_corr['Bil. Episod'].sum())} episod</b> keseluruhan."
-                    ),
-                )
-                st.markdown(card_qa_corr_g, unsafe_allow_html=True)
 
     # MODE 3: PELAN TINDAKAN TAKTIKAL & LOKALITI (DEFAULT)
     else:
@@ -2228,6 +2226,20 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
 
         with c_qa2:
             if not df_active_risk.empty:
+                top1 = df_active_risk.iloc[0]
+                st.markdown(
+                    build_graph_info_strip_html(
+                        strip_title="📊 Graf Kedudukan Skor Risiko Eskalasi Wabak Aktif (0–100)",
+                        tooltip_title="🚨 Indeks Skor Risiko Eskalasi (0–100)",
+                        relevance_html="Menggabungkan kelajuan kes harian (Velocity), kes 7 hari terakhir, tempoh wabak, dan status semasa untuk mengenal pasti lokaliti paling kritikal.",
+                        formula_html="Skor = min(Vel×35,35) + min(Kes<sub>7h</sub>×8,30) + min(Tempoh×0.6,20) + Bonus Status",
+                        current_calc_html=(
+                            f"<b>Keutamaan #1 Semasa:</b> {html.escape(top1['Lokaliti'])}<br>"
+                            f"Skor = <b>{top1['Skor Risiko']}/100 ({top1['Tahap Risiko']})</b> | Velocity = <b>{top1['Velocity (Kes/Hari)']} kes/hari</b>"
+                        ),
+                    ),
+                    unsafe_allow_html=True,
+                )
                 top_r_bar = df_active_risk.head(8).sort_values(
                     by="Skor Risiko", ascending=True
                 )
@@ -2243,7 +2255,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                         "TINGGI": "#f59e0b",
                         "SEDERHANA": "#0ea5e9",
                     },
-                    title="Kedudukan Skor Risiko Eskalasi Wabak Aktif (0–100)",
                 )
                 fig_qa_risk.update_traces(textposition="outside")
                 fig_qa_risk.update_xaxes(range=[0, 112])
@@ -2252,14 +2263,13 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     xaxis_title="Skor Risiko (0–100)",
                     yaxis_title="",
                     legend_title="",
-                    margin=dict(t=42, b=10, l=10, r=10),
+                    margin=dict(t=16, b=10, l=10, r=10),
                     paper_bgcolor="rgba(255,255,255,0.75)",
                     plot_bgcolor="rgba(255,255,255,0.55)",
                 )
                 st.plotly_chart(
                     fig_qa_risk, use_container_width=True, key="qa_risk_hbar"
                 )
-                top1 = df_active_risk.iloc[0]
                 n_crit_high = int(
                     df_active_risk["Tahap Risiko"].isin(["KRITIKAL", "TINGGI"]).sum()
                 )
@@ -2273,19 +2283,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     ),
                     unsafe_allow_html=True,
                 )
-                card_qa_risk_g = build_ai_hover_card_html(
-                    zone_id="ai_qa_right",
-                    card_title="ℹ️ Metodologi Graf Keutamaan Skor Risiko Eskalasi",
-                    body_html='<div style="font-size:0.8rem; opacity:0.85;">Menunjukkan susunan lokaliti aktif mengikut <b>Skor Risiko Eskalasi (0–100)</b> bagi menentukan giliran pasukan kawalan vektor.</div>',
-                    tooltip_title="🚨 Indeks Skor Risiko Eskalasi (0–100)",
-                    relevance_html="Menggabungkan kelajuan kes harian (Velocity), kes 7 hari terakhir, tempoh wabak, dan status semasa untuk mengenal pasti lokaliti paling kritikal.",
-                    formula_html="Skor = min(Vel×35,35) + min(Kes<sub>7h</sub>×8,30) + min(Tempoh×0.6,20) + Bonus Status",
-                    current_calc_html=(
-                        f"<b>Keutamaan #1 Semasa:</b> {html.escape(top1['Lokaliti'])}<br>"
-                        f"Skor = <b>{top1['Skor Risiko']}/100 ({top1['Tahap Risiko']})</b> | Velocity = <b>{top1['Velocity (Kes/Hari)']} kes/hari</b>"
-                    ),
-                )
-                st.markdown(card_qa_risk_g, unsafe_allow_html=True)
 
     # Panggil Gemini API yang tertanam dalam Secrets (dengan cache sesi untuk menjimatkan kuota percuma harian)
     if embedded_api_key:
@@ -2355,7 +2352,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             )
     else:
         st.caption(
-            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana graf atau jadual di atas untuk melihat formula & pengiraan semasa."
+            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana lencana formula atau jadual di atas untuk melihat pengiraan semasa."
         )
 
 
@@ -2390,6 +2387,10 @@ def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.episode_filter = "Semua"
     st.session_state.active_workspace_view = VIEW_LOCALITY
     st.session_state.scroll_to_view_top = True
+
+
+def select_wabak_episode_only(wabak_no_str):
+    st.session_state.selected_wabak = f"Wabak No: {format_wabak_no(wabak_no_str)}"
 
 
 def jump_to_lokaliti_from_table(lokaliti, wabak_no):
@@ -2740,7 +2741,9 @@ if uploaded_file is not None or df_hist is not None:
         # =========================================================
         qs_c1, qs_c2 = st.columns([2.6, 1.4])
         with qs_c1:
-            search_options = ["-- Taip atau Pilih Lokaliti untuk Analisis --"] + semua_lokaliti_list
+            search_options = [
+                "-- Taip atau Pilih Lokaliti untuk Analisis --"
+            ] + semua_lokaliti_list
             st.selectbox(
                 "🔍 Carian Pantas Lokaliti (Taip mana-mana nama taman / flat / kondo):",
                 options=search_options,
@@ -3189,7 +3192,6 @@ if uploaded_file is not None or df_hist is not None:
         elif st.session_state.active_workspace_view == VIEW_LOCALITY:
             try:
                 if not df_lok.empty and pilihan_kategori:
-                    # Pemilih kategori / episod wabak terus di bahagian atas paparan lokaliti
                     lok_bar_c1, lok_bar_c2 = st.columns([1.4, 2.6])
                     with lok_bar_c1:
                         st.button(
@@ -3319,7 +3321,7 @@ if uploaded_file is not None or df_hist is not None:
                             f"🚨 **Amaran Jurang Kawalan Lapangan:** Wabak aktif ini masih belum merekodkan tarikh aktiviti pertama bagi **{', '.join(missing_acts)}**. Tindakan segera diperlukan untuk menyekat rantaian penularan."
                         )
 
-                    # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (LEBAR BAR MENGIKUT TEMPOH HARI) ---
+                    # --- NOTA SEJARAH EPISODE WABAK & GRAF TREND INTERAKTIF (BAR & LEGENDA BOLEH KLIK) ---
                     if rekod_episode_lokaliti > 0:
                         df_wabak_lok = df_lok[df_lok["Jenis Kes"] == "Wabak"].copy()
 
@@ -3598,11 +3600,18 @@ if uploaded_file is not None or df_hist is not None:
                                         for i in range(0, len(period_items), tick_step)
                                     ]
 
+                                    active_w_clean = (
+                                        pilihan_kategori.replace("Wabak No: ", "").strip()
+                                        if "Wabak No:" in pilihan_kategori
+                                        else ""
+                                    )
+
                                     fig_sejarah = go.Figure()
                                     for _, row in df_plot.sort_values(
                                         by=["Tarikh Mula", "Wabak_Str"]
                                     ).iterrows():
                                         w_str = row["Wabak_Str"]
+                                        is_selected_bar = w_str == active_w_clean
                                         fig_sejarah.add_trace(
                                             go.Bar(
                                                 x=[row["Center_Dt"]],
@@ -3612,11 +3621,20 @@ if uploaded_file is not None or df_hist is not None:
                                                 marker=dict(
                                                     color=color_map[w_str],
                                                     line=dict(
-                                                        width=0.8,
-                                                        color="rgba(0,0,0,0.55)",
+                                                        width=2.4
+                                                        if is_selected_bar
+                                                        else 0.8,
+                                                        color="#0f172a"
+                                                        if is_selected_bar
+                                                        else "rgba(0,0,0,0.55)",
                                                     ),
                                                 ),
-                                                opacity=0.9,
+                                                opacity=1.0
+                                                if (
+                                                    not active_w_clean
+                                                    or is_selected_bar
+                                                )
+                                                else 0.65,
                                                 selected=dict(marker=dict(opacity=1.0)),
                                                 unselected=dict(
                                                     marker=dict(opacity=0.85)
@@ -3634,7 +3652,7 @@ if uploaded_file is not None or df_hist is not None:
                                                 ],
                                                 hovertemplate="<br>".join(
                                                     [
-                                                        "<b>Wabak No:</b> %{customdata[3]}",
+                                                        "<b>Wabak No:</b> %{customdata[3]} <i>(Klik bar/legenda)</i>",
                                                         "<b>Jumlah Kes:</b> %{customdata[6]} Kes",
                                                         "<b>Tarikh Mula:</b> %{customdata[0]}",
                                                         "<b>%{customdata[4]}:</b> %{customdata[1]}",
@@ -3676,7 +3694,7 @@ if uploaded_file is not None or df_hist is not None:
                                         tickvals=tick_vals,
                                         ticktext=tick_texts,
                                         tickangle=-90,
-                                        title="Tahun & Minggu Epid (Lebar Bar = Tempoh Hari Episod)",
+                                        title="Tahun & Minggu Epid (Klik mana-mana bar atau legenda No. Wabak untuk paparan butiran)",
                                         rangeslider=dict(visible=False),
                                     )
                                     fig_sejarah.update_yaxes(
@@ -3691,7 +3709,7 @@ if uploaded_file is not None or df_hist is not None:
                                         paper_bgcolor="rgba(255,255,255,0.75)",
                                         plot_bgcolor="rgba(255,255,255,0.55)",
                                         legend=dict(
-                                            title="No. Wabak (Skrol ▲▼)",
+                                            title="No. Wabak (Klik / Skrol ▲▼)",
                                             orientation="v",
                                             yanchor="top",
                                             y=1.0,
@@ -3711,86 +3729,122 @@ if uploaded_file is not None or df_hist is not None:
                                         key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
                                     )
 
-                                    if len(x_labels) > 10:
-                                        period_items_json = json.dumps(period_items)
-                                        components.html(
-                                            f"""
-                                            <script>
-                                            (function() {{
-                                                const periodItems = {period_items_json};
-                                                const doc = window.parent.document;
-                                                const win = window.parent;
-                                                let rafId = null;
+                                    # Butang pencetus tersembunyi untuk klik pada Legenda (Legend Click) bagi setiap episod wabak
+                                    for w_opt_str in unique_wabaks_str:
+                                        st.button(
+                                            f"EP_JUMP_{w_opt_str}",
+                                            key=f"ep_jump_trigger_{pilihan_lokaliti}_{w_opt_str}",
+                                            on_click=select_wabak_episode_only,
+                                            args=(w_opt_str,),
+                                        )
 
-                                                function findZoomSlider() {{
-                                                    const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
-                                                    for (const s of sliders) {{
-                                                        if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {{
-                                                            return s;
+                                    period_items_json = json.dumps(period_items)
+                                    has_zoom_slider = (
+                                        "true" if len(x_labels) > 10 else "false"
+                                    )
+                                    components.html(
+                                        f"""
+                                        <script>
+                                        (function() {{
+                                            const periodItems = {period_items_json};
+                                            const hasZoomSlider = {has_zoom_slider};
+                                            const doc = window.parent.document;
+                                            const win = window.parent;
+                                            let rafId = null;
+
+                                            function hideEpJumpButtons() {{
+                                                const buttons = doc.querySelectorAll('button');
+                                                buttons.forEach(btn => {{
+                                                    if (btn.innerText && btn.innerText.trim().startsWith('EP_JUMP_')) {{
+                                                        const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
+                                                        if (container) {{
+                                                            container.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;margin:0;padding:0;';
                                                         }}
                                                     }}
-                                                    return null;
-                                                }}
+                                                }});
+                                            }}
 
-                                                function findHistoryPlot(sliderEl) {{
-                                                    const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
-                                                    if (!charts.length) return null;
-                                                    if (!sliderEl) return charts[0];
-                                                    const sRect = sliderEl.getBoundingClientRect();
-                                                    let bestChart = charts[0];
-                                                    let minDist = Infinity;
-                                                    for (const c of charts) {{
-                                                        const cRect = c.getBoundingClientRect();
-                                                        const dist = Math.abs(cRect.top - sRect.bottom);
-                                                        if (cRect.top >= sRect.top - 20 && dist < minDist) {{
-                                                            minDist = dist;
-                                                            bestChart = c;
-                                                        }}
-                                                    }}
-                                                    return bestChart;
-                                                }}
-
-                                                function syncZoomLive() {{
-                                                    const sliderEl = findZoomSlider();
-                                                    if (!sliderEl || !periodItems.length) return;
-                                                    const thumbs = sliderEl.querySelectorAll('[role="slider"]');
-                                                    if (thumbs.length < 2) return;
-                                                    const v0 = parseInt(thumbs[0].getAttribute('aria-valuenow'), 10);
-                                                    const v1 = parseInt(thumbs[1].getAttribute('aria-valuenow'), 10);
-                                                    if (isNaN(v0) || isNaN(v1)) return;
-                                                    const minIdx = Math.max(0, Math.min(v0, v1));
-                                                    const maxIdx = Math.min(periodItems.length - 1, Math.max(v0, v1));
-                                                    const visibleCount = Math.max(maxIdx - minIdx + 1, 1);
-                                                    const tickStep = Math.max(1, Math.floor(visibleCount / 42));
-                                                    const tickVals = [];
-                                                    const tickTexts = [];
-                                                    for (let i = 0; i < periodItems.length; i += tickStep) {{
-                                                        tickVals.push(periodItems[i].start_iso);
-                                                        tickTexts.push(periodItems[i].label);
-                                                    }}
-                                                    const plotEl = findHistoryPlot(sliderEl);
-                                                    if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {{
-                                                        try {{
-                                                            win.Plotly.relayout(plotEl, {{
-                                                                'xaxis.range': [periodItems[minIdx].start_iso, periodItems[maxIdx].end_iso],
-                                                                'xaxis.tickvals': tickVals,
-                                                                'xaxis.ticktext': tickTexts,
-                                                                'xaxis.autorange': false
-                                                            }});
-                                                        }} catch (e) {{}}
+                                            function triggerEpisodeSelect(wabakNoStr) {{
+                                                if (!wabakNoStr) return;
+                                                const targetLabel = 'EP_JUMP_' + String(wabakNoStr).trim();
+                                                const buttons = doc.querySelectorAll('button');
+                                                for (const btn of buttons) {{
+                                                    if (btn.innerText && btn.innerText.trim() === targetLabel) {{
+                                                        btn.click();
+                                                        break;
                                                     }}
                                                 }}
+                                            }}
 
-                                                function bindRealtime() {{
-                                                    const sliderEl = findZoomSlider();
-                                                    if (!sliderEl || sliderEl.dataset.rtBound === '1') return;
+                                            function findZoomSlider() {{
+                                                const sliders = doc.querySelectorAll('[data-testid="stSlider"]');
+                                                for (const s of sliders) {{
+                                                    if (s.textContent && s.textContent.includes('Zoom / Skrol Garis Masa Minggu Epid')) {{
+                                                        return s;
+                                                    }}
+                                                }}
+                                                return null;
+                                            }}
+
+                                            function findHistoryPlot(sliderEl) {{
+                                                const charts = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
+                                                if (!charts.length) return null;
+                                                if (!sliderEl) return charts[0];
+                                                const sRect = sliderEl.getBoundingClientRect();
+                                                let bestChart = charts[0];
+                                                let minDist = Infinity;
+                                                for (const c of charts) {{
+                                                    const cRect = c.getBoundingClientRect();
+                                                    const dist = Math.abs(cRect.top - sRect.bottom);
+                                                    if (cRect.top >= sRect.top - 20 && dist < minDist) {{
+                                                        minDist = dist;
+                                                        bestChart = c;
+                                                    }}
+                                                }}
+                                                return bestChart;
+                                            }}
+
+                                            function syncZoomLive() {{
+                                                if (!hasZoomSlider) return;
+                                                const sliderEl = findZoomSlider();
+                                                if (!sliderEl || !periodItems.length) return;
+                                                const thumbs = sliderEl.querySelectorAll('[role="slider"]');
+                                                if (thumbs.length < 2) return;
+                                                const v0 = parseInt(thumbs[0].getAttribute('aria-valuenow'), 10);
+                                                const v1 = parseInt(thumbs[1].getAttribute('aria-valuenow'), 10);
+                                                if (isNaN(v0) || isNaN(v1)) return;
+                                                const minIdx = Math.max(0, Math.min(v0, v1));
+                                                const maxIdx = Math.min(periodItems.length - 1, Math.max(v0, v1));
+                                                const visibleCount = Math.max(maxIdx - minIdx + 1, 1);
+                                                const tickStep = Math.max(1, Math.floor(visibleCount / 42));
+                                                const tickVals = [];
+                                                const tickTexts = [];
+                                                for (let i = 0; i < periodItems.length; i += tickStep) {{
+                                                    tickVals.push(periodItems[i].start_iso);
+                                                    tickTexts.push(periodItems[i].label);
+                                                }}
+                                                const plotEl = findHistoryPlot(sliderEl);
+                                                if (plotEl && win.Plotly && typeof win.Plotly.relayout === 'function') {{
+                                                    try {{
+                                                        win.Plotly.relayout(plotEl, {{
+                                                            'xaxis.range': [periodItems[minIdx].start_iso, periodItems[maxIdx].end_iso],
+                                                            'xaxis.tickvals': tickVals,
+                                                            'xaxis.ticktext': tickTexts,
+                                                            'xaxis.autorange': false
+                                                        }});
+                                                    }} catch (e) {{}}
+                                                }}
+                                            }}
+
+                                            function bindAll() {{
+                                                hideEpJumpButtons();
+                                                const sliderEl = findZoomSlider();
+                                                if (hasZoomSlider && sliderEl && sliderEl.dataset.rtBound !== '1') {{
                                                     sliderEl.dataset.rtBound = '1';
-
                                                     const triggerUpdate = () => {{
                                                         if (rafId) cancelAnimationFrame(rafId);
                                                         rafId = requestAnimationFrame(syncZoomLive);
                                                     }};
-
                                                     const observer = new MutationObserver(triggerUpdate);
                                                     const thumbs = sliderEl.querySelectorAll('[role="slider"]');
                                                     thumbs.forEach(t => {{
@@ -3801,14 +3855,32 @@ if uploaded_file is not None or df_hist is not None:
                                                     syncZoomLive();
                                                 }}
 
-                                                bindRealtime();
-                                                const retryTimer = setInterval(bindRealtime, 400);
-                                                setTimeout(() => clearInterval(retryTimer), 6000);
-                                            }})();
-                                            </script>
-                                            """,
-                                            height=0,
-                                        )
+                                                const plotEl = findHistoryPlot(sliderEl);
+                                                if (plotEl && typeof plotEl.on === 'function' && plotEl.dataset.legBound !== '1') {{
+                                                    plotEl.dataset.legBound = '1';
+                                                    plotEl.on('plotly_legendclick', function(ev) {{
+                                                        if (ev && ev.data && typeof ev.curveNumber === 'number') {{
+                                                            const trace = ev.data[ev.curveNumber];
+                                                            if (trace && trace.name) {{
+                                                                triggerEpisodeSelect(trace.name);
+                                                            }}
+                                                        }}
+                                                        return false;
+                                                    }});
+                                                    plotEl.on('plotly_legenddoubleclick', function() {{
+                                                        return false;
+                                                    }});
+                                                }}
+                                            }}
+
+                                            bindAll();
+                                            const retryTimer = setInterval(bindAll, 350);
+                                            setTimeout(() => clearInterval(retryTimer), 6000);
+                                        }})();
+                                        </script>
+                                        """,
+                                        height=0,
+                                    )
 
                                     if selected_data and selected_data.selection.points:
                                         pt = selected_data.selection.points[0]
@@ -3894,6 +3966,15 @@ if uploaded_file is not None or df_hist is not None:
                                         """,
                                             unsafe_allow_html=True,
                                         )
+
+                    # --- SEPANDUK JELAS MENUNJUKKAN EPISOD YANG SEDANG DIPAPARKAN DI BAWAH GRAF ---
+                    st.markdown(
+                        f'<div class="ep-active-banner">'
+                        f'<span>🔎 <b>Sedang Memaparkan Butiran Episod:</b> <span style="color:#0369a1; font-weight:800;">{html.escape(str(pilihan_kategori))}</span> • <b>{html.escape(str(pilihan_lokaliti))}</b></span>'
+                        f'<span>Status: <b>{html.escape(str(status_wabak_semasa))}</b> • Mula: <b>{html.escape(str(tarikh_mula_str))}</b> • <b>{jumlah_kes} Kes</b></span>'
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
 
                     # --- 4 KAD METRIK LOKALITI LIQUID-GLASS (DISERAGAMKAN + MOMENTUM 7-HARI) ---
                     kadar_velocity = jumlah_kes / tempoh_wabak_hari
@@ -4404,7 +4485,7 @@ if uploaded_file is not None or df_hist is not None:
             try:
                 st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
                 st.caption(
-                    "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data serta gelembung info formula apabila kursor diarahkan."
+                    "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data. Arahkan kursor pada lencana formula atau jadual untuk butiran pengiraan tanpa menghalang titik plot."
                 )
 
                 ai_analytics = compute_ai_epidemiological_analytics(
@@ -4432,6 +4513,26 @@ if uploaded_file is not None or df_hist is not None:
 
                         if not weekly_df.empty and not df_forecast.empty:
                             hist_tail = weekly_df.tail(16)
+                            last_wk_lbl = str(hist_tail["Minggu"].iloc[-1])
+                            last_wk_kes = int(hist_tail["Kes"].iloc[-1])
+                            next_fc = df_forecast.iloc[0]
+
+                            st.markdown(
+                                build_graph_info_strip_html(
+                                    strip_title="📈 Unjuran Kes Mingguan (4 Minggu Hadapan dengan 95% CI)",
+                                    tooltip_title="📈 Ramalan Trend Mingguan & 95% CI",
+                                    relevance_html="Mengunjurkan trajektori kes denggi mingguan untuk 4 minggu epid hadapan menggunakan regresi linear pada data terkini bagi mengesan awal gelombang peningkatan kes serta julat ketidakpastian statistik pada tahap keyakinan 95%.",
+                                    formula_html="ŷ<sub>t+k</sub> = a + b(x<sub>n</sub> + k)  |  95% CI = ŷ<sub>t+k</sub> ± t<sub>α/2, n−2</sub> · s<sub>e</sub>√(1 + 1/n + (x<sub>n+k</sub>−x̄)²/S<sub>xx</sub>)",
+                                    current_calc_html=(
+                                        f"<b>Pengiraan Semasa ({n_fit_val} minggu terkini):</b><br>"
+                                        f"Minggu Terkini ({html.escape(last_wk_lbl)}) = <b>{last_wk_kes} kes</b> | Kecerunan (b) = <b>{slope_val:+.2f} kes/minggu</b><br>"
+                                        f"Ralat Piawai (s<sub>e</sub>) = <b>{s_err_val:.2f}</b> | R² = <b>{r_sq_val:.3f}</b><br>"
+                                        f"Unjuran Minggu {html.escape(str(next_fc['Minggu']))}: <b>{next_fc['Unjuran Kes']} kes</b> (95% CI: <b>{next_fc['95% CI Bawah']} – {next_fc['95% CI Atas']}</b>)"
+                                    ),
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
                             fig_fc = go.Figure()
                             fig_fc.add_trace(
                                 go.Scatter(
@@ -4478,10 +4579,10 @@ if uploaded_file is not None or df_hist is not None:
                                 )
                             )
                             fig_fc.update_layout(
-                                title="Unjuran Kes Mingguan (4 Minggu Hadapan dengan 95% CI)",
                                 xaxis_title="Minggu Epid",
                                 yaxis_title="Jumlah Kes",
-                                height=380,
+                                height=360,
+                                margin=dict(t=16, b=10, l=10, r=10),
                                 paper_bgcolor="rgba(255,255,255,0.75)",
                                 plot_bgcolor="rgba(255,255,255,0.55)",
                                 legend=dict(
@@ -4492,11 +4593,8 @@ if uploaded_file is not None or df_hist is not None:
                                 fig_fc, use_container_width=True, key="ai_forecast_chart"
                             )
 
-                            last_wk_lbl = str(hist_tail["Minggu"].iloc[-1])
-                            last_wk_kes = int(hist_tail["Kes"].iloc[-1])
                             peak_pt = hist_tail.loc[hist_tail["Kes"].idxmax()]
                             low_pt = hist_tail.loc[hist_tail["Kes"].idxmin()]
-                            next_fc = df_forecast.iloc[0]
                             end_fc = df_forecast.iloc[-1]
                             arah_fc = (
                                 "menurun"
@@ -4552,6 +4650,22 @@ if uploaded_file is not None or df_hist is not None:
                     with col_ai_f2:
                         df_ar = ai_analytics["df_active_risk"]
                         if not df_ar.empty:
+                            top_r = df_ar.iloc[0]
+                            st.markdown(
+                                build_graph_info_strip_html(
+                                    strip_title="🎯 Matriks Risiko Eskalasi Wabak Aktif",
+                                    tooltip_title="🎯 Matriks Risiko Eskalasi & Unjuran Poisson +14 Hari",
+                                    relevance_html="Mengenal pasti wabak aktif yang berisiko tinggi meningkat kepada Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari akan datang berdasarkan halaju kes semasa dan kes baharu 7 hari terkini.",
+                                    formula_html="Skor = min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status<br>Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)",
+                                    current_calc_html=(
+                                        f"<b>Lokaliti Risiko #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
+                                        f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
+                                        f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
+                                    ),
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
                             fig_risk = px.scatter(
                                 df_ar,
                                 x="Tempoh (Hari)",
@@ -4571,10 +4685,10 @@ if uploaded_file is not None or df_hist is not None:
                                     "Wabak Tak Terkawal": "#3e85c7",
                                     "Hotspot": "#fe0000",
                                 },
-                                title="Matriks Risiko Eskalasi Wabak Aktif",
                             )
                             fig_risk.update_layout(
-                                height=380,
+                                height=360,
+                                margin=dict(t=16, b=10, l=10, r=10),
                                 paper_bgcolor="rgba(255,255,255,0.75)",
                                 plot_bgcolor="rgba(255,255,255,0.55)",
                                 legend=dict(
@@ -4628,7 +4742,6 @@ if uploaded_file is not None or df_hist is not None:
                             risk_tbl_html = df_to_styled_html_table(
                                 risk_display_df, badge_cols=risk_badges
                             )
-                            top_r = df_ar.iloc[0]
                             n_krit = int((df_ar["Tahap Risiko"] == "KRITIKAL").sum())
                             n_tinggi = int((df_ar["Tahap Risiko"] == "TINGGI").sum())
                             n_sed = int((df_ar["Tahap Risiko"] == "SEDERHANA").sum())
@@ -4665,6 +4778,21 @@ if uploaded_file is not None or df_hist is not None:
                     with c_corr1:
                         df_lags = ai_analytics["df_lags"]
                         if not df_lags.empty:
+                            lag_lines = "<br>".join(
+                                f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
+                                for _, r in df_lags.iterrows()
+                            )
+                            st.markdown(
+                                build_graph_info_strip_html(
+                                    strip_title="⏱️ Kelengahan Operasi Kawalan Vektor (Median vs Purata)",
+                                    tooltip_title="⏱️ Kelengahan Rantaian Notifikasi & Kawalan Vektor",
+                                    relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
+                                    formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
+                                    current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
                             fig_lag = px.bar(
                                 df_lags,
                                 x="Metrik Kelewatan",
@@ -4672,13 +4800,13 @@ if uploaded_file is not None or df_hist is not None:
                                 barmode="group",
                                 text_auto=True,
                                 color_discrete_sequence=["#0ea5e9", "#f59e0b"],
-                                title="Kelengahan Operasi Kawalan Vektor (Median vs Purata)",
                             )
                             fig_lag.update_layout(
-                                height=340,
+                                height=320,
                                 xaxis_title="",
                                 yaxis_title="Bilangan Hari",
                                 legend_title="",
+                                margin=dict(t=16, b=10, l=10, r=10),
                                 paper_bgcolor="rgba(255,255,255,0.75)",
                                 plot_bgcolor="rgba(255,255,255,0.55)",
                             )
@@ -4718,10 +4846,6 @@ if uploaded_file is not None or df_hist is not None:
                             lag_tbl_html = df_to_styled_html_table(
                                 df_lags, badge_cols=lag_badges
                             )
-                            lag_lines = "<br>".join(
-                                f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
-                                for _, r in df_lags.iterrows()
-                            )
                             n_patuh = int(
                                 (df_lags["Status Prestasi"] == "PATUH KPI").sum()
                             )
@@ -4755,6 +4879,25 @@ if uploaded_file is not None or df_hist is not None:
                         df_sc = ai_analytics["df_status_corr"]
                         df_pearson = ai_analytics["df_pearson"]
                         if not df_sc.empty:
+                            p_summary_lines = (
+                                "<br>".join(
+                                    f"• {html.escape(str(r['Pasangan Pembolehubah']))}: <b>r = {r['Pekali Korelasi (r)']}</b> ({r['Kekuatan Hubungan']}, n={r['Bil. Episod (n)']})"
+                                    for _, r in df_pearson.iterrows()
+                                )
+                                if not df_pearson.empty
+                                else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
+                            )
+                            st.markdown(
+                                build_graph_info_strip_html(
+                                    strip_title="📊 Korelasi Status Wabak vs Saiz Kes & Kelengahan",
+                                    tooltip_title="🔗 Korelasi Status Wabak & Pekali Pearson (r)",
+                                    relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
+                                    formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
+                                    current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
                             fig_sc = px.bar(
                                 df_sc,
                                 x="Status Wabak",
@@ -4766,13 +4909,13 @@ if uploaded_file is not None or df_hist is not None:
                                 barmode="group",
                                 text_auto=True,
                                 color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
-                                title="Korelasi Status Wabak vs Saiz Kes & Kelengahan",
                             )
                             fig_sc.update_layout(
-                                height=340,
+                                height=320,
                                 xaxis_title="",
                                 yaxis_title="Nilai Purata",
                                 legend_title="",
+                                margin=dict(t=16, b=10, l=10, r=10),
                                 paper_bgcolor="rgba(255,255,255,0.75)",
                                 plot_bgcolor="rgba(255,255,255,0.55)",
                             )
@@ -4807,14 +4950,6 @@ if uploaded_file is not None or df_hist is not None:
                                 + df_to_styled_html_table(df_pearson)
                                 if not df_pearson.empty
                                 else ""
-                            )
-                            p_summary_lines = (
-                                "<br>".join(
-                                    f"• {html.escape(str(r['Pasangan Pembolehubah']))}: <b>r = {r['Pekali Korelasi (r)']}</b> ({r['Kekuatan Hubungan']}, n={r['Bil. Episod (n)']})"
-                                    for _, r in df_pearson.iterrows()
-                                )
-                                if not df_pearson.empty
-                                else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
                             )
                             if not df_pearson.empty:
                                 best_p = df_pearson.loc[
