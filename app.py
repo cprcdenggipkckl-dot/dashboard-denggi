@@ -44,15 +44,24 @@ st.markdown(
         --text-muted: #475569;
     }
 
-    /* Sembunyikan bar pembangun Streamlit (Fork, GitHub, Deploy) untuk paparan eksekutif */
+    /* Sembunyikan menu pembangun Streamlit sahaja, kekalkan butang buka/tutup Sidebar */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stDeployButton, [data-testid="stToolbar"], [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
+    .stDeployButton, [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
         display: none !important;
     }
     header[data-testid="stHeader"] {
         background: transparent !important;
         box-shadow: none !important;
+    }
+    [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.88) !important;
+        backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(14, 165, 233, 0.4) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10) !important;
     }
 
     /* Tipografi Global */
@@ -93,11 +102,11 @@ st.markdown(
 
     /* Sidebar Liquid-Glass */
     section[data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.62) !important;
+        background: rgba(255, 255, 255, 0.68) !important;
         backdrop-filter: blur(26px) saturate(185%) !important;
         -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.85) !important;
-        box-shadow: 4px 0 28px rgba(15, 23, 42, 0.04);
+        border-right: 1px solid rgba(255, 255, 255, 0.88) !important;
+        box-shadow: 4px 0 28px rgba(15, 23, 42, 0.05);
     }
 
     /* Kad Liquid-Glass Utama */
@@ -203,7 +212,7 @@ st.markdown(
         box-shadow: 0 14px 36px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
 
-    /* Gaya Tab Navigasi Liquid-Glass */
+    /* Gaya Sub-Tab Liquid-Glass */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background: rgba(255, 255, 255, 0.62);
@@ -227,20 +236,31 @@ st.markdown(
         box-shadow: 0 4px 14px rgba(14, 165, 233, 0.15) !important;
     }
 
-    /* Butang Liquid-Glass */
+    /* Butang Liquid-Glass & Butang Navigasi Aktif */
     .stButton > button, .stDownloadButton > button {
-        background: rgba(255, 255, 255, 0.78) !important;
+        background: rgba(255, 255, 255, 0.80) !important;
         backdrop-filter: blur(16px) !important;
         border: 1px solid rgba(255, 255, 255, 0.92) !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
         font-weight: 600 !important;
+        color: #0f172a !important;
         transition: all 0.22s ease !important;
     }
     .stButton > button:hover, .stDownloadButton > button:hover {
         background: rgba(255, 255, 255, 0.98) !important;
-        border-color: rgba(14, 165, 233, 0.5) !important;
-        box-shadow: 0 8px 22px rgba(14, 165, 233, 0.15) !important;
+        border-color: rgba(14, 165, 233, 0.55) !important;
+        box-shadow: 0 8px 22px rgba(14, 165, 233, 0.16) !important;
+    }
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 255, 255, 0.65) !important;
+        box-shadow: 0 8px 22px rgba(2, 132, 199, 0.28) !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #0369a1 0%, #4338ca 100%) !important;
+        color: #ffffff !important;
     }
 
     @media print {
@@ -591,7 +611,6 @@ components.html(
         const doc = window.parent.document;
         const win = window.parent;
 
-        // Suntik gaya portal terus ke dokumen induk supaya z-index 2147483647 mengatasi semua tab & butang
         if (!doc.getElementById('dw-portal-style')) {
             const st = doc.createElement('style');
             st.id = 'dw-portal-style';
@@ -709,7 +728,6 @@ components.html(
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
-            // 1. Kad Metrik atau Kad AI
             const card = target.closest('.metric-hover-card, .ai-hover-card');
             if (card) {
                 const bubble = card.querySelector('.metric-tooltip-bubble, .ai-tooltip-bubble');
@@ -727,7 +745,6 @@ components.html(
                 }
             }
 
-            // 2. Graf Plotly dalam Pusat Analisis AI (dipautkan ke kad AI dalam lajur sama)
             const plotEl = target.closest('[data-testid="stPlotlyChart"]');
             if (plotEl) {
                 const tabPanel = plotEl.closest('[data-testid="stTabPanel"]');
@@ -767,7 +784,7 @@ components.html(
             doc.addEventListener('mouseleave', hidePortal, true);
             win.addEventListener('scroll', hidePortal, true);
             doc.addEventListener('click', function(e) {
-                if (e.target && e.target.closest('[data-baseweb="tab"]')) {
+                if (e.target && (e.target.closest('[data-baseweb="tab"]') || e.target.closest('button'))) {
                     hidePortal();
                 }
             }, true);
@@ -1550,7 +1567,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
         + weekly_df["_me"].astype(str).str.zfill(2)
     )
 
-    # 1. Ramalan Trend 4 Minggu (OLS + Selang Keyakinan 95%)
     forecast_rows = []
     slope_per_week = 0.0
     s_err = 0.0
@@ -1599,7 +1615,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
             )
     df_forecast = pd.DataFrame(forecast_rows)
 
-    # 2. Korelasi Operasi & Kelewatan Kawalan Vektor
     lag_specs = [
         ("Onset → Notifikasi", "Tarikh Onset", "Tkh Notifikasi", 3),
         ("Notifikasi → PTP (Larviciding)", "Tkh Notifikasi", "Tkh PTP Aktiviti Pertama", 2),
@@ -1712,7 +1727,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
     df_status_corr = pd.DataFrame(status_comp_rows)
     df_pearson = pd.DataFrame(pearson_rows)
 
-    # 3. Matriks Risiko Eskalasi Wabak Aktif & Unjuran 14 Hari (95% CI Poisson)
     active_risk_rows = []
     df_act = df_w_all[
         ~df_w_all["Wabak Status"].astype(str).str.contains("Tamat", case=False, na=False)
@@ -1789,7 +1803,6 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
             by=["Skor Risiko", "Velocity (Kes/Hari)"], ascending=False
         ).reset_index(drop=True)
 
-    # 4. Ringkasan Spesifik Lokaliti Dipilih untuk Pelan Tindakan
     lok_summary = {}
     if df_lok is not None and not df_lok.empty and pilihan_lokaliti:
         df_l = df_lok.copy()
@@ -2347,39 +2360,61 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
 
 
 # --- PENGURUSAN STATE (MEMORI APLIKASI) ---
+VIEW_DAILY = "📋 Status Harian & Peta GPS"
+VIEW_LOCALITY = "📍 Analisis Lokaliti & Struktur"
+VIEW_AI = "🧠 Pusat Analisis AI & Ramalan (95% CI)"
+
 if "selected_lokaliti" not in st.session_state:
     st.session_state.selected_lokaliti = None
 if "selected_wabak" not in st.session_state:
     st.session_state.selected_wabak = None
 if "episode_filter" not in st.session_state:
     st.session_state.episode_filter = "Semua"
-if "switch_to_locality_tab" not in st.session_state:
-    st.session_state.switch_to_locality_tab = False
+if "active_workspace_view" not in st.session_state:
+    st.session_state.active_workspace_view = VIEW_DAILY
+if "scroll_to_view_top" not in st.session_state:
+    st.session_state.scroll_to_view_top = False
 if "ai_custom_question" not in st.session_state:
     st.session_state.ai_custom_question = (
         "Jana pelan tindakan taktikal dan ramalan risiko wabak semasa."
     )
 
 
+def set_workspace_view(view_name):
+    st.session_state.active_workspace_view = view_name
+
+
 def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = f"Wabak No: {format_wabak_no(wabak_no)}"
     st.session_state.episode_filter = "Semua"
-    st.session_state.switch_to_locality_tab = True
+    st.session_state.active_workspace_view = VIEW_LOCALITY
+    st.session_state.scroll_to_view_top = True
 
 
 def jump_to_lokaliti_from_table(lokaliti, wabak_no):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = f"Wabak No: {format_wabak_no(wabak_no)}"
     st.session_state.episode_filter = "Semua"
-    st.session_state.switch_to_locality_tab = True
+    st.session_state.active_workspace_view = VIEW_LOCALITY
+    st.session_state.scroll_to_view_top = True
 
 
 def set_lokaliti_sahaja(lokaliti):
     st.session_state.selected_lokaliti = lokaliti
     st.session_state.selected_wabak = None
     st.session_state.episode_filter = "Semua"
-    st.session_state.switch_to_locality_tab = True
+    st.session_state.active_workspace_view = VIEW_LOCALITY
+    st.session_state.scroll_to_view_top = True
+
+
+def on_quick_search_select():
+    chosen = st.session_state.get("main_quick_search_lokaliti")
+    if chosen and chosen != "-- Taip atau Pilih Lokaliti untuk Analisis --":
+        st.session_state.selected_lokaliti = chosen
+        st.session_state.selected_wabak = None
+        st.session_state.active_workspace_view = VIEW_LOCALITY
+        st.session_state.scroll_to_view_top = True
 
 
 def set_chart_year_range(state_key, start_yr, end_yr):
@@ -2701,38 +2736,90 @@ if uploaded_file is not None or df_hist is not None:
             )
 
         # =========================================================
-        # RUANG KERJA UTAMA BERASASKAN TAB (BEBAS SKROL PANJANG)
+        # BAR CARIAN PANTAS LOKALITI (MAIN WORKSPACE QUICK SEARCH)
         # =========================================================
-        main_tab1, main_tab2, main_tab3 = st.tabs(
-            [
-                "📋 Status Harian & Peta GPS",
-                "📍 Analisis Lokaliti & Struktur",
-                "🧠 Pusat Analisis AI & Ramalan (95% CI)",
-            ]
-        )
+        qs_c1, qs_c2 = st.columns([2.6, 1.4])
+        with qs_c1:
+            search_options = ["-- Taip atau Pilih Lokaliti untuk Analisis --"] + semua_lokaliti_list
+            st.selectbox(
+                "🔍 Carian Pantas Lokaliti (Taip mana-mana nama taman / flat / kondo):",
+                options=search_options,
+                index=0,
+                key="main_quick_search_lokaliti",
+                on_change=on_quick_search_select,
+            )
+        with qs_c2:
+            if pilihan_lokaliti:
+                ep_disp = episode_map.get(pilihan_lokaliti, 0)
+                st.markdown(
+                    f'<div style="background:rgba(255,255,255,0.78); border:1px solid rgba(14,165,233,0.35); border-radius:12px; padding:10px 14px; margin-top:22px; font-size:0.83rem;">'
+                    f'📍 <b>Lokaliti Semasa:</b> {html.escape(str(pilihan_lokaliti))} <span style="color:#0369a1; font-weight:700;">({ep_disp} Episod)</span>'
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
-        # Skrip penukaran tab automatik apabila pengguna klik mana-mana lokaliti dalam jadual atau kad Highlight
-        if st.session_state.switch_to_locality_tab:
-            st.session_state.switch_to_locality_tab = False
+        # =========================================================
+        # NAVIGASI RUANG KERJA LIQUID-GLASS (100% STATE-DRIVEN)
+        # =========================================================
+        st.markdown('<div id="dw-workspace-top-anchor"></div>', unsafe_allow_html=True)
+
+        if st.session_state.scroll_to_view_top:
+            st.session_state.scroll_to_view_top = False
             components.html(
                 """
                 <script>
                 setTimeout(function() {
-                    const tabs = window.parent.document.querySelectorAll('[data-baseweb="tab"]');
-                    if (tabs && tabs.length >= 2) {
-                        tabs[1].click();
-                        window.parent.scrollTo({ top: 0, behavior: 'smooth' });
+                    const el = window.parent.document.getElementById('dw-workspace-top-anchor');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                }, 120);
+                }, 100);
                 </script>
                 """,
                 height=0,
             )
 
+        nav_c1, nav_c2, nav_c3 = st.columns(3)
+        with nav_c1:
+            st.button(
+                VIEW_DAILY,
+                key="nav_btn_daily",
+                type="primary"
+                if st.session_state.active_workspace_view == VIEW_DAILY
+                else "secondary",
+                on_click=set_workspace_view,
+                args=(VIEW_DAILY,),
+                use_container_width=True,
+            )
+        with nav_c2:
+            st.button(
+                VIEW_LOCALITY,
+                key="nav_btn_locality",
+                type="primary"
+                if st.session_state.active_workspace_view == VIEW_LOCALITY
+                else "secondary",
+                on_click=set_workspace_view,
+                args=(VIEW_LOCALITY,),
+                use_container_width=True,
+            )
+        with nav_c3:
+            st.button(
+                VIEW_AI,
+                key="nav_btn_ai",
+                type="primary"
+                if st.session_state.active_workspace_view == VIEW_AI
+                else "secondary",
+                on_click=set_workspace_view,
+                args=(VIEW_AI,),
+                use_container_width=True,
+            )
+
+        st.markdown("---")
+
         # =========================================================
-        # TAB 1: JADUAL HARIAN STATUS WABAK, PETA GPS & HIGHLIGHT
+        # PAPARAN 1: JADUAL HARIAN STATUS WABAK, PETA GPS & HIGHLIGHT
         # =========================================================
-        with main_tab1:
+        if st.session_state.active_workspace_view == VIEW_DAILY:
             try:
                 df_sw_tamat, df_sw_aktif = build_status_wabak_tables(df, today_my)
                 sw_png_bytes = render_status_wabak_png(df_sw_tamat, df_sw_aktif)
@@ -3097,11 +3184,38 @@ if uploaded_file is not None or df_hist is not None:
                 st.error(f"Ralat pada paparan Status Harian / Peta: {tab1_err}")
 
         # =========================================================
-        # TAB 2: ANALISIS LOKALITI, STRUKTUR BERTINGKAT & KLINIKAL
+        # PAPARAN 2: ANALISIS LOKALITI, STRUKTUR BERTINGKAT & KLINIKAL
         # =========================================================
-        with main_tab2:
+        elif st.session_state.active_workspace_view == VIEW_LOCALITY:
             try:
                 if not df_lok.empty and pilihan_kategori:
+                    # Pemilih kategori / episod wabak terus di bahagian atas paparan lokaliti
+                    lok_bar_c1, lok_bar_c2 = st.columns([1.4, 2.6])
+                    with lok_bar_c1:
+                        st.button(
+                            "⬅️ Kembali ke Status Harian & Peta GPS",
+                            key="btn_back_to_daily",
+                            on_click=set_workspace_view,
+                            args=(VIEW_DAILY,),
+                            use_container_width=True,
+                        )
+                    with lok_bar_c2:
+                        if len(pilihan_wabak_list) > 1:
+                            idx_cat_main = (
+                                pilihan_wabak_list.index(pilihan_kategori)
+                                if pilihan_kategori in pilihan_wabak_list
+                                else 0
+                            )
+                            chosen_cat_main = st.selectbox(
+                                "Tukar Episod Wabak / Kategori Kes di Lokaliti Ini:",
+                                options=pilihan_wabak_list,
+                                index=idx_cat_main,
+                                key=f"main_cat_switch_{pilihan_lokaliti}",
+                            )
+                            if chosen_cat_main != pilihan_kategori:
+                                st.session_state.selected_wabak = chosen_cat_main
+                                st.rerun()
+
                     if pilihan_kategori == "Satu Kes (Kes Terpencil)":
                         df_filter = df_lok[df_lok["Jenis Kes"] == "Satu Kes"].copy()
                         status_wabak_semasa = "Tiada (Satu Kes)"
@@ -4284,9 +4398,9 @@ if uploaded_file is not None or df_hist is not None:
                 st.error(f"Ralat pada paparan Analisis Lokaliti: {tab2_err}")
 
         # =========================================================
-        # TAB 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI)
+        # PAPARAN 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI)
         # =========================================================
-        with main_tab3:
+        elif st.session_state.active_workspace_view == VIEW_AI:
             try:
                 st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
                 st.caption(
