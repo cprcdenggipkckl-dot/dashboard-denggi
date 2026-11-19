@@ -65,6 +65,18 @@ st.markdown(
         display: none !important;
     }
 
+    /* Keluarkan iframe skrip height=0 daripada aliran susun atur supaya tiada ruang kosong */
+    [data-testid="stElementContainer"]:has(iframe[height="0"]),
+    .element-container:has(iframe[height="0"]) {
+        position: absolute !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     /* Tipografi Global */
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -376,12 +388,14 @@ st.markdown(
         text-decoration: underline;
     }
 
-    /* Sembunyikan butang pencetus navigasi SW_JUMP_* dan EP_JUMP_* tanpa menyahaktifkannya */
+    /* Keluarkan butang pencetus navigasi SW_JUMP_* dan EP_JUMP_* daripada aliran susun atur supaya 0px ruang kosong */
     [class*="st-key-sw_jump_trigger_"],
     [class*="st-key-ep_jump_trigger_"] {
-        height: 0px !important;
-        min-height: 0px !important;
-        max-height: 0px !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: 0 !important;
+        width: 1px !important;
+        height: 1px !important;
         overflow: hidden !important;
         opacity: 0.01 !important;
         margin: 0 !important;
@@ -2843,7 +2857,7 @@ if uploaded_file is not None or df_hist is not None:
                                     if (txt.startsWith('SW_JUMP_')) {
                                         const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
                                         if (container) {
-                                            container.style.cssText = 'height:0px;min-height:0px;max-height:0px;overflow:hidden;opacity:0.01;margin:0;padding:0;';
+                                            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0.01;margin:0;padding:0;';
                                         }
                                     }
                                 });
@@ -3568,7 +3582,8 @@ if uploaded_file is not None or df_hist is not None:
                                     fig_sejarah.update_layout(
                                         title=f"Garis Masa Kekerapan, Saiz & Tempoh Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
                                         barmode="overlay",
-                                        height=450,
+                                        height=430,
+                                        margin=dict(t=42, b=10, l=10, r=10),
                                         dragmode="zoom",
                                         clickmode="event+select",
                                         paper_bgcolor="rgba(255,255,255,0.75)",
@@ -3595,7 +3610,7 @@ if uploaded_file is not None or df_hist is not None:
                                         key=chart_key,
                                     )
 
-                                    # Proses klik pada bar terus melalui seleksi asli Streamlit (tanpa ubah state dropdown selepas widget dicipta)
+                                    # Proses klik pada bar terus melalui seleksi asli Streamlit
                                     if selected_data:
                                         pts = getattr(
                                             getattr(selected_data, "selection", None),
@@ -3648,7 +3663,7 @@ if uploaded_file is not None or df_hist is not None:
                                                         )
                                                         st.rerun()
 
-                                    # Butang pencetus tersembunyi untuk klik pada Legenda (Legend Click)
+                                    # Butang pencetus tersembunyi (position:absolute, 0px gap) untuk klik pada Legenda
                                     for w_opt_str in unique_wabaks_str:
                                         st.button(
                                             f"EP_JUMP_{w_opt_str}",
@@ -3678,7 +3693,7 @@ if uploaded_file is not None or df_hist is not None:
                                                     if (txt.startsWith('EP_JUMP_')) {{
                                                         const container = btn.closest('[data-testid="stElementContainer"], .element-container') || btn.parentElement;
                                                         if (container) {{
-                                                            container.style.cssText = 'height:0px;min-height:0px;max-height:0px;overflow:hidden;opacity:0.01;margin:0;padding:0;';
+                                                            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;opacity:0.01;margin:0;padding:0;';
                                                         }}
                                                     }}
                                                 }});
@@ -3780,7 +3795,6 @@ if uploaded_file is not None or df_hist is not None:
                                                 if (plotEl && plotEl.dataset.legBound !== '1') {{
                                                     plotEl.dataset.legBound = '1';
 
-                                                    // Tangkap klik terus pada teks/kotak legenda SVG
                                                     plotEl.addEventListener('click', function(e) {{
                                                         const traceNode = e.target && e.target.closest ? e.target.closest('.legend .traces') : null;
                                                         if (traceNode) {{
