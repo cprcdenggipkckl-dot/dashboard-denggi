@@ -811,6 +811,14 @@ def format_wabak_no(val):
         return str(val).strip()
 
 
+def clean_locality_display(lok):
+    """Memastikan kurungan terbuka pada nama lokaliti ditutup dengan kemas untuk paparan jadual."""
+    s = str(lok).strip()
+    if s.count("(") > s.count(")"):
+        s += ")" * (s.count("(") - s.count(")"))
+    return s
+
+
 def format_kaw_jagaan(val):
     s = str(val).strip().upper()
     if "DEWAN BANDARAYA" in s or "DBKL" in s:
@@ -835,8 +843,10 @@ def fmt_date_short(dt):
 
 
 def get_status_style(st_str):
-    """Mengembalikan (warna_latar, warna_teks) dengan kontras tinggi untuk sel gelap."""
+    """Mengembalikan (warna_latar, warna_teks) sepadan dengan format jadual harian PKD."""
     s = str(st_str).upper()
+    if "BARU" in s:
+        return "#00ffff", "#000000"
     if "HOTSPOT" in s:
         return "#fe0000", "#ffffff"
     if "TAK TERKAWAL" in s:
@@ -844,7 +854,7 @@ def get_status_style(st_str):
     if "TERKAWAL" in s:
         return "#f4cccc", "#000000"
     if "TAMAT" in s:
-        return "#b6d7a8", "#000000"
+        return "#ffffff", "#000000"
     return "#ffffff", "#000000"
 
 
@@ -997,7 +1007,7 @@ def build_ai_hover_card_html(
 
 
 def build_status_wabak_tables(df, report_date):
-    """Menjana jadual WABAK TAMAT dan SENARAI WABAK AKTIF mengikut logik harian."""
+    """Menjana jadual WABAK TAMAT dan SENARAI WABAK AKTIF mengikut logik harian PKD."""
     report_date = pd.Timestamp(report_date).normalize()
     current_year = report_date.year
 
@@ -1029,9 +1039,10 @@ def build_status_wabak_tables(df, report_date):
     aktif_rows = []
 
     status_rank_map = {
-        "WABAK TERKAWAL": 0,
-        "WABAK TAK TERKAWAL": 1,
-        "HOTSPOT": 2,
+        "WABAK BARU": 0,
+        "WABAK TERKAWAL": 1,
+        "WABAK TAK TERKAWAL": 2,
+        "HOTSPOT": 3,
     }
 
     for (w_no, lok), grp in df_w.groupby(["Wabak No", "Lokaliti (Alamat Semasa)"]):
@@ -1074,17 +1085,21 @@ def build_status_wabak_tables(df, report_date):
         )
         jumlah_kes = len(grp)
         bil_episod = int(ep_count_map.get(lok, 1))
+        lok_raw = str(lok).strip()
+        lok_disp = clean_locality_display(lok_raw)
 
         if "TAMAT" in status_upper:
-            if t_tamat.normalize() == report_date:
+            # Paparkan wabak yang diisytihar tamat pada hari laporan atau sejak semalam (tetingkap 24-48 jam PKD)
+            if (report_date - pd.Timedelta(days=1)) <= t_tamat.normalize() <= report_date:
                 tempoh = max((t_tamat - t_mula).days, 1)
                 tamat_rows.append(
                     {
                         "Wabak No": w_no,
-                        "STATUS WABAK": "WABAK TAMAT",
+                        "STATUS WABAK": "WABAK TAMAT (WT)",
                         "KAW JAGAAN": kaw_val,
                         "PARLIMEN": parl_val,
-                        "LOKALITI": str(lok).strip(),
+                        "LOKALITI": lok_disp,
+                        "_lok_raw": lok_raw,
                         "JUMLAH KES": jumlah_kes,
                         "BIL EPISOD": bil_episod,
                         "TEMPOH WABAK": tempoh,
@@ -1101,13 +1116,14 @@ def build_status_wabak_tables(df, report_date):
                     "STATUS WABAK": status_upper,
                     "KAW JAGAAN": kaw_val,
                     "PARLIMEN": parl_val,
-                    "LOKALITI": str(lok).strip(),
+                    "LOKALITI": lok_disp,
+                    "_lok_raw": lok_raw,
                     "JUMLAH KES": jumlah_kes,
                     "BIL EPISOD": bil_episod,
                     "TEMPOH WABAK": tempoh,
                     "TARIKH MULA": fmt_date_short(t_mula),
                     "TARIKH TAMAT": fmt_date_short(t_tamat),
-                    "_rank": status_rank_map.get(status_upper, 3),
+                    "_rank": status_rank_map.get(status_upper, 4),
                 }
             )
 
@@ -1155,13 +1171,14 @@ def render_status_wabak_html(df_tamat, df_aktif):
             st_val = str(r["STATUS WABAK"])
             kaw_val = str(r["KAW JAGAAN"])
             parl_val = str(r["PARLIMEN"])
-            lok_val = str(r["LOKALITI"])
+            lok_disp = str(r["LOKALITI"])
+            lok_raw = str(r.get("_lok_raw", lok_disp))
             s_bg, s_fg = get_status_style(st_val)
-            fw = "700" if s_fg == "#ffffff" else "600"
+            fw = "700" if (s_fg == "#ffffff" or "BARU" in st_val) else "600"
             k_bg = get_kaw_bg(kaw_val)
             p_bg = get_parl_bg(parl_val)
 
-            clickable_rows.append((lok_val, r["Wabak No"]))
+            clickable_rows.append((lok_raw, r["Wabak No"]))
             cur_idx = row_idx
             row_idx += 1
 
@@ -1171,7 +1188,7 @@ def render_status_wabak_html(df_tamat, df_aktif):
                 f'<td style="background-color:{s_bg}; color:{s_fg}; font-weight:{fw}; text-align:left;">{html.escape(st_val)}</td>'
                 f'<td style="background-color:{k_bg}; color:#000000; text-align:center;">{html.escape(kaw_val)}</td>'
                 f'<td style="background-color:{p_bg}; color:#000000; text-align:center;">{html.escape(parl_val)}</td>'
-                f'<td class="sw-lok-link" data-sw-idx="{cur_idx}" title="Klik untuk membuka Analisis Lokaliti bagi {html.escape(lok_val)}">{html.escape(lok_val)}</td>'
+                f'<td class="sw-lok-link" data-sw-idx="{cur_idx}" title="Klik untuk membuka Analisis Lokaliti bagi {html.escape(lok_disp)}">{html.escape(lok_disp)}</td>'
                 f'<td style="background-color:#ffffff; color:#000000; text-align:right;">{int(r["JUMLAH KES"])}</td>'
                 f'<td style="background-color:#ffffff; color:#000000; text-align:right;">{int(r["BIL EPISOD"])}</td>'
                 f'<td style="background-color:#ffffff; color:#000000; text-align:right;">{int(r["TEMPOH WABAK"])}</td>'
@@ -1344,7 +1361,11 @@ def render_status_wabak_png(df_tamat, df_aktif):
                 kaw_val = str(r["KAW JAGAAN"])
                 parl_val = str(r["PARLIMEN"])
                 s_color, s_fg = get_status_style(st_val)
-                s_font = f_cell_bold if s_fg == "#ffffff" else f_cell
+                s_font = (
+                    f_cell_bold
+                    if (s_fg == "#ffffff" or "BARU" in st_val)
+                    else f_cell
+                )
 
                 row_specs = [
                     (str(int(r["BIL"])), s_color, s_fg, "right", s_font),
@@ -1789,7 +1810,7 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
             active_risk_rows.append(
                 {
                     "No. Wabak": format_wabak_no(w_no),
-                    "Lokaliti": str(lok).strip(),
+                    "Lokaliti": clean_locality_display(lok),
                     "Status Semasa": st_w,
                     "Jumlah Kes": kes,
                     "Tempoh (Hari)": tempoh,
@@ -2995,6 +3016,7 @@ if uploaded_file is not None or df_hist is not None:
                                 ),
                             )
                             map_color_discrete = {
+                                "Wabak Baru": "#00bcd4",
                                 "Hotspot": "#fe0000",
                                 "Wabak Tak Terkawal": "#2563eb",
                                 "Wabak Terkawal": "#f97316",
@@ -4734,6 +4756,7 @@ if uploaded_file is not None or df_hist is not None:
                                     "Skor Risiko": True,
                                 },
                                 color_discrete_map={
+                                    "Wabak Baru": "#00bcd4",
                                     "Wabak Terkawal": "#e06666",
                                     "Wabak Tak Terkawal": "#3e85c7",
                                     "Hotspot": "#fe0000",
