@@ -235,6 +235,26 @@ st.markdown(
         box-shadow: 0 14px 36px rgba(14, 165, 233, 0.16), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
 
+    /* Gaya Liquid-Glass untuk Kotak Pilihan (Selectbox) & Jarak Label */
+    [data-testid="stSelectbox"] label {
+        font-weight: 600 !important;
+        font-size: 0.86rem !important;
+        color: #1e293b !important;
+        margin-bottom: 6px !important;
+    }
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+        background: rgba(255, 255, 255, 0.84) !important;
+        backdrop-filter: blur(16px) !important;
+        border: 1px solid rgba(203, 213, 225, 0.9) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div:hover {
+        border-color: rgba(14, 165, 233, 0.6) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+    }
+
     /* Gaya Sub-Tab Liquid-Glass */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
@@ -402,17 +422,17 @@ st.markdown(
         padding: 0 !important;
     }
 
-    /* Kad Metrik Liquid-Glass dengan Kesan Tonasi */
+    /* Kad Metrik Liquid-Glass dengan Kesan Tonasi & Jarak Bawah Yang Jelas */
     .metric-hover-card {
         position: relative;
         background: var(--glass-bg-strong);
         border: 1px solid var(--glass-border);
         border-radius: 16px;
-        padding: 12px 14px;
+        padding: 13px 15px;
         box-shadow: var(--glass-shadow);
         transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
         cursor: help;
-        margin-bottom: 6px;
+        margin-bottom: 14px;
     }
     .metric-hover-card:hover {
         background: rgba(240, 249, 255, 0.96);
@@ -2643,6 +2663,9 @@ if uploaded_file is not None or df_hist is not None:
                 unsafe_allow_html=True,
             )
 
+        # Jarak pernafasan yang jelas antara 5 kotak KPI di atas dan bar carian/tapisan di bawah
+        st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
+
         # =========================================================
         # BAR KAWALAN UTAMA: TAPIS EPISOD, CARIAN PANTAS LOKALITI & CETAK PDF
         # =========================================================
@@ -2686,7 +2709,7 @@ if uploaded_file is not None or df_hist is not None:
             )
 
         with qs_c3:
-            st.markdown("<div style='height:27px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height:31px;'></div>", unsafe_allow_html=True)
             if st.button(
                 "🖨️ Cetak / Simpan PDF",
                 key="main_print_pdf_btn",
@@ -2700,6 +2723,8 @@ if uploaded_file is not None or df_hist is not None:
                     """,
                     height=0,
                 )
+
+        st.markdown('<div style="height: 10px;"></div>', unsafe_allow_html=True)
 
         if not senarai_lokaliti_tapis:
             pilihan_lokaliti = None
@@ -3176,7 +3201,7 @@ if uploaded_file is not None or df_hist is not None:
 
                     lok_bar_c1, lok_bar_c2 = st.columns([1.4, 2.6])
                     with lok_bar_c1:
-                        st.markdown("<div style='height:27px;'></div>", unsafe_allow_html=True)
+                        st.markdown("<div style='height:31px;'></div>", unsafe_allow_html=True)
                         st.button(
                             "⬅️ Kembali ke Status Harian & Peta GPS",
                             key="btn_back_to_daily",
