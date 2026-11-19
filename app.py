@@ -44,11 +44,11 @@ st.markdown(
         --text-muted: #475569;
     }
 
-    /* Sembunyikan semua butang pembangun di penjuru kanan atas (Share, Star, Edit, GitHub) */
+    /* Sembunyikan HANYA butang pembangun di penjuru kanan atas (Share, Star, Edit, GitHub),
+       sambil mengekalkan bekas stToolbar supaya butang buka/tutup Sidebar (>>) di kiri sentiasa kelihatan */
     #MainMenu,
     footer,
     .stDeployButton,
-    [data-testid="stToolbar"],
     [data-testid="stAppToolbar"],
     .stAppToolbar,
     [data-testid="stHeaderActionElements"],
@@ -57,25 +57,23 @@ st.markdown(
         display: none !important;
         visibility: hidden !important;
     }
-    header[data-testid="stHeader"] {
+    header[data-testid="stHeader"],
+    [data-testid="stToolbar"] {
         background: transparent !important;
         box-shadow: none !important;
     }
-    header[data-testid="stHeader"] [data-testid="stToolbar"],
-    header[data-testid="stHeader"] [data-testid="stHeaderActionElements"] {
-        display: none !important;
-    }
-    /* Kekalkan butang buka/tutup Sidebar di penjuru kiri atas */
     [data-testid="stSidebarCollapsedControl"],
-    [data-testid="stExpandSidebarButton"] {
-        display: flex !important;
+    [data-testid="stExpandSidebarButton"],
+    button[kind="headerNoPadding"] {
+        display: inline-flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background: rgba(255, 255, 255, 0.90) !important;
+        background: rgba(255, 255, 255, 0.92) !important;
         backdrop-filter: blur(16px) !important;
-        border: 1px solid rgba(14, 165, 233, 0.4) !important;
+        border: 1px solid rgba(14, 165, 233, 0.45) !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.10) !important;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12) !important;
+        color: #0369a1 !important;
     }
 
     /* Tipografi Global */
@@ -732,8 +730,6 @@ components.html(
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
-            // Hanya aktifkan gelembung formula pada kad metrik, kad jadual AI, atau jalur info di atas graf
-            // supaya titik plot dalam graf sentiasa bebas dibaca tanpa halangan
             const card = target.closest('.metric-hover-card, .ai-hover-card, .ai-graph-info-strip');
             if (card) {
                 const bubble = card.querySelector('.metric-tooltip-bubble, .ai-tooltip-bubble');
@@ -1939,7 +1935,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
 
     c_qa1, c_qa2 = st.columns([1.15, 1.0])
 
-    # MODE 1: RAMALAN 4 MINGGU & 95% CI
     if is_forecast_q:
         with c_qa1:
             fc_table_html = df_to_styled_html_table(df_forecast)
@@ -2042,7 +2037,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     unsafe_allow_html=True,
                 )
 
-    # MODE 2: KORELASI KELEWATAN & ESKALASI
     elif is_corr_q:
         with c_qa1:
             lag_badge = {
@@ -2155,7 +2149,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     unsafe_allow_html=True,
                 )
 
-    # MODE 3: PELAN TINDAKAN TAKTIKAL & LOKALITI (DEFAULT)
     else:
         lok_name = lok_sum.get("lokaliti", "Lokaliti Dipilih")
         kluster_txt = lok_sum.get("kluster_utama", "Radius 200m kes indeks")
@@ -2284,7 +2277,6 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     unsafe_allow_html=True,
                 )
 
-    # Panggil Gemini API yang tertanam dalam Secrets (dengan cache sesi untuk menjimatkan kuota percuma harian)
     if embedded_api_key:
         fact_packet = {
             "tarikh_laporan": fmt_date_short(today_my),
@@ -3621,7 +3613,7 @@ if uploaded_file is not None or df_hist is not None:
                                                 marker=dict(
                                                     color=color_map[w_str],
                                                     line=dict(
-                                                        width=2.4
+                                                        width=2.6
                                                         if is_selected_bar
                                                         else 0.8,
                                                         color="#0f172a"
@@ -3634,7 +3626,7 @@ if uploaded_file is not None or df_hist is not None:
                                                     not active_w_clean
                                                     or is_selected_bar
                                                 )
-                                                else 0.65,
+                                                else 0.62,
                                                 selected=dict(marker=dict(opacity=1.0)),
                                                 unselected=dict(
                                                     marker=dict(opacity=0.85)
@@ -3705,7 +3697,7 @@ if uploaded_file is not None or df_hist is not None:
                                         title=f"Garis Masa Kekerapan, Saiz & Tempoh Setiap Wabak di {pilihan_lokaliti} ({tajuk_tempoh})",
                                         barmode="overlay",
                                         height=450,
-                                        dragmode="pan",
+                                        clickmode="event+select",
                                         paper_bgcolor="rgba(255,255,255,0.75)",
                                         plot_bgcolor="rgba(255,255,255,0.55)",
                                         legend=dict(
@@ -3729,7 +3721,7 @@ if uploaded_file is not None or df_hist is not None:
                                         key=f"plotly_sejarah_{pilihan_lokaliti}_{yr_start}_{yr_end}",
                                     )
 
-                                    # Butang pencetus tersembunyi untuk klik pada Legenda (Legend Click) bagi setiap episod wabak
+                                    # Butang pencetus tersembunyi untuk klik pada Bar atau Legenda (Bar & Legend Click)
                                     for w_opt_str in unique_wabaks_str:
                                         st.button(
                                             f"EP_JUMP_{w_opt_str}",
@@ -3855,27 +3847,45 @@ if uploaded_file is not None or df_hist is not None:
                                                     syncZoomLive();
                                                 }}
 
-                                                const plotEl = findHistoryPlot(sliderEl);
-                                                if (plotEl && typeof plotEl.on === 'function' && plotEl.dataset.legBound !== '1') {{
-                                                    plotEl.dataset.legBound = '1';
-                                                    plotEl.on('plotly_legendclick', function(ev) {{
-                                                        if (ev && ev.data && typeof ev.curveNumber === 'number') {{
-                                                            const trace = ev.data[ev.curveNumber];
-                                                            if (trace && trace.name) {{
-                                                                triggerEpisodeSelect(trace.name);
+                                                const plots = doc.querySelectorAll('[data-testid="stPlotlyChart"] .js-plotly-plot');
+                                                plots.forEach(plotEl => {{
+                                                    if (typeof plotEl.on === 'function' && plotEl.dataset.epClickBound !== '1') {{
+                                                        plotEl.dataset.epClickBound = '1';
+
+                                                        // Klik pada Bar episod dalam graf
+                                                        plotEl.on('plotly_click', function(ev) {{
+                                                            if (ev && ev.points && ev.points.length > 0) {{
+                                                                const pt = ev.points[0];
+                                                                let wStr = null;
+                                                                if (pt.customdata && pt.customdata.length > 3) {{
+                                                                    wStr = pt.customdata[3];
+                                                                }} else if (pt.data && pt.data.name) {{
+                                                                    wStr = pt.data.name;
+                                                                }}
+                                                                if (wStr) triggerEpisodeSelect(wStr);
                                                             }}
-                                                        }}
-                                                        return false;
-                                                    }});
-                                                    plotEl.on('plotly_legenddoubleclick', function() {{
-                                                        return false;
-                                                    }});
-                                                }}
+                                                        }});
+
+                                                        // Klik pada Legenda No. Wabak di sebelah kanan graf
+                                                        plotEl.on('plotly_legendclick', function(ev) {{
+                                                            if (ev && ev.data && typeof ev.curveNumber === 'number') {{
+                                                                const trace = ev.data[ev.curveNumber];
+                                                                if (trace && trace.name) {{
+                                                                    triggerEpisodeSelect(trace.name);
+                                                                }}
+                                                            }}
+                                                            return false;
+                                                        }});
+                                                        plotEl.on('plotly_legenddoubleclick', function() {{
+                                                            return false;
+                                                        }});
+                                                    }}
+                                                }});
                                             }}
 
                                             bindAll();
-                                            const retryTimer = setInterval(bindAll, 350);
-                                            setTimeout(() => clearInterval(retryTimer), 6000);
+                                            const retryTimer = setInterval(bindAll, 300);
+                                            setTimeout(() => clearInterval(retryTimer), 7000);
                                         }})();
                                         </script>
                                         """,
@@ -3884,33 +3894,52 @@ if uploaded_file is not None or df_hist is not None:
 
                                     if selected_data and selected_data.selection.points:
                                         pt = selected_data.selection.points[0]
-                                        cdata = pt.get("customdata")
-                                        if cdata and len(cdata) > 3:
-                                            clicked_w_no_str = str(cdata[3])
-                                        elif "curve_number" in pt:
-                                            sorted_df_plot = df_plot.sort_values(
-                                                by=["Tarikh Mula", "Wabak_Str"]
-                                            ).reset_index(drop=True)
-                                            clicked_w_no_str = str(
-                                                sorted_df_plot.iloc[pt["curve_number"]][
-                                                    "Wabak_Str"
-                                                ]
+                                        click_sig = (
+                                            pilihan_lokaliti,
+                                            yr_start,
+                                            yr_end,
+                                            pt.get("curve_number"),
+                                            pt.get("point_number"),
+                                        )
+                                        if (
+                                            st.session_state.get("last_sejarah_bar_sig")
+                                            != click_sig
+                                        ):
+                                            st.session_state["last_sejarah_bar_sig"] = (
+                                                click_sig
                                             )
-                                        else:
-                                            clicked_w_no_str = None
+                                            cdata = pt.get("customdata")
+                                            if cdata and len(cdata) > 3:
+                                                clicked_w_no_str = str(cdata[3])
+                                            elif "curve_number" in pt:
+                                                sorted_df_plot = df_plot.sort_values(
+                                                    by=["Tarikh Mula", "Wabak_Str"]
+                                                ).reset_index(drop=True)
+                                                if 0 <= pt["curve_number"] < len(
+                                                    sorted_df_plot
+                                                ):
+                                                    clicked_w_no_str = str(
+                                                        sorted_df_plot.iloc[
+                                                            pt["curve_number"]
+                                                        ]["Wabak_Str"]
+                                                    )
+                                                else:
+                                                    clicked_w_no_str = None
+                                            else:
+                                                clicked_w_no_str = None
 
-                                        if clicked_w_no_str:
-                                            target_w_str = (
-                                                f"Wabak No: {clicked_w_no_str}"
-                                            )
-                                            if (
-                                                st.session_state.selected_wabak
-                                                != target_w_str
-                                            ):
-                                                st.session_state.selected_wabak = (
-                                                    target_w_str
+                                            if clicked_w_no_str:
+                                                target_w_str = (
+                                                    f"Wabak No: {clicked_w_no_str}"
                                                 )
-                                                st.rerun()
+                                                if (
+                                                    st.session_state.selected_wabak
+                                                    != target_w_str
+                                                ):
+                                                    st.session_state.selected_wabak = (
+                                                        target_w_str
+                                                    )
+                                                    st.rerun()
                                 else:
                                     st.info(
                                         f"Tiada episod wabak direkodkan di {pilihan_lokaliti} bagi tempoh **{tajuk_tempoh}**. Pilih tahun lain atau klik **Semua ({min_yr_plot}–{max_yr_plot})** untuk melihat keseluruhan garis masa."
