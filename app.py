@@ -2362,12 +2362,14 @@ def set_lokaliti_dan_wabak(lokaliti, wabak_no):
     st.session_state.episode_filter = "Semua"
     st.session_state.active_workspace_view = VIEW_LOCALITY
     st.session_state.scroll_to_view_top = True
+    st.session_state.last_sejarah_click_sig = None
 
 
 def select_wabak_episode_only(wabak_no_str):
     target_val = f"Wabak No: {format_wabak_no(wabak_no_str)}"
     st.session_state.selected_wabak = target_val
     st.session_state["locality_episode_selector"] = target_val
+    st.session_state.last_sejarah_click_sig = None
 
 
 def jump_to_lokaliti_from_table(lokaliti, wabak_no):
@@ -2376,6 +2378,7 @@ def jump_to_lokaliti_from_table(lokaliti, wabak_no):
     st.session_state.episode_filter = "Semua"
     st.session_state.active_workspace_view = VIEW_LOCALITY
     st.session_state.scroll_to_view_top = True
+    st.session_state.last_sejarah_click_sig = None
 
 
 def set_lokaliti_sahaja(lokaliti):
@@ -2384,6 +2387,7 @@ def set_lokaliti_sahaja(lokaliti):
     st.session_state.episode_filter = "Semua"
     st.session_state.active_workspace_view = VIEW_LOCALITY
     st.session_state.scroll_to_view_top = True
+    st.session_state.last_sejarah_click_sig = None
 
 
 def on_quick_search_select():
@@ -2393,12 +2397,14 @@ def on_quick_search_select():
         st.session_state.selected_wabak = None
         st.session_state.active_workspace_view = VIEW_LOCALITY
         st.session_state.scroll_to_view_top = True
+        st.session_state.last_sejarah_click_sig = None
 
 
 def on_locality_episode_dropdown_change():
     chosen_ep = st.session_state.get("locality_episode_selector")
     if chosen_ep:
         st.session_state.selected_wabak = chosen_ep
+        st.session_state.last_sejarah_click_sig = None
 
 
 def set_chart_year_range(state_key, start_yr, end_yr):
@@ -2681,7 +2687,6 @@ if uploaded_file is not None or df_hist is not None:
                     height=0,
                 )
 
-        # Tentukan lokaliti dan kategori aktif yang sah
         if not senarai_lokaliti_tapis:
             pilihan_lokaliti = None
             df_lok = pd.DataFrame()
@@ -3152,7 +3157,7 @@ if uploaded_file is not None or df_hist is not None:
         elif st.session_state.active_workspace_view == VIEW_LOCALITY:
             try:
                 if not df_lok.empty and pilihan_kategori:
-                    # Segerakkan pemilih episod dengan state semasa
+                    # Segerakkan pemilih episod SEBELUM widget st.selectbox dicipta
                     st.session_state["locality_episode_selector"] = pilihan_kategori
 
                     lok_bar_c1, lok_bar_c2 = st.columns([1.4, 2.6])
@@ -3590,7 +3595,7 @@ if uploaded_file is not None or df_hist is not None:
                                         key=chart_key,
                                     )
 
-                                    # Proses klik pada bar terus melalui seleksi asli Streamlit
+                                    # Proses klik pada bar terus melalui seleksi asli Streamlit (tanpa ubah state dropdown selepas widget dicipta)
                                     if selected_data:
                                         pts = getattr(
                                             getattr(selected_data, "selection", None),
@@ -3641,9 +3646,6 @@ if uploaded_file is not None or df_hist is not None:
                                                         st.session_state.selected_wabak = (
                                                             target_w_str
                                                         )
-                                                        st.session_state[
-                                                            "locality_episode_selector"
-                                                        ] = target_w_str
                                                         st.rerun()
 
                                     # Butang pencetus tersembunyi untuk klik pada Legenda (Legend Click)
