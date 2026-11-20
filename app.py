@@ -633,7 +633,7 @@ st.markdown(
 )
 
 # =========================================================
-# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (KAD, JADUAL & KAWASAN DATA GRAF AI)
+# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (TANPA MENGHALANG DATA & BOLEH SKROL)
 # =========================================================
 components.html(
     """
@@ -649,16 +649,21 @@ components.html(
                 #dw-global-tooltip-portal {
                     position: fixed;
                     z-index: 2147483647;
-                    pointer-events: none;
-                    width: 410px;
-                    max-width: 92vw;
-                    background: rgba(15, 23, 42, 0.96);
+                    pointer-events: auto;
+                    width: 420px;
+                    max-width: 90vw;
+                    max-height: 76vh;
+                    overflow-y: auto;
+                    overscroll-behavior: contain;
+                    scrollbar-width: thin;
+                    scrollbar-color: #38bdf8 rgba(255, 255, 255, 0.12);
+                    background: rgba(15, 23, 42, 0.97);
                     backdrop-filter: blur(22px) saturate(180%);
                     -webkit-backdrop-filter: blur(22px) saturate(180%);
                     color: #f8fafc;
-                    padding: 15px 17px;
+                    padding: 15px 17px 16px 17px;
                     border-radius: 14px;
-                    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(125, 211, 252, 0.32);
+                    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(125, 211, 252, 0.36);
                     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
                     font-size: 0.82rem;
                     line-height: 1.5;
@@ -668,10 +673,45 @@ components.html(
                     transform: translateY(4px);
                     transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
                 }
+                #dw-global-tooltip-portal::-webkit-scrollbar {
+                    width: 7px;
+                }
+                #dw-global-tooltip-portal::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.08);
+                    border-radius: 8px;
+                }
+                #dw-global-tooltip-portal::-webkit-scrollbar-thumb {
+                    background: #38bdf8;
+                    border-radius: 8px;
+                }
                 #dw-global-tooltip-portal.dw-visible {
                     opacity: 1;
                     visibility: visible;
                     transform: translateY(0);
+                }
+                #dw-global-tooltip-portal .dw-portal-close-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 0.71rem;
+                    color: #94a3b8;
+                    margin-bottom: 6px;
+                    padding-bottom: 4px;
+                    border-bottom: 1px dashed rgba(148, 163, 184, 0.25);
+                }
+                #dw-global-tooltip-portal .dw-portal-close-btn {
+                    background: rgba(255, 255, 255, 0.12);
+                    color: #e2e8f0;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 1px 7px;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                }
+                #dw-global-tooltip-portal .dw-portal-close-btn:hover {
+                    background: rgba(239, 68, 68, 0.75);
+                    color: #ffffff;
                 }
                 #dw-global-tooltip-portal .tooltip-title {
                     font-size: 0.92rem;
@@ -713,40 +753,77 @@ components.html(
         }
 
         let activeHost = null;
+        let hideTimer = null;
 
-        function hidePortal() {
+        function clearHideTimer() {
+            if (hideTimer) {
+                clearTimeout(hideTimer);
+                hideTimer = null;
+            }
+        }
+
+        function hidePortalNow() {
+            clearHideTimer();
             if (portal) portal.classList.remove('dw-visible');
             activeHost = null;
         }
 
-        function positionPortal(anchorRect, isChartArea) {
-            const pad = 12;
-            const pRect = portal.getBoundingClientRect();
-            const pWidth = pRect.width || 410;
-            const pHeight = pRect.height || 220;
+        function scheduleHidePortal() {
+            clearHideTimer();
+            hideTimer = setTimeout(() => {
+                if (portal && portal.matches(':hover')) return;
+                if (activeHost && activeHost.matches(':hover')) return;
+                hidePortalNow();
+            }, 280);
+        }
 
-            if (isChartArea) {
-                // Paparkan di penjuru kanan atas kawasan data graf supaya tidak menghalang titik plot atau kursor
-                let left = anchorRect.right - pWidth - 14;
+        function positionPortalSideBySide(anchorRect, isKpiCard) {
+            const pad = 14;
+            const gap = 14;
+            const pWidth = Math.min(420, win.innerWidth - pad * 2);
+            portal.style.width = pWidth + 'px';
+
+            const pRect = portal.getBoundingClientRect();
+            const pHeight = Math.min(pRect.height || 260, win.innerHeight * 0.76);
+
+            // Kad KPI kecil di bahagian atas: papar terus di bawah kad supaya tidak menutup kad KPI bersebelahan
+            if (isKpiCard) {
+                let left = anchorRect.left;
+                if (left + pWidth > win.innerWidth - pad) {
+                    left = win.innerWidth - pWidth - pad;
+                }
                 if (left < pad) left = pad;
-                let top = anchorRect.top + 10;
+                let top = anchorRect.bottom + 8;
                 if (top + pHeight > win.innerHeight - pad) {
-                    top = Math.max(pad, win.innerHeight - pHeight - pad);
+                    top = Math.max(pad, anchorRect.top - pHeight - 8);
                 }
                 portal.style.left = Math.round(left) + 'px';
                 portal.style.top = Math.round(top) + 'px';
                 return;
             }
 
-            let left = anchorRect.left;
-            if (left + pWidth > win.innerWidth - pad) {
-                left = win.innerWidth - pWidth - pad;
-            }
-            if (left < pad) left = pad;
+            // Bagi Graf & Jadual: letak di kolum bertentangan supaya data graf, titik plot & jadual semasa 100% TIDAK TERHALANG
+            const anchorCenterX = anchorRect.left + anchorRect.width / 2;
+            const isLeftColumn = anchorCenterX < (win.innerWidth * 0.52);
 
-            let top = anchorRect.bottom + 8;
+            let left;
+            if (isLeftColumn) {
+                // Hos berada di sebelah kiri -> letak gelembung di sebelah kanan hos
+                left = anchorRect.right + gap;
+                if (left + pWidth > win.innerWidth - pad) {
+                    left = win.innerWidth - pWidth - pad;
+                }
+            } else {
+                // Hos berada di sebelah kanan -> letak gelembung di sebelah kiri hos
+                left = anchorRect.left - pWidth - gap;
+                if (left < pad) {
+                    left = pad;
+                }
+            }
+
+            let top = anchorRect.top;
             if (top + pHeight > win.innerHeight - pad) {
-                top = anchorRect.top - pHeight - 8;
+                top = win.innerHeight - pHeight - pad;
             }
             if (top < pad) top = pad;
 
@@ -771,53 +848,89 @@ components.html(
             return null;
         }
 
+        function renderBubbleIntoPortal(hostEl, bubbleEl, isKpiCard) {
+            clearHideTimer();
+            if (activeHost !== hostEl) {
+                activeHost = hostEl;
+                portal.innerHTML =
+                    '<div class="dw-portal-close-bar">' +
+                    '<span>↕️ Arah kursor ke sini & skrol untuk baca penuh</span>' +
+                    '<button type="button" class="dw-portal-close-btn" title="Tutup">✕</button>' +
+                    '</div>' +
+                    bubbleEl.innerHTML;
+                portal.scrollTop = 0;
+                portal.classList.add('dw-visible');
+                const closeBtn = portal.querySelector('.dw-portal-close-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        hidePortalNow();
+                    });
+                }
+            }
+            positionPortalSideBySide(hostEl.getBoundingClientRect(), isKpiCard);
+        }
+
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
-            const card = target.closest('.metric-hover-card, .ai-hover-card, .ai-graph-info-strip');
-            if (card) {
-                const bubble = card.querySelector('.metric-tooltip-bubble, .ai-tooltip-bubble');
+            // Jika kursor berada di dalam gelembung portal sendiri, kekalkan paparan supaya pengguna boleh skrol
+            if (target === portal || portal.contains(target)) {
+                clearHideTimer();
+                return;
+            }
+
+            const kpiCard = target.closest('.metric-hover-card');
+            if (kpiCard) {
+                const bubble = kpiCard.querySelector('.metric-tooltip-bubble');
                 if (bubble) {
-                    if (activeHost !== card) {
-                        activeHost = card;
-                        portal.innerHTML = bubble.innerHTML;
-                        portal.classList.add('dw-visible');
-                    }
-                    positionPortal(card.getBoundingClientRect(), false);
+                    renderBubbleIntoPortal(kpiCard, bubble, true);
                     return;
                 }
             }
 
-            // Jika kursor berada di atas kawasan data graf AI, paparkan gelembung naratif graf tersebut
+            const aiCard = target.closest('.ai-hover-card, .ai-graph-info-strip');
+            if (aiCard) {
+                const bubble = aiCard.querySelector('.ai-tooltip-bubble');
+                if (bubble) {
+                    renderBubbleIntoPortal(aiCard, bubble, false);
+                    return;
+                }
+            }
+
             const chartEl = target.closest('[data-testid="stPlotlyChart"]');
             if (chartEl) {
                 const bubble = findPrecedingChartBubble(chartEl);
                 if (bubble) {
-                    if (activeHost !== chartEl) {
-                        activeHost = chartEl;
-                        portal.innerHTML = bubble.innerHTML;
-                        portal.classList.add('dw-visible');
-                    }
-                    positionPortal(chartEl.getBoundingClientRect(), true);
+                    renderBubbleIntoPortal(chartEl, bubble, false);
                     return;
                 }
             }
 
-            if (activeHost && !activeHost.contains(target)) {
-                hidePortal();
+            if (activeHost) {
+                scheduleHidePortal();
             }
         }
 
         if (!win._dwTooltipPortalBound) {
             win._dwTooltipPortalBound = true;
+            portal.addEventListener('mouseenter', clearHideTimer);
+            portal.addEventListener('mouseleave', scheduleHidePortal);
+
             doc.addEventListener('mouseover', function(e) {
                 showPortalForTarget(e.target);
             }, true);
-            doc.addEventListener('mouseleave', hidePortal, true);
-            win.addEventListener('scroll', hidePortal, true);
+            doc.addEventListener('mouseleave', scheduleHidePortal, true);
+            win.addEventListener('scroll', function(e) {
+                // Jangan tutup gelembung apabila pengguna sedang skrol di dalam gelembung portal itu sendiri
+                if (e && e.target && (e.target === portal || (portal && portal.contains(e.target)))) {
+                    return;
+                }
+                hidePortalNow();
+            }, true);
             doc.addEventListener('click', function(e) {
-                if (e.target && (e.target.closest('[data-baseweb="tab"]') || e.target.closest('button'))) {
-                    hidePortal();
+                if (e.target && (e.target.closest('[data-baseweb="tab"]') || e.target.closest('button:not(.dw-portal-close-btn)'))) {
+                    hidePortalNow();
                 }
             }, true);
         }
@@ -4797,7 +4910,7 @@ if uploaded_file is not None or df_hist is not None:
             try:
                 st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
                 st.caption(
-                    "Arahkan kursor pada kawasan data graf, lencana formula atau jadual di bawah untuk memaparkan naratif terperinci POA Denggi & pengiraan semasa."
+                    "Arahkan kursor pada mana-mana graf atau jadual — gelembung naratif akan muncul di sebelah bersebelahan tanpa menutup data, dan anda boleh menggerakkan kursor ke dalam gelembung untuk skrol bacaan penuh."
                 )
 
                 poa_period_options = {
