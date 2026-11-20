@@ -633,7 +633,7 @@ st.markdown(
 )
 
 # =========================================================
-# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (TANPA MENGHALANG PLOT GRAF)
+# PORTAL TERAPUNG GLOBAL UNTUK GELEMBUNG INFO (KAD, JADUAL & KAWASAN DATA GRAF AI)
 # =========================================================
 components.html(
     """
@@ -650,7 +650,7 @@ components.html(
                     position: fixed;
                     z-index: 2147483647;
                     pointer-events: none;
-                    width: 390px;
+                    width: 410px;
                     max-width: 92vw;
                     background: rgba(15, 23, 42, 0.96);
                     backdrop-filter: blur(22px) saturate(180%);
@@ -719,11 +719,24 @@ components.html(
             activeHost = null;
         }
 
-        function positionPortal(anchorRect) {
+        function positionPortal(anchorRect, isChartArea) {
             const pad = 12;
             const pRect = portal.getBoundingClientRect();
-            const pWidth = pRect.width || 390;
-            const pHeight = pRect.height || 210;
+            const pWidth = pRect.width || 410;
+            const pHeight = pRect.height || 220;
+
+            if (isChartArea) {
+                // Paparkan di penjuru kanan atas kawasan data graf supaya tidak menghalang titik plot atau kursor
+                let left = anchorRect.right - pWidth - 14;
+                if (left < pad) left = pad;
+                let top = anchorRect.top + 10;
+                if (top + pHeight > win.innerHeight - pad) {
+                    top = Math.max(pad, win.innerHeight - pHeight - pad);
+                }
+                portal.style.left = Math.round(left) + 'px';
+                portal.style.top = Math.round(top) + 'px';
+                return;
+            }
 
             let left = anchorRect.left;
             if (left + pWidth > win.innerWidth - pad) {
@@ -741,6 +754,23 @@ components.html(
             portal.style.top = Math.round(top) + 'px';
         }
 
+        function findPrecedingChartBubble(chartContainer) {
+            if (!chartContainer) return null;
+            let el = chartContainer.closest('[data-testid="stElementContainer"], .element-container') || chartContainer;
+            let prev = el.previousElementSibling;
+            let hops = 0;
+            while (prev && hops < 3) {
+                const strip = prev.querySelector('.ai-graph-info-strip');
+                if (strip) {
+                    const bubble = strip.querySelector('.ai-tooltip-bubble');
+                    if (bubble) return bubble;
+                }
+                prev = prev.previousElementSibling;
+                hops += 1;
+            }
+            return null;
+        }
+
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
@@ -753,7 +783,22 @@ components.html(
                         portal.innerHTML = bubble.innerHTML;
                         portal.classList.add('dw-visible');
                     }
-                    positionPortal(card.getBoundingClientRect());
+                    positionPortal(card.getBoundingClientRect(), false);
+                    return;
+                }
+            }
+
+            // Jika kursor berada di atas kawasan data graf AI, paparkan gelembung naratif graf tersebut
+            const chartEl = target.closest('[data-testid="stPlotlyChart"]');
+            if (chartEl) {
+                const bubble = findPrecedingChartBubble(chartEl);
+                if (bubble) {
+                    if (activeHost !== chartEl) {
+                        activeHost = chartEl;
+                        portal.innerHTML = bubble.innerHTML;
+                        portal.classList.add('dw-visible');
+                    }
+                    positionPortal(chartEl.getBoundingClientRect(), true);
                     return;
                 }
             }
@@ -934,7 +979,7 @@ def build_graph_info_strip_html(
     formula_html,
     current_calc_html,
 ):
-    """Jalur lencana metodologi & formula di bahagian atas graf AI supaya tidak menghalang titik plot."""
+    """Jalur lencana metodologi & formula di bahagian atas graf AI (juga aktif bila kursor di atas kawasan data graf)."""
     return (
         f'<div class="ai-graph-info-strip">'
         f"<span>{html.escape(strip_title)}</span>"
@@ -1469,7 +1514,12 @@ def read_raw_bytes(raw_bytes, file_name):
     if "Wabak No" in df.columns:
         df["Wabak No"] = pd.to_numeric(df["Wabak No"], errors="coerce")
 
-    for col in ["Jenis Kes", "Wabak Status", "Lokaliti (Alamat Semasa)"]:
+    for col in [
+        "Jenis Kes",
+        "Wabak Status",
+        "Lokaliti (Alamat Semasa)",
+        "Pihak Pentadbir Lokaliti",
+    ]:
         if col in df.columns:
             df[col] = (
                 df[col]
@@ -1483,6 +1533,9 @@ def read_raw_bytes(raw_bytes, file_name):
         "Tarikh Daftar",
         "Tarikh Onset",
         "Tkh Notifikasi",
+        "Tkh Input Notifikasi",
+        "Tarikh Diagnosis",
+        "Tarikh Siasatan Kes",
         "Tkh PTP Aktiviti Pertama",
         "Tkh SRT Aktiviti Pertama",
         "Tkh ULV Aktiviti Pertama",
@@ -1579,10 +1632,169 @@ def parse_address(address):
 
 
 # =========================================================
-# ENJIN AI EPIDEMIOLOGI BERASASKAN DATA (ZERO-HALLUCINATION)
+# ENJIN AI EPIDEMIOLOGI & PENCAPAIAN KPI POA DENGGI (ZERO-HALLUCINATION)
 # =========================================================
-def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my):
-    """Mengira ramalan 4 minggu (95% CI), matriks risiko eskalasi, korelasi operasi & pelan tindakan terus daripada data."""
+def compute_poa_kpi_summary(df_sub):
+    """Mengira pencapaian KPI POA Denggi sebenar (Indikator 1/A1, Indikator 4/A2, Indikator 9/C1 & Indikator 10/C1)."""
+    if df_sub is None or df_sub.empty:
+        return pd.DataFrame(), {"sporadik_total": 0, "sporadik_kkm": 0, "target_premises_med": 0}
+
+    # Indikator 1 (A1): Notifikasi denggi oleh fasiliti kesihatan dalam tempoh 24 jam (DNTI) — Sasaran 100%
+    if "Tkh Notifikasi" in df_sub.columns and "Tarikh Diagnosis" in df_sub.columns:
+        d1 = (df_sub["Tkh Notifikasi"] - df_sub["Tarikh Diagnosis"]).dt.days
+        v1 = d1.notna()
+        num1 = int((d1[v1] <= 1).sum())
+        den1 = int(v1.sum())
+    elif "Tkh Input Notifikasi" in df_sub.columns and "Tkh Notifikasi" in df_sub.columns:
+        d1 = (df_sub["Tkh Input Notifikasi"] - df_sub["Tkh Notifikasi"]).dt.days
+        v1 = d1.notna()
+        num1 = int((d1[v1] <= 1).sum())
+        den1 = int(v1.sum())
+    else:
+        num1, den1 = len(df_sub), len(df_sub)
+    pct1 = round((num1 / max(den1, 1)) * 100, 1)
+    gap1 = num1 - int(np.ceil(1.00 * den1))
+
+    # Indikator 4 (A2): Siasatan dan pendaftaran kes dalam tempoh 24 jam daripada tarikh notifikasi — Sasaran 85%
+    if "Tkh Input Notifikasi" in df_sub.columns:
+        ref_notif = df_sub["Tkh Input Notifikasi"].fillna(df_sub["Tkh Notifikasi"])
+    else:
+        ref_notif = df_sub["Tkh Notifikasi"]
+    d4 = (df_sub["Tarikh Daftar"] - ref_notif).dt.days
+    v4 = d4.notna()
+    num4 = int((d4[v4] <= 1).sum())
+    den4 = int(v4.sum())
+    pct4 = round((num4 / max(den4, 1)) * 100, 1)
+    gap4 = num4 - int(np.ceil(0.85 * den4))
+
+    # Kes Sporadik ('Satu Kes') untuk Indikator 9 & 10 (Strategi C1)
+    spor = df_sub[df_sub["Jenis Kes"] == "Satu Kes"].copy()
+    spor_kkm = spor[
+        spor["Pihak Pentadbir Lokaliti"]
+        .astype(str)
+        .str.contains("PKD|KKM", case=False, na=False)
+    ].copy()
+
+    # Indikator 9(i) & 9(ii) (C1): PTP <= 24 jam daripada Tarikh Daftar untuk kes sporadik (Sasaran: 70% Semua, 80% KKM)
+    den9_all = len(spor)
+    d9_all = (
+        (spor["Tkh PTP Aktiviti Pertama"] - spor["Tarikh Daftar"]).dt.days
+        if "Tkh PTP Aktiviti Pertama" in spor.columns
+        else pd.Series(dtype=float)
+    )
+    num9_all = int((d9_all.notna() & (d9_all <= 1)).sum()) if den9_all > 0 else 0
+    pct9_all = round((num9_all / max(den9_all, 1)) * 100, 1) if den9_all > 0 else 0.0
+    gap9_all = num9_all - int(np.ceil(0.70 * den9_all))
+
+    den9_kkm = len(spor_kkm)
+    d9_kkm = (
+        (spor_kkm["Tkh PTP Aktiviti Pertama"] - spor_kkm["Tarikh Daftar"]).dt.days
+        if "Tkh PTP Aktiviti Pertama" in spor_kkm.columns
+        else pd.Series(dtype=float)
+    )
+    num9_kkm = int((d9_kkm.notna() & (d9_kkm <= 1)).sum()) if den9_kkm > 0 else 0
+    pct9_kkm = round((num9_kkm / max(den9_kkm, 1)) * 100, 1) if den9_kkm > 0 else 0.0
+    gap9_kkm = num9_kkm - int(np.ceil(0.80 * den9_kkm))
+
+    # Indikator 10(i) & 10(ii) (C1): SRT <= 24 jam daripada Tarikh Daftar untuk kes sporadik (Sasaran: 60% Semua, 80% KKM)
+    den10_all = len(spor)
+    d10_all = (
+        (spor["Tkh SRT Aktiviti Pertama"] - spor["Tarikh Daftar"]).dt.days
+        if "Tkh SRT Aktiviti Pertama" in spor.columns
+        else pd.Series(dtype=float)
+    )
+    num10_all = int((d10_all.notna() & (d10_all <= 1)).sum()) if den10_all > 0 else 0
+    pct10_all = round((num10_all / max(den10_all, 1)) * 100, 1) if den10_all > 0 else 0.0
+    gap10_all = num10_all - int(np.ceil(0.60 * den10_all))
+
+    den10_kkm = len(spor_kkm)
+    d10_kkm = (
+        (spor_kkm["Tkh SRT Aktiviti Pertama"] - spor_kkm["Tarikh Daftar"]).dt.days
+        if "Tkh SRT Aktiviti Pertama" in spor_kkm.columns
+        else pd.Series(dtype=float)
+    )
+    num10_kkm = int((d10_kkm.notna() & (d10_kkm <= 1)).sum()) if den10_kkm > 0 else 0
+    pct10_kkm = round((num10_kkm / max(den10_kkm, 1)) * 100, 1) if den10_kkm > 0 else 0.0
+    gap10_kkm = num10_kkm - int(np.ceil(0.80 * den10_kkm))
+
+    target_prem_med = 0
+    if "Rumah/Kedai" in spor.columns and spor["Rumah/Kedai"].notna().any():
+        target_prem_med = int(
+            round(float(pd.to_numeric(spor["Rumah/Kedai"], errors="coerce").median()))
+        )
+
+    poa_rows = [
+        {
+            "Kod": "Ind 1 (A1)",
+            "Indikator POA": "Notifikasi Fasiliti ≤ 24 Jam (DNTI)",
+            "Pencapaian (%)": pct1,
+            "Sasaran (%)": 100.0,
+            "Bilangan": f"{num1:,}/{den1:,}",
+            "Varians": f"{gap1:+d}",
+            "Status POA": "TERCAPAI" if pct1 >= 100.0 else "TIDAK TERCAPAI",
+        },
+        {
+            "Kod": "Ind 4 (A2)",
+            "Indikator POA": "Siasatan & Daftar Kes ≤ 24 Jam",
+            "Pencapaian (%)": pct4,
+            "Sasaran (%)": 85.0,
+            "Bilangan": f"{num4:,}/{den4:,}",
+            "Varians": f"{gap4:+d}",
+            "Status POA": "TERCAPAI" if pct4 >= 85.0 else "TIDAK TERCAPAI",
+        },
+        {
+            "Kod": "Ind 9(i) (C1)",
+            "Indikator POA": "PTP ≤ 24 Jam (Sporadik - Semua)",
+            "Pencapaian (%)": pct9_all,
+            "Sasaran (%)": 70.0,
+            "Bilangan": f"{num9_all:,}/{den9_all:,}",
+            "Varians": f"{gap9_all:+d}",
+            "Status POA": "TERCAPAI" if pct9_all >= 70.0 else "TIDAK TERCAPAI",
+        },
+        {
+            "Kod": "Ind 9(ii) (C1)",
+            "Indikator POA": "PTP ≤ 24 Jam (Sporadik - KKM)",
+            "Pencapaian (%)": pct9_kkm,
+            "Sasaran (%)": 80.0,
+            "Bilangan": f"{num9_kkm:,}/{den9_kkm:,}",
+            "Varians": f"{gap9_kkm:+d}",
+            "Status POA": "TERCAPAI" if pct9_kkm >= 80.0 else "TIDAK TERCAPAI",
+        },
+        {
+            "Kod": "Ind 10(i) (C1)",
+            "Indikator POA": "SRT ≤ 24 Jam (Sporadik - Semua)",
+            "Pencapaian (%)": pct10_all,
+            "Sasaran (%)": 60.0,
+            "Bilangan": f"{num10_all:,}/{den10_all:,}",
+            "Varians": f"{gap10_all:+d}",
+            "Status POA": "TERCAPAI" if pct10_all >= 60.0 else "TIDAK TERCAPAI",
+        },
+        {
+            "Kod": "Ind 10(ii) (C1)",
+            "Indikator POA": "SRT ≤ 24 Jam (Sporadik - KKM)",
+            "Pencapaian (%)": pct10_kkm,
+            "Sasaran (%)": 80.0,
+            "Bilangan": f"{num10_kkm:,}/{den10_kkm:,}",
+            "Varians": f"{gap10_kkm:+d}",
+            "Status POA": "TERCAPAI" if pct10_kkm >= 80.0 else "TIDAK TERCAPAI",
+        },
+    ]
+    meta = {
+        "sporadik_total": den9_all,
+        "sporadik_kkm": den9_kkm,
+        "target_premises_med": target_prem_med,
+        "daftar_24j_pct": pct4,
+        "daftar_24j_num": num4,
+        "daftar_24j_den": den4,
+        "daftar_24j_gap": gap4,
+    }
+    return pd.DataFrame(poa_rows), meta
+
+
+def compute_ai_epidemiological_analytics(
+    df, df_lok, pilihan_lokaliti, today_my, poa_period_code="ALL"
+):
+    """Mengira ramalan 4 minggu (95% CI), pencapaian KPI POA, matriks risiko eskalasi & korelasi terus daripada data."""
     df_calc = df.copy()
     df_calc["_yr"] = pd.to_numeric(
         df_calc.get("Epid Tahun (Tkh Daftar)", pd.Series(dtype=float)), errors="coerce"
@@ -1656,33 +1868,23 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
             )
     df_forecast = pd.DataFrame(forecast_rows)
 
-    lag_specs = [
-        ("Onset → Notifikasi", "Tarikh Onset", "Tkh Notifikasi", 3),
-        ("Notifikasi → PTP (Larviciding)", "Tkh Notifikasi", "Tkh PTP Aktiviti Pertama", 2),
-        ("Notifikasi → SRT (Fogging)", "Tkh Notifikasi", "Tkh SRT Aktiviti Pertama", 2),
-        ("Notifikasi → ULV", "Tkh Notifikasi", "Tkh ULV Aktiviti Pertama", 7),
-    ]
-    lag_summary = []
-    for label, c_start, c_end, sla_target in lag_specs:
-        if c_start in df_calc.columns and c_end in df_calc.columns:
-            diff_days = (df_calc[c_end] - df_calc[c_start]).dt.days
-            valid_d = diff_days[(diff_days >= 0) & (diff_days <= 60)].dropna()
-            if not valid_d.empty:
-                med_val = round(float(valid_d.median()), 1)
-                lag_summary.append(
-                    {
-                        "Metrik Kelewatan": label,
-                        "Median (Hari)": med_val,
-                        "Purata (Hari)": round(float(valid_d.mean()), 1),
-                        "Sasaran KPI (Hari)": f"≤ {sla_target} hari",
-                        "Status Prestasi": "PATUH KPI"
-                        if med_val <= sla_target
-                        else "MELEBIHI KPI",
-                        "Sampel Kes (n)": int(len(valid_d)),
-                    }
-                )
-    df_lags = pd.DataFrame(lag_summary)
+    # Tapis data tahun semasa mengikut tempoh POA dipilih (Keseluruhan / Q1 / Q2 / Q3 / Q4 / Q1-Q3)
+    target_yr = int(df_calc["_yr"].dropna().max()) if df_calc["_yr"].notna().any() else today_my.year
+    df_poa_base = df_calc[df_calc["_yr"] == target_yr].copy()
+    if poa_period_code == "Q1":
+        df_poa_base = df_poa_base[df_poa_base["_me"].between(1, 13)]
+    elif poa_period_code == "Q2":
+        df_poa_base = df_poa_base[df_poa_base["_me"].between(14, 26)]
+    elif poa_period_code == "Q3":
+        df_poa_base = df_poa_base[df_poa_base["_me"].between(27, 39)]
+    elif poa_period_code == "Q4":
+        df_poa_base = df_poa_base[df_poa_base["_me"].between(40, 53)]
+    elif poa_period_code == "Q1_Q3":
+        df_poa_base = df_poa_base[df_poa_base["_me"].between(1, 39)]
 
+    df_poa_kpis, poa_meta = compute_poa_kpi_summary(df_poa_base)
+
+    # Analisis Korelasi Status Wabak vs Saiz Kes, Kepantasan Daftar 24j (POA A2) & Lengah Epidemiologi (Onset)
     status_comp_rows = []
     pearson_rows = []
     df_w_all = df_calc[df_calc["Jenis Kes"] == "Wabak"].dropna(subset=["Wabak No"]).copy()
@@ -1694,32 +1896,18 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
         else:
             df_w_all["_onset_lag"] = np.nan
 
-        if (
-            "Tkh Notifikasi" in df_w_all.columns
-            and "Tkh PTP Aktiviti Pertama" in df_w_all.columns
-        ):
-            df_w_all["_ptp_lag"] = (
-                df_w_all["Tkh PTP Aktiviti Pertama"] - df_w_all["Tkh Notifikasi"]
-            ).dt.days
-        else:
-            df_w_all["_ptp_lag"] = np.nan
-
-        if (
-            "Tkh Notifikasi" in df_w_all.columns
-            and "Tkh SRT Aktiviti Pertama" in df_w_all.columns
-        ):
-            df_w_all["_srt_lag"] = (
-                df_w_all["Tkh SRT Aktiviti Pertama"] - df_w_all["Tkh Notifikasi"]
-            ).dt.days
-        else:
-            df_w_all["_srt_lag"] = np.nan
+        ref_n_w = (
+            df_w_all["Tkh Input Notifikasi"].fillna(df_w_all["Tkh Notifikasi"])
+            if "Tkh Input Notifikasi" in df_w_all.columns
+            else df_w_all["Tkh Notifikasi"]
+        )
+        df_w_all["_daftar_24j"] = (
+            (df_w_all["Tarikh Daftar"] - ref_n_w).dt.days <= 1
+        ).astype(float) * 100.0
 
         for st_name, grp in df_w_all.groupby("Wabak Status"):
             o_valid = grp["_onset_lag"][
                 (grp["_onset_lag"] >= 0) & (grp["_onset_lag"] <= 45)
-            ].dropna()
-            s_valid = grp["_srt_lag"][
-                (grp["_srt_lag"] >= 0) & (grp["_srt_lag"] <= 45)
             ].dropna()
             status_comp_rows.append(
                 {
@@ -1728,25 +1916,26 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
                     "Purata Kes / Episod": round(
                         len(grp) / max(grp["Wabak No"].nunique(), 1), 1
                     ),
-                    "Purata Lengah Onset→Notif (Hari)": round(float(o_valid.mean()), 1)
+                    "Kadar Daftar ≤24j (%)": round(float(grp["_daftar_24j"].mean()), 1),
+                    "Lengah Onset→Notif (Hari)": round(float(o_valid.mean()), 1)
                     if not o_valid.empty
-                    else None,
-                    "Purata Lengah Notif→SRT (Hari)": round(float(s_valid.mean()), 1)
-                    if not s_valid.empty
                     else None,
                 }
             )
 
         w_ep_stats = df_w_all.groupby("Wabak No").agg(
             kes=("Notifikasi No", "count"),
+            daftar_pct=("_daftar_24j", "mean"),
             onset_l=("_onset_lag", lambda s: s[(s >= 0) & (s <= 45)].mean()),
-            ptp_l=("_ptp_lag", lambda s: s[(s >= 0) & (s <= 45)].mean()),
-            srt_l=("_srt_lag", lambda s: s[(s >= 0) & (s <= 45)].mean()),
+            t_min=("Tarikh Daftar", "min"),
+            t_max=("Tarikh Daftar", "max"),
         )
+        w_ep_stats["tempoh_h"] = (w_ep_stats["t_max"] - w_ep_stats["t_min"]).dt.days.clip(lower=1)
+
         for p_label, p_col in [
-            ("Saiz Wabak vs Lengah Onset→Notifikasi", "onset_l"),
-            ("Saiz Wabak vs Lengah Notifikasi→PTP", "ptp_l"),
-            ("Saiz Wabak vs Lengah Notifikasi→SRT", "srt_l"),
+            ("Saiz Wabak vs Tempoh Wabak (Hari)", "tempoh_h"),
+            ("Saiz Wabak vs Kadar Daftar ≤24j (POA A2)", "daftar_pct"),
+            ("Saiz Wabak vs Lengah Onset→Notif (Epidemiologi)", "onset_l"),
         ]:
             sub_p = w_ep_stats[["kes", p_col]].dropna()
             if len(sub_p) >= 3 and sub_p[p_col].std() > 0:
@@ -1899,7 +2088,9 @@ def compute_ai_epidemiological_analytics(df, df_lok, pilihan_lokaliti, today_my)
         "s_err": s_err,
         "r_squared": r_squared,
         "n_fit_weeks": n_fit_weeks,
-        "df_lags": df_lags,
+        "df_poa_kpis": df_poa_kpis,
+        "poa_meta": poa_meta,
+        "target_yr": target_yr,
         "df_status_corr": df_status_corr,
         "df_pearson": df_pearson,
         "df_active_risk": df_active_risk,
@@ -1959,7 +2150,8 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
     """Memaparkan jadual kemas, visualisasi grafikal interaktif (dengan kesimpulan data & jalur info) serta jawapan AI."""
     q_lower = question.lower().strip()
     df_forecast = analytics["df_forecast"]
-    df_lags = analytics["df_lags"]
+    df_poa_kpis = analytics["df_poa_kpis"]
+    poa_meta = analytics["poa_meta"]
     df_status_corr = analytics["df_status_corr"]
     df_pearson = analytics["df_pearson"]
     df_active_risk = analytics["df_active_risk"]
@@ -1973,9 +2165,21 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         k in q_lower
         for k in ["ramal", "predict", "forecast", "ci", "trend", "minggu", "unjuran"]
     )
-    is_corr_q = any(
+    is_poa_or_corr_q = any(
         k in q_lower
-        for k in ["korelasi", "correlation", "punca", "lewat", "lag", "sebab", "kpi"]
+        for k in [
+            "poa",
+            "kpi",
+            "daftar",
+            "24",
+            "sporadik",
+            "ptp",
+            "srt",
+            "korelasi",
+            "correlation",
+            "punca",
+            "sebab",
+        ]
     )
 
     c_qa1, c_qa2 = st.columns([1.15, 1.0])
@@ -2083,115 +2287,127 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
                     unsafe_allow_html=True,
                 )
 
-    # MODE 2: KORELASI KELEWATAN & ESKALASI
-    elif is_corr_q:
+    # MODE 2: PENCAPAIAN KPI POA DENGGI & KORELASI WABAK
+    elif is_poa_or_corr_q:
         with c_qa1:
-            lag_badge = {
-                "Status Prestasi": {
-                    "PATUH KPI": ("#dcfce7", "#166534"),
-                    "MELEBIHI KPI": ("#fee2e2", "#991b1b"),
+            poa_badge = {
+                "Status POA": {
+                    "TERCAPAI": ("#dcfce7", "#166534"),
+                    "TIDAK TERCAPAI": ("#fee2e2", "#991b1b"),
                 }
             }
-            lag_tbl = df_to_styled_html_table(df_lags, badge_cols=lag_badge)
+            poa_tbl = df_to_styled_html_table(df_poa_kpis, badge_cols=poa_badge)
             p_tbl = (
                 "<br><b>Pekali Korelasi Pearson (r):</b>"
                 + df_to_styled_html_table(df_pearson)
                 if not df_pearson.empty
                 else ""
             )
-            med_o = (
-                f"{df_lags.iloc[0]['Median (Hari)']} hari"
-                if not df_lags.empty
-                else "N/A"
-            )
-            r_sample = (
-                f"{df_pearson.iloc[0]['Pasangan Pembolehubah']}: <b>r = {df_pearson.iloc[0]['Pekali Korelasi (r)']}</b>"
-                if not df_pearson.empty
-                else "Data korelasi dikira daripada episod wabak"
-            )
-            exceed_rows = (
-                df_lags[df_lags["Status Prestasi"] == "MELEBIHI KPI"][
-                    "Metrik Kelewatan"
+            d24_pct = poa_meta.get("daftar_24j_pct", 0.0)
+            d24_num = poa_meta.get("daftar_24j_num", 0)
+            d24_den = poa_meta.get("daftar_24j_den", 0)
+            d24_gap = poa_meta.get("daftar_24j_gap", 0)
+            unmet_list = (
+                df_poa_kpis[df_poa_kpis["Status POA"] == "TIDAK TERCAPAI"][
+                    "Indikator POA"
                 ].tolist()
-                if not df_lags.empty
+                if not df_poa_kpis.empty
                 else []
             )
-            kpi_note = (
-                f"Tahap melebihi sasaran KPI: <b>{html.escape(', '.join(exceed_rows))}</b>."
-                if exceed_rows
-                else "Semua tahap operasi mematuhi sasaran KPI median."
+            unmet_note = (
+                f"Indikator di bawah sasaran POA: <b>{html.escape(', '.join(unmet_list))}</b>."
+                if unmet_list
+                else "Kesemua indikator POA mencapai sasaran yang ditetapkan."
             )
-            corr_tbl_conc = (
-                f"<b>📌 Kesimpulan Jadual Kelengahan & Korelasi:</b> Median kelewatan dari mula gejala "
-                f"(Onset) ke notifikasi ialah <b>{med_o}</b>. {kpi_note} "
-                f"Hubungan linear terkuat dikesan pada <b>{r_sample}</b>."
+            poa_tbl_conc = (
+                f"<b>📌 Kesimpulan Jadual KPI POA Denggi:</b> Pendaftaran kes dalam tempoh 24 jam daripada notifikasi "
+                f"(<b>Ind 4 / A2</b>) mencapai <b>{d24_pct}% ({d24_num:,}/{d24_den:,}; varians {d24_gap:+d} kes berbanding sasaran 85%)</b>. "
+                f"{unmet_note}"
             )
-            card_corr_qa = build_ai_hover_card_html(
+            card_poa_qa = build_ai_hover_card_html(
                 zone_id="ai_qa_left",
-                card_title="⏱️ Jadual Kelewatan Operasi & Korelasi Pearson (r)",
-                body_html=lag_tbl + p_tbl,
-                tooltip_title="🔗 Analisis Kelewatan & Korelasi Pearson (r)",
-                relevance_html="Mengukur kepatuhan masa tindak balas kawalan vektor berbanding sasaran KPI serta menguji korelasi statistik antara kelengahan tindakan dengan saiz episod wabak.",
-                formula_html="Δt = T<sub>aktiviti</sub> − T<sub>rujukan</sub>  |  r = Σ(x−x̄)(y−ȳ) / √[Σ(x−x̄)²Σ(y−ȳ)²]",
-                current_calc_html=(
-                    f"<b>Angka Semasa:</b> Median Onset→Notifikasi = <b>{med_o}</b><br>"
-                    f"Korelasi: {r_sample}"
+                card_title="📋 Jadual Pencapaian KPI POA Denggi & Korelasi (r)",
+                body_html=poa_tbl + p_tbl,
+                tooltip_title="📋 Sasaran & Formula KPI POA Denggi (KKM / PKD)",
+                relevance_html=(
+                    "Mengukur pematuhan operasi survelan dan kawalan kes sporadik mengikut Pelan Tindakan (POA) Denggi:<br>"
+                    "• <b>Ind 1 (A1):</b> Notifikasi fasiliti kesihatan dalam tempoh 24 jam (Sasaran 100%).<br>"
+                    "• <b>Ind 4 (A2):</b> Siasatan & pendaftaran kes dalam tempoh 24 jam dari tarikh notifikasi (Sasaran 85%).<br>"
+                    "• <b>Ind 9 & 10 (C1):</b> Aktiviti PTP (Sasaran 70% Semua / 80% KKM) & SRT (Sasaran 60% Semua / 80% KKM) dalam 24 jam dari <b>Tarikh Daftar</b> bagi kes sporadik (<code>Satu Kes</code>)."
                 ),
-                conclusion_html=corr_tbl_conc,
+                formula_html=(
+                    "A2 Daftar ≤24j = (Kes Daftar ≤1h dari Notif ÷ Jumlah Kes Daftar) × 100<br>"
+                    "C1 PTP/SRT ≤24j = (Sporadik PTP/SRT ≤1h dari Tkh Daftar ÷ Bil. Sporadik) × 100"
+                ),
+                current_calc_html=(
+                    f"<b>Prestasi Semasa Ind 4 (A2 — Daftar ≤24j):</b> <b>{d24_pct}%</b> ({d24_num:,}/{d24_den:,}, varians <b>{d24_gap:+d} kes</b> dari sasaran 85%)<br>"
+                    f"<b>Sampel Kes Sporadik (Satu Kes):</b> <b>{poa_meta.get('sporadik_total', 0)} kes</b> keseluruhan (<b>{poa_meta.get('sporadik_kkm', 0)} kes</b> lokaliti KKM)."
+                ),
+                conclusion_html=poa_tbl_conc,
             )
-            st.markdown(card_corr_qa, unsafe_allow_html=True)
+            st.markdown(card_poa_qa, unsafe_allow_html=True)
 
         with c_qa2:
-            if not df_status_corr.empty:
+            if not df_poa_kpis.empty:
                 st.markdown(
                     build_graph_info_strip_html(
-                        strip_title="📊 Graf Perbandingan Status Wabak vs Saiz & Kelengahan",
-                        tooltip_title="📊 Korelasi Status Wabak & Kelengahan",
-                        relevance_html="Mengenal pasti sama ada wabak yang bertukar menjadi Tak Terkawal atau Hotspot mempunyai kelengahan notifikasi pesakit atau tindakan kawalan yang lebih panjang.",
-                        formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod  |  Purata Lengah = ΣΔt ÷ n",
+                        strip_title="📊 Graf Pencapaian Semasa vs Sasaran POA Denggi (%)",
+                        tooltip_title="📊 Perbandingan Pencapaian Semasa vs Sasaran POA (%)",
+                        relevance_html="Membandingkan peratus pencapaian sebenar setiap indikator POA dengan sasaran KPI PKD/JKN bagi mengenal pasti jurang prestasi survelan (A1/A2) dan kawalan kes sporadik (C1).",
+                        formula_html="Pencapaian (%) = (Bil. Kes Patuh ≤24j ÷ Bil. Kes Layak) × 100  |  Varians = Bil. Patuh − ⌈Sasaran% × N⌉",
                         current_calc_html=(
-                            f"<b>Kategori Dianalisis:</b> {len(df_status_corr)} status wabak daripada <b>{int(df_status_corr['Bil. Episod'].sum())} episod</b> keseluruhan."
+                            f"<b>Ringkasan Semasa:</b> <b>{int((df_poa_kpis['Status POA'] == 'TERCAPAI').sum())} daripada {len(df_poa_kpis)} indikator POA</b> mencapai sasaran."
                         ),
                     ),
                     unsafe_allow_html=True,
                 )
-                fig_qa_corr = px.bar(
-                    df_status_corr,
-                    x="Status Wabak",
-                    y=[
-                        "Purata Kes / Episod",
-                        "Purata Lengah Onset→Notif (Hari)",
-                        "Purata Lengah Notif→SRT (Hari)",
-                    ],
-                    barmode="group",
-                    text_auto=True,
-                    color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
+                fig_qa_poa = go.Figure()
+                fig_qa_poa.add_trace(
+                    go.Bar(
+                        x=df_poa_kpis["Kod"],
+                        y=df_poa_kpis["Pencapaian (%)"],
+                        name="Pencapaian Semasa (%)",
+                        marker_color=[
+                            "#10b981" if s == "TERCAPAI" else "#ef4444"
+                            for s in df_poa_kpis["Status POA"]
+                        ],
+                        text=df_poa_kpis["Pencapaian (%)"].apply(lambda v: f"{v:.1f}%"),
+                        textposition="outside",
+                    )
                 )
-                fig_qa_corr.update_layout(
+                fig_qa_poa.add_trace(
+                    go.Scatter(
+                        x=df_poa_kpis["Kod"],
+                        y=df_poa_kpis["Sasaran (%)"],
+                        name="Sasaran POA (%)",
+                        mode="lines+markers",
+                        line=dict(color="#0f172a", width=2.2, dash="dash"),
+                        marker=dict(size=8, symbol="diamond"),
+                    )
+                )
+                fig_qa_poa.update_yaxes(range=[0, 114])
+                fig_qa_poa.update_layout(
                     height=330,
                     xaxis_title="",
-                    yaxis_title="Nilai Purata",
-                    legend_title="",
+                    yaxis_title="Peratus (%)",
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
                     margin=dict(t=16, b=10, l=10, r=10),
                     paper_bgcolor="rgba(255,255,255,0.75)",
                     plot_bgcolor="rgba(255,255,255,0.55)",
                 )
                 st.plotly_chart(
-                    fig_qa_corr, use_container_width=True, key="qa_corr_bar"
+                    fig_qa_poa, use_container_width=True, key="qa_poa_bar"
                 )
-                max_ep_row = df_status_corr.loc[
-                    df_status_corr["Purata Kes / Episod"].idxmax()
-                ]
-                min_ep_row = df_status_corr.loc[
-                    df_status_corr["Purata Kes / Episod"].idxmin()
-                ]
+                best_poa = df_poa_kpis.loc[df_poa_kpis["Pencapaian (%)"].idxmax()]
+                low_poa = df_poa_kpis.loc[df_poa_kpis["Pencapaian (%)"].idxmin()]
                 st.markdown(
                     render_ai_conclusion_box(
-                        "Kesimpulan Graf Perbandingan Status Wabak",
-                        f"Kategori <b>{html.escape(str(max_ep_row['Status Wabak']))}</b> mencatatkan purata beban kes tertinggi "
-                        f"(<b>{max_ep_row['Purata Kes / Episod']} kes/episod</b>) berbanding <b>{html.escape(str(min_ep_row['Status Wabak']))}</b> "
-                        f"(<b>{min_ep_row['Purata Kes / Episod']} kes/episod</b>). Mempercepatkan pengesanan kes awal dan semburan SRT "
-                        f"menghalang wabak terkawal daripada berkembang ke kelompok kes bersaiz besar.",
+                        "Kesimpulan Graf Perbandingan KPI POA Denggi",
+                        f"Pencapaian tertinggi direkodkan pada <b>{html.escape(str(best_poa['Indikator POA']))}</b> "
+                        f"(<b>{best_poa['Pencapaian (%)']}%</b> berbanding sasaran <b>{best_poa['Sasaran (%)']}%</b>), manakala "
+                        f"jurang terendah ialah <b>{html.escape(str(low_poa['Indikator POA']))}</b> "
+                        f"(<b>{low_poa['Pencapaian (%)']}%</b> vs sasaran <b>{low_poa['Sasaran (%)']}%</b>). Mempercepatkan "
+                        f"pendaftaran kes ≤24 jam (A2) serta semburan SRT kes sporadik di kawasan PBT meningkatkan perlindungan komuniti daripada tercetusnya wabak baharu.",
                     ),
                     unsafe_allow_html=True,
                 )
@@ -2212,25 +2428,25 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         plan_df = pd.DataFrame(
             [
                 {
-                    "Keutamaan": "KEUTAMAAN 1",
-                    "Tindakan Operasi": "Pemusnahan Tempat Pembiakan (PTP / S&D)",
-                    "Sasaran Spesifik (Data)": f"{lok_name} — Fokus {kluster_txt}",
-                    "Tempoh / KPI": "< 48 Jam dari Notifikasi",
-                    "Justifikasi Data": f"{lok_sum.get('jumlah_kes_sejarah', 0)} kes sejarah ({lok_sum.get('bil_episod_wabak', 0)} episod)",
+                    "Keutamaan": "KEUTAMAAN 1 (POA A2)",
+                    "Tindakan Operasi": "Siasatan & Pendaftaran Kes ≤ 24 Jam (Sasaran 85%)",
+                    "Sasaran Spesifik (Data)": f"Pencapaian semasa: {poa_meta.get('daftar_24j_pct', 0.0)}% ({poa_meta.get('daftar_24j_num', 0):,}/{poa_meta.get('daftar_24j_den', 0):,})",
+                    "Tempoh / KPI": "≤ 24 Jam dari Notifikasi",
+                    "Justifikasi Data": "Memastikan siasatan kes & pengisytiharan wabak tidak tertangguh",
                 },
                 {
-                    "Keutamaan": "KEUTAMAAN 2",
-                    "Tindakan Operasi": "Semburan Ruang Termal (SRT) & Kitaran Ulangan",
-                    "Sasaran Spesifik (Data)": f"Zon aktif tertinggi: {top_risk_lok}",
-                    "Tempoh / KPI": "Hari ke-1 & Ulangan Hari ke-7–10",
-                    "Justifikasi Data": "Memutuskan kitaran pengeraman ekstrinsik nyamuk Aedes",
+                    "Keutamaan": "KEUTAMAAN 2 (POA C1)",
+                    "Tindakan Operasi": "PTP & SRT ≤ 24 Jam dari Tarikh Daftar (Kes Sporadik & Wabak)",
+                    "Sasaran Spesifik (Data)": f"{lok_name} — Fokus {kluster_txt}",
+                    "Tempoh / KPI": "≤ 24 Jam dari Tarikh Daftar",
+                    "Justifikasi Data": "Menghalang kes sporadik (Satu Kes) daripada berkembang menjadi wabak",
                 },
                 {
                     "Keutamaan": "KEUTAMAAN 3",
-                    "Tindakan Operasi": "Pengesanan Kes Aktif (ACD) & Promosi Kesihatan",
-                    "Sasaran Spesifik (Data)": f"Kumpulan {nat_txt} | Pekerjaan: {occ_txt}",
-                    "Tempoh / KPI": "Serta-merta semasa siasatan kes",
-                    "Justifikasi Data": "Mengurangkan lengah Onset → Notifikasi ke fasiliti",
+                    "Tindakan Operasi": "Kawalan Wabak Aktif, ACD & Promosi Kesihatan",
+                    "Sasaran Spesifik (Data)": f"Zon tertinggi: {top_risk_lok} | {nat_txt} ({occ_txt})",
+                    "Tempoh / KPI": "Serta-merta & Ulangan Hari ke-7–10",
+                    "Justifikasi Data": f"{lok_sum.get('jumlah_kes_sejarah', 0)} kes sejarah ({lok_sum.get('bil_episod_wabak', 0)} episod) di lokaliti",
                 },
             ]
         )
@@ -2238,28 +2454,27 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         with c_qa1:
             plan_badge = {
                 "Keutamaan": {
-                    "KEUTAMAAN 1": ("#fee2e2", "#991b1b"),
-                    "KEUTAMAAN 2": ("#fef3c7", "#92400e"),
+                    "KEUTAMAAN 1 (POA A2)": ("#fee2e2", "#991b1b"),
+                    "KEUTAMAAN 2 (POA C1)": ("#fef3c7", "#92400e"),
                     "KEUTAMAAN 3": ("#e0f2fe", "#075985"),
                 }
             }
             plan_html = df_to_styled_html_table(plan_df, badge_cols=plan_badge)
             plan_tbl_conc = (
-                f"<b>📌 Kesimpulan Jadual Pelan Tindakan:</b> Operasi lapangan di <b>{html.escape(lok_name)}</b> "
-                f"wajar dimulakan dengan pemeriksaan PTP/S&D dalam tempoh <b>< 48 jam</b> di titik tumpuan "
-                f"<b>{html.escape(kluster_txt)}</b>, disusuli semburan ulangan SRT dan saringan ACD kepada kumpulan "
-                f"<b>{html.escape(nat_txt)} ({html.escape(occ_txt)})</b>."
+                f"<b>📌 Kesimpulan Jadual Pelan Tindakan POA:</b> Keutamaan survelan ialah memastikan "
+                f"<b>Pendaftaran Kes ≤ 24 Jam (Sasaran POA A2: 85%)</b> dan pelaksanaan <b>PTP/SRT ≤ 24 Jam dari Tarikh Daftar</b> "
+                f"di titik tumpuan <b>{html.escape(kluster_txt)} ({html.escape(lok_name)})</b>."
             )
             card_plan_qa = build_ai_hover_card_html(
                 zone_id="ai_qa_left",
-                card_title=f"🎯 Jadual Pelan Tindakan Taktikal: {lok_name}",
+                card_title=f"🎯 Jadual Pelan Tindakan Taktikal (POA): {lok_name}",
                 body_html=plan_html,
-                tooltip_title="🎯 Matriks Pelan Tindakan Berpandukan Data",
-                relevance_html="Menyusun keutamaan tindakan lapangan (PTP, SRT/ULV, ACD) secara automatik berdasarkan kluster struktur bangunan (Blok & Tingkat), demografi pesakit dominan, dan skor risiko wabak semasa.",
-                formula_html="Keutamaan = f(Kluster Blok/Tingkat Terpadat, Skor Risiko Eskalasi, Demografi Dominan)",
+                tooltip_title="🎯 Matriks Pelan Tindakan Berpandukan POA & Data",
+                relevance_html="Menyusun keutamaan tindakan lapangan mengikut piawaian POA Denggi (A2 Pendaftaran ≤24j dari Notifikasi; C1 PTP/SRT ≤24j dari Tarikh Daftar) dan kluster struktur bangunan (Blok & Tingkat).",
+                formula_html="A2: T<sub>Daftar</sub> − T<sub>Notif</sub> ≤ 24j (Sasaran 85%)  |  C1: T<sub>PTP/SRT</sub> − T<sub>Daftar</sub> ≤ 24j",
                 current_calc_html=(
                     f"<b>Lokaliti Sasaran:</b> {html.escape(lok_name)}<br>"
-                    f"<b>Kluster Utama:</b> {html.escape(kluster_txt)} | <b>Demografi:</b> {html.escape(nat_txt)} ({html.escape(occ_txt)})"
+                    f"<b>Kluster Utama:</b> {html.escape(kluster_txt)} | <b>Daftar ≤24j Semasa:</b> {poa_meta.get('daftar_24j_pct', 0.0)}%"
                 ),
                 conclusion_html=plan_tbl_conc,
             )
@@ -2333,8 +2548,8 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             "ramalan_4_minggu_95CI": df_forecast.to_dict(orient="records")
             if not df_forecast.empty
             else [],
-            "kelewatan_operasi": df_lags.to_dict(orient="records")
-            if not df_lags.empty
+            "pencapaian_kpi_poa_denggi": df_poa_kpis.to_dict(orient="records")
+            if not df_poa_kpis.empty
             else [],
             "korelasi_pearson": df_pearson.to_dict(orient="records")
             if not df_pearson.empty
@@ -2362,8 +2577,9 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         else:
             system_prompt = (
                 "Anda ialah Pakar Epidemiologi Denggi KKM. Jawab soalan pengguna HANYA berdasarkan fakta "
-                "dan angka dalam JSON DATA_SAHIH di bawah. JANGAN reka atau anggar sebarang angka yang tiada "
-                "dalam JSON. Susun jawapan dalam bentuk jadual Markdown atau poin ringkas yang padat dan praktikal."
+                "dan angka dalam JSON DATA_SAHIH di bawah. Patuhi definisi POA Denggi: Indikator 1 (A1) Notifikasi <=24j (Sasaran 100%), "
+                "Indikator 4 (A2) Daftar Kes <=24j dari Notifikasi (Sasaran 85%), Indikator 9 (C1) PTP Sporadik <=24j dari Tarikh Daftar (Sasaran 70% Semua / 80% KKM), "
+                "Indikator 10 (C1) SRT Sporadik <=24j dari Tarikh Daftar (Sasaran 60% Semua / 80% KKM). JANGAN reka angka yang tiada dalam JSON."
             )
             user_prompt = (
                 f"DATA_SAHIH:\n{json.dumps(fact_packet, ensure_ascii=False, indent=2)}\n\n"
@@ -2393,7 +2609,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             )
     else:
         st.caption(
-            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana lencana formula atau jadual di atas untuk melihat pengiraan semasa."
+            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada kawasan data graf, lencana formula atau jadual di atas untuk melihat naratif & pengiraan semasa."
         )
 
 
@@ -2499,7 +2715,7 @@ if df_hist is None:
             <div class="lg-pill-row">
                 <span class="lg-feature-pill">📋 Jadual Harian STATUS WABAK & Eksport WhatsApp</span>
                 <span class="lg-feature-pill">🗺️ Peta Kluster GPS & Matriks Blok/Tingkat</span>
-                <span class="lg-feature-pill">🧠 Ramalan AI 95% CI & Sifar Halusinasi</span>
+                <span class="lg-feature-pill">🧠 Ramalan AI 95% CI & KPI POA Denggi</span>
             </div>
         </div>
         """,
@@ -2561,9 +2777,9 @@ if uploaded_file is not None or df_hist is not None:
         # JALUR KPI EKSEKUTIF TERATAS (5 KAD LIQUID-GLASS)
         # =========================================================
         curr_yr = data_ref_date.year
-        df_curr_yr = df[df["Tarikh Daftar"].dt.year == curr_yr]
+        df_curr_yr = df[df["Tarikh Daftar"].dt.year == curr_yr].copy()
         if df_curr_yr.empty:
-            df_curr_yr = df
+            df_curr_yr = df.copy()
             yr_disp = "Keseluruhan"
         else:
             yr_disp = str(curr_yr)
@@ -2623,14 +2839,12 @@ if uploaded_file is not None or df_hist is not None:
             else ("#059669" if mom_7d_pct < -5 else "#0f172a")
         )
 
-        if "Tarikh Onset" in df.columns and "Tkh Notifikasi" in df.columns:
-            o_lag_s = (df["Tkh Notifikasi"] - df["Tarikh Onset"]).dt.days
-            o_lag_valid = o_lag_s[(o_lag_s >= 0) & (o_lag_s <= 60)].dropna()
-            med_o_lag = (
-                round(float(o_lag_valid.median()), 1) if not o_lag_valid.empty else 0.0
-            )
-        else:
-            med_o_lag = 0.0
+        # Indikator 4 (POA A2): Siasatan dan pendaftaran kes dalam tempoh 24 jam daripada tarikh notifikasi (Sasaran 85%)
+        _, top_poa_meta = compute_poa_kpi_summary(df_curr_yr)
+        d24_pct_top = top_poa_meta["daftar_24j_pct"]
+        d24_num_top = top_poa_meta["daftar_24j_num"]
+        d24_den_top = top_poa_meta["daftar_24j_den"]
+        d24_gap_top = top_poa_meta["daftar_24j_gap"]
 
         ek1, ek2, ek3, ek4, ek5 = st.columns(5)
         with ek1:
@@ -2690,14 +2904,14 @@ if uploaded_file is not None or df_hist is not None:
         with ek5:
             st.markdown(
                 build_glass_kpi_html(
-                    label="Median Onset→Notif",
-                    value_str=f"{med_o_lag} hari",
-                    sub_str="Sasaran KPI KKM: <b>≤ 3.0 hari</b>",
-                    tooltip_title="⏱️ Kelajuan Pengesanan Kes (Onset → Notifikasi)",
-                    relevance_html="Mengukur kepantasan pesakit mendapatkan rawatan dan fasiliti kesihatan membuat notifikasi selepas gejala bermula. Lengah yang rendah memendekkan tempoh nyamuk Aedes menggigit pesakit viremia.",
-                    formula_html="Median(Tkh Notifikasi − Tarikh Onset)",
-                    current_calc_html=f"<b>Angka Semasa:</b> Median kelewatan daripada <b>{len(o_lag_valid):,} kes</b> ialah <b>{med_o_lag} hari</b>.",
-                    accent_color="#059669" if med_o_lag <= 3.0 else "#d97706",
+                    label=f"Daftar Kes ≤24j ({yr_disp})",
+                    value_str=f"{d24_pct_top:.1f}%",
+                    sub_str=f"Sasaran POA A2: <b>85.0%</b> ({d24_num_top:,}/{d24_den_top:,})",
+                    tooltip_title="⏱️ KPI POA Indikator 4 (A2): Daftar Kes ≤ 24 Jam",
+                    relevance_html="Memastikan setiap notifikasi denggi yang diterima disiasat dan didaftarkan dalam sistem e-Denggi dalam tempoh 24 jam daripada tarikh notifikasi (Sasaran POA PKD: 85%).",
+                    formula_html="(Bil. kes daftar dalam tempoh 24 jam ÷ Bil. kes daftar) × 100",
+                    current_calc_html=f"<b>Pencapaian Semasa ({yr_disp}):</b> <b>{d24_num_top:,} / {d24_den_top:,} kes</b> = <b>{d24_pct_top:.1f}%</b> (Varians: <b>{d24_gap_top:+d} kes</b> berbanding sasaran 85%).",
+                    accent_color="#059669" if d24_pct_top >= 85.0 else "#d97706",
                 ),
                 unsafe_allow_html=True,
             )
@@ -4577,23 +4791,39 @@ if uploaded_file is not None or df_hist is not None:
                 st.error(f"Ralat pada paparan Analisis Lokaliti: {tab2_err}")
 
         # =========================================================
-        # PAPARAN 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI)
+        # PAPARAN 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI & POA KPI)
         # =========================================================
         elif st.session_state.active_workspace_view == VIEW_AI:
             try:
                 st.header("🧠 Pusat Analisis AI & Ramalan Epidemiologi (Data-Driven)")
                 st.caption(
-                    "Setiap graf, jadual, dan titik plot di bawah dilengkapi kesimpulan automatik berasaskan data. Arahkan kursor pada lencana formula atau jadual untuk butiran pengiraan tanpa menghalang titik plot."
+                    "Arahkan kursor pada kawasan data graf, lencana formula atau jadual di bawah untuk memaparkan naratif terperinci POA Denggi & pengiraan semasa."
                 )
 
+                poa_period_options = {
+                    "Keseluruhan Tahun Semasa": "ALL",
+                    "Q1 (ME01 – ME13)": "Q1",
+                    "Q2 (ME14 – ME26)": "Q2",
+                    "Q3 (ME27 – ME39)": "Q3",
+                    "Q4 (ME40 – ME52)": "Q4",
+                    "Kumulatif Q1–Q3 (ME01 – ME39)": "Q1_Q3",
+                }
+                sel_poa_period_lbl = st.selectbox(
+                    "📅 Tempoh Penilaian KPI POA Denggi (Memperkukuh Survelan & Kawalan Sporadik):",
+                    options=list(poa_period_options.keys()),
+                    index=0,
+                    key="ai_poa_period_selector",
+                )
+                sel_poa_code = poa_period_options[sel_poa_period_lbl]
+
                 ai_analytics = compute_ai_epidemiological_analytics(
-                    df, df_lok, pilihan_lokaliti, data_ref_date
+                    df, df_lok, pilihan_lokaliti, data_ref_date, poa_period_code=sel_poa_code
                 )
 
                 ai_tab1, ai_tab2, ai_tab3 = st.tabs(
                     [
                         "📈 Ramalan Trend & 95% Confidence Interval",
-                        "🔗 Korelasi Data & Kelewatan Operasi",
+                        "📋 Pencapaian KPI POA & Korelasi Wabak",
                         "🎯 Soal Jawab AI & Pelan Tindakan",
                     ]
                 )
@@ -4873,106 +5103,154 @@ if uploaded_file is not None or df_hist is not None:
                             st.success("Tiada wabak aktif semasa untuk pemodelan risiko.")
 
                 with ai_tab2:
-                    c_corr1, c_corr2 = st.columns(2)
+                    c_corr1, c_corr2 = st.columns([1.18, 1.0])
                     with c_corr1:
-                        df_lags = ai_analytics["df_lags"]
-                        if not df_lags.empty:
-                            lag_lines = "<br>".join(
-                                f"• {html.escape(str(r['Metrik Kelewatan']))}: Median <b>{r['Median (Hari)']}h</b> (Purata <b>{r['Purata (Hari)']}h</b>, n={r['Sampel Kes (n)']})"
-                                for _, r in df_lags.iterrows()
+                        df_poa_kpis = ai_analytics["df_poa_kpis"]
+                        poa_meta = ai_analytics["poa_meta"]
+                        target_yr_disp = ai_analytics["target_yr"]
+                        if not df_poa_kpis.empty:
+                            poa_lines = "<br>".join(
+                                f"• <b>{html.escape(str(r['Kod']))}</b> ({html.escape(str(r['Indikator POA']))}): "
+                                f"<b>{r['Pencapaian (%)']}%</b> ({r['Bilangan']}, Sasaran {r['Sasaran (%)']}%, Varians <b>{r['Varians']}</b>)"
+                                for _, r in df_poa_kpis.iterrows()
                             )
+                            prem_note = (
+                                f"Median premis sasaran (<code>Rumah/Kedai</code>) sekitar kes sporadik: <b>{poa_meta['target_premises_med']} premis</b> (Rujukan Ind 11 / C1: Liputan PTP ≥ 50% dalam radius 50m/200m)."
+                                if poa_meta.get("target_premises_med", 0) > 0
+                                else "Rujukan Ind 11 (C1): Liputan PTP ≥ 50% (Semua) / ≥ 60% (KKM) dalam radius 50m/200m."
+                            )
+                            poa_tooltip_rel = (
+                                "Penilaian pencapaian rasmi berdasarkan <b>Pelan Tindakan (POA) Denggi KKM / PKD</b>:<br>"
+                                "• <b>Ind 1 (A1) Notifikasi ≤24j (DNTI):</b> Memastikan fasiliti kesihatan menotifikasi kes dalam 24 jam (Sasaran 100%).<br>"
+                                "• <b>Ind 4 (A2) Daftar Kes ≤24j:</b> Memastikan notifikasi disiasat & didaftarkan dalam 24 jam dari tarikh notifikasi (Sasaran 85%).<br>"
+                                "• <b>Ind 9 & 10 (C1) Kawalan Kes Sporadik (<code>Satu Kes</code>):</b> Pelaksanaan PTP (Sasaran 70% Semua / 80% KKM) dan SRT (Sasaran 60% Semua / 80% KKM) dalam 24 jam dari <b>Tarikh Daftar</b> bagi mencegah kes terpencil bertukar menjadi wabak.<br>"
+                                f"• <i>Nota:</i> <code>Tarikh Onset</code> adalah petunjuk epidemiologi pesakit mendapatkan rawatan (bukan KPI staf PKD). {prem_note}"
+                            )
+                            poa_tooltip_form = (
+                                "A1: (Notifikasi ≤24j ÷ Jumlah Notifikasi) × 100 [Sasaran: 100%]<br>"
+                                "A2: (Kes Daftar ≤24j dari Notifikasi ÷ Bil. Kes Daftar) × 100 [Sasaran: 85%]<br>"
+                                "C1 Ind 9: (Sporadik PTP ≤24j dari Tkh Daftar ÷ Bil. Sporadik) × 100 [70% / 80%]<br>"
+                                "C1 Ind 10: (Sporadik SRT ≤24j dari Tkh Daftar ÷ Bil. Sporadik) × 100 [60% / 80%]"
+                            )
+                            poa_tooltip_curr = (
+                                f"<b>Pencapaian Semasa ({html.escape(sel_poa_period_lbl)} — Tahun {target_yr_disp}):</b><br>{poa_lines}"
+                            )
+
                             st.markdown(
                                 build_graph_info_strip_html(
-                                    strip_title="⏱️ Kelengahan Operasi Kawalan Vektor (Median vs Purata)",
-                                    tooltip_title="⏱️ Kelengahan Rantaian Notifikasi & Kawalan Vektor",
-                                    relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
-                                    formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
-                                    current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
+                                    strip_title=f"📋 Pencapaian KPI POA Denggi vs Sasaran PKD ({sel_poa_period_lbl})",
+                                    tooltip_title="📋 Metodologi & Formula Indikator POA Denggi",
+                                    relevance_html=poa_tooltip_rel,
+                                    formula_html=poa_tooltip_form,
+                                    current_calc_html=poa_tooltip_curr,
                                 ),
                                 unsafe_allow_html=True,
                             )
 
-                            fig_lag = px.bar(
-                                df_lags,
-                                x="Metrik Kelewatan",
-                                y=["Median (Hari)", "Purata (Hari)"],
-                                barmode="group",
-                                text_auto=True,
-                                color_discrete_sequence=["#0ea5e9", "#f59e0b"],
+                            fig_poa = go.Figure()
+                            fig_poa.add_trace(
+                                go.Bar(
+                                    x=df_poa_kpis["Kod"],
+                                    y=df_poa_kpis["Pencapaian (%)"],
+                                    name="Pencapaian Semasa (%)",
+                                    marker_color=[
+                                        "#10b981" if s == "TERCAPAI" else "#ef4444"
+                                        for s in df_poa_kpis["Status POA"]
+                                    ],
+                                    text=df_poa_kpis["Pencapaian (%)"].apply(
+                                        lambda v: f"{v:.1f}%"
+                                    ),
+                                    textposition="outside",
+                                    customdata=df_poa_kpis[
+                                        ["Indikator POA", "Bilangan", "Sasaran (%)", "Varians", "Status POA"]
+                                    ].values,
+                                    hovertemplate=(
+                                        "<b>%{customdata[0]}</b><br>"
+                                        "Pencapaian: <b>%{y:.1f}%</b> (%{customdata[1]})<br>"
+                                        "Sasaran POA: <b>%{customdata[2]:.1f}%</b><br>"
+                                        "Varians: <b>%{customdata[3]} kes</b> (%{customdata[4]})<extra></extra>"
+                                    ),
+                                )
                             )
-                            fig_lag.update_layout(
-                                height=320,
+                            fig_poa.add_trace(
+                                go.Scatter(
+                                    x=df_poa_kpis["Kod"],
+                                    y=df_poa_kpis["Sasaran (%)"],
+                                    name="Sasaran POA (%)",
+                                    mode="lines+markers",
+                                    line=dict(color="#0f172a", width=2.2, dash="dash"),
+                                    marker=dict(size=8, symbol="diamond"),
+                                )
+                            )
+                            fig_poa.update_yaxes(range=[0, 114])
+                            fig_poa.update_layout(
+                                height=330,
                                 xaxis_title="",
-                                yaxis_title="Bilangan Hari",
-                                legend_title="",
+                                yaxis_title="Peratus (%)",
+                                legend=dict(
+                                    orientation="h", yanchor="bottom", y=1.02, x=0
+                                ),
                                 margin=dict(t=16, b=10, l=10, r=10),
                                 paper_bgcolor="rgba(255,255,255,0.75)",
                                 plot_bgcolor="rgba(255,255,255,0.55)",
                             )
                             st.plotly_chart(
-                                fig_lag, use_container_width=True, key="ai_lag_chart"
+                                fig_poa, use_container_width=True, key="ai_poa_kpi_chart"
                             )
 
-                            slow_lag = df_lags.loc[df_lags["Median (Hari)"].idxmax()]
-                            fast_lag = df_lags.loc[df_lags["Median (Hari)"].idxmin()]
-                            skewed_stages = df_lags[
-                                (df_lags["Purata (Hari)"] - df_lags["Median (Hari)"])
-                                >= 1.0
-                            ]["Metrik Kelewatan"].tolist()
-                            skew_note = (
-                                f"Terdapat pencongan kes tertangguh (Purata jauh melebihi Median) pada <b>{html.escape(', '.join(skewed_stages))}</b>."
-                                if skewed_stages
-                                else "Taburan masa tindak balas adalah konsisten antara nilai Median dan Purata."
+                            n_achieved = int(
+                                (df_poa_kpis["Status POA"] == "TERCAPAI").sum()
+                            )
+                            unmet_df = df_poa_kpis[
+                                df_poa_kpis["Status POA"] == "TIDAK TERCAPAI"
+                            ]
+                            unmet_str = (
+                                ", ".join(
+                                    f"{r['Kod']} ({r['Pencapaian (%)']}% vs {r['Sasaran (%)']}%, varians {r['Varians']})"
+                                    for _, r in unmet_df.iterrows()
+                                )
+                                if not unmet_df.empty
+                                else "Tiada — semua indikator mencapai sasaran"
                             )
 
                             st.markdown(
                                 render_ai_conclusion_box(
-                                    "Kesimpulan Graf Kelengahan Operasi Kawalan Vektor",
-                                    f"Fasa paling panjang ialah <b>{html.escape(str(slow_lag['Metrik Kelewatan']))}</b> "
-                                    f"(Median <b>{slow_lag['Median (Hari)']} hari</b>, Purata <b>{slow_lag['Purata (Hari)']} hari</b>), manakala "
-                                    f"tindak balas terpantas ialah <b>{html.escape(str(fast_lag['Metrik Kelewatan']))}</b> "
-                                    f"(Median <b>{fast_lag['Median (Hari)']} hari</b>). {skew_note}",
+                                    "Kesimpulan Graf Pencapaian KPI POA Denggi",
+                                    f"Bagi tempoh <b>{html.escape(sel_poa_period_lbl)} ({target_yr_disp})</b>, sebanyak "
+                                    f"<b>{n_achieved} daripada {len(df_poa_kpis)} indikator POA</b> telah mencapai sasaran. "
+                                    f"Indikator yang memerlukan tindakan penambahbaikan: <b>{html.escape(unmet_str)}</b>.",
                                 ),
                                 unsafe_allow_html=True,
                             )
 
-                            lag_badges = {
-                                "Status Prestasi": {
-                                    "PATUH KPI": ("#dcfce7", "#166534"),
-                                    "MELEBIHI KPI": ("#fee2e2", "#991b1b"),
+                            poa_badges = {
+                                "Status POA": {
+                                    "TERCAPAI": ("#dcfce7", "#166534"),
+                                    "TIDAK TERCAPAI": ("#fee2e2", "#991b1b"),
                                 }
                             }
-                            lag_tbl_html = df_to_styled_html_table(
-                                df_lags, badge_cols=lag_badges
+                            poa_tbl_html = df_to_styled_html_table(
+                                df_poa_kpis, badge_cols=poa_badges
                             )
-                            n_patuh = int(
-                                (df_lags["Status Prestasi"] == "PATUH KPI").sum()
+                            poa_table_conc = (
+                                f"<b>📌 Kesimpulan Jadual Prestasi POA:</b> Kawalan kes sporadik di lokaliti KKM "
+                                f"(<b>Ind 9(ii) PTP: {df_poa_kpis.iloc[3]['Pencapaian (%)']}%</b> & "
+                                f"<b>Ind 10(ii) SRT: {df_poa_kpis.iloc[5]['Pencapaian (%)']}%</b>) melepasi sasaran 80%, "
+                                f"manakala fokus utama operasi adalah meningkatkan <b>Pendaftaran Kes ≤24j (Ind 4 / A2: {df_poa_kpis.iloc[1]['Pencapaian (%)']}% vs 85%)</b>."
                             )
-                            exceed_stages = df_lags[
-                                df_lags["Status Prestasi"] == "MELEBIHI KPI"
-                            ]["Metrik Kelewatan"].tolist()
-                            exceed_txt = (
-                                f"Tindakan penambahbaikan perlu difokuskan kepada <b>{html.escape(', '.join(exceed_stages))}</b> yang melebihi sasaran KPI."
-                                if exceed_stages
-                                else "Kesemua peringkat rantaian kawalan vektor mematuhi sasaran KPI."
+                            card_poa_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_poa",
+                                card_title=f"📋 Jadual Pencapaian KPI POA Denggi ({sel_poa_period_lbl})",
+                                body_html=poa_tbl_html,
+                                tooltip_title="📋 Metodologi & Formula Indikator POA Denggi",
+                                relevance_html=poa_tooltip_rel,
+                                formula_html=poa_tooltip_form,
+                                current_calc_html=poa_tooltip_curr,
+                                conclusion_html=poa_table_conc,
                             )
-                            lag_table_conc = (
-                                f"<b>📌 Kesimpulan Jadual Prestasi KPI:</b> Sebanyak <b>{n_patuh} daripada {len(df_lags)} metrik</b> "
-                                f"mematuhi sasaran KPI median. {exceed_txt}"
-                            )
-                            card_lag_html = build_ai_hover_card_html(
-                                zone_id="ai_zone_lags",
-                                card_title="⏱️ Jadual Analisis Kelengahan Operasi Kawalan Vektor",
-                                body_html=lag_tbl_html,
-                                tooltip_title="⏱️ Kelengahan Rantaian Notifikasi & Kawalan Vektor",
-                                relevance_html="Mengukur masa tindak balas sebenar dari mula gejala (Tarikh Onset) hingga notifikasi dan aktiviti lapangan pertama (PTP, SRT, ULV) untuk mengesan kesesakan operasi sebelum generasi kedua nyamuk Aedes menjangkiti penduduk lain.",
-                                formula_html="Δt<sub>i</sub> = T<sub>aktiviti,i</sub> − T<sub>rujukan,i</sub> (0 ≤ Δt<sub>i</sub> ≤ 60 hari)<br>Median = P<sub>50</sub>(Δt)  |  Purata = (ΣΔt<sub>i</sub>) ÷ n",
-                                current_calc_html=f"<b>Angka Semasa Keseluruhan Dataset:</b><br>{lag_lines}",
-                                conclusion_html=lag_table_conc,
-                            )
-                            st.markdown(card_lag_html, unsafe_allow_html=True)
+                            st.markdown(card_poa_html, unsafe_allow_html=True)
                         else:
-                            st.info("Kolum tarikh aktiviti PTP/SRT/ULV tidak lengkap.")
+                            st.info("Tiada rekod kes bagi tempoh POA yang dipilih.")
 
                     with c_corr2:
                         df_sc = ai_analytics["df_status_corr"]
@@ -4986,12 +5264,21 @@ if uploaded_file is not None or df_hist is not None:
                                 if not df_pearson.empty
                                 else f"Jumlah episod dianalisis: <b>{int(df_sc['Bil. Episod'].sum())} episod</b>"
                             )
+                            corr_rel_html = (
+                                "Membandingkan purata saiz kes setiap episod, pematuhan pendaftaran 24 jam (<b>POA A2</b>), dan "
+                                "tempoh lengah pesakit mendapatkan rawatan (<code>Tarikh Onset → Notifikasi</code> sebagai <i>petunjuk epidemiologi</i>) "
+                                "merentas status wabak bagi menilai faktor yang memacu eskalasi wabak."
+                            )
+                            corr_form_html = (
+                                "Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>"
+                                "r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]"
+                            )
                             st.markdown(
                                 build_graph_info_strip_html(
-                                    strip_title="📊 Korelasi Status Wabak vs Saiz Kes & Kelengahan",
+                                    strip_title="📊 Korelasi Status Wabak vs Saiz Kes & Pendaftaran 24j",
                                     tooltip_title="🔗 Korelasi Status Wabak & Pekali Pearson (r)",
-                                    relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
-                                    formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
+                                    relevance_html=corr_rel_html,
+                                    formula_html=corr_form_html,
                                     current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
                                 ),
                                 unsafe_allow_html=True,
@@ -5002,15 +5289,14 @@ if uploaded_file is not None or df_hist is not None:
                                 x="Status Wabak",
                                 y=[
                                     "Purata Kes / Episod",
-                                    "Purata Lengah Onset→Notif (Hari)",
-                                    "Purata Lengah Notif→SRT (Hari)",
+                                    "Lengah Onset→Notif (Hari)",
                                 ],
                                 barmode="group",
                                 text_auto=True,
-                                color_discrete_sequence=["#ef4444", "#3b82f6", "#f59e0b"],
+                                color_discrete_sequence=["#ef4444", "#3b82f6"],
                             )
                             fig_sc.update_layout(
-                                height=320,
+                                height=330,
                                 xaxis_title="",
                                 yaxis_title="Nilai Purata",
                                 legend_title="",
@@ -5034,11 +5320,11 @@ if uploaded_file is not None or df_hist is not None:
 
                             st.markdown(
                                 render_ai_conclusion_box(
-                                    "Kesimpulan Graf Status Wabak vs Saiz & Kelengahan",
+                                    "Kesimpulan Graf Status Wabak vs Saiz & Lengah Epidemiologi",
                                     f"Episod berstatus <b>{html.escape(str(max_sz['Status Wabak']))}</b> merekodkan purata saiz kes "
                                     f"<b>{ratio_sz}× lebih besar</b> (<b>{max_sz['Purata Kes / Episod']} kes/episod</b>) berbanding "
                                     f"<b>{html.escape(str(min_sz['Status Wabak']))}</b> (<b>{min_sz['Purata Kes / Episod']} kes/episod</b>). "
-                                    f"Pengesanan awal kes sebelum melepasi 2 minggu penularan adalah penentu utama mengelakkan eskalasi.",
+                                    f"Pengesanan awal kes dan pendaftaran dalam tempoh 24 jam (POA A2) membolehkan kawalan vektor dimulakan sebelum penularan generasi kedua.",
                                 ),
                                 unsafe_allow_html=True,
                             )
@@ -5055,10 +5341,9 @@ if uploaded_file is not None or df_hist is not None:
                                     df_pearson["Pekali Korelasi (r)"].abs().idxmax()
                                 ]
                                 corr_table_conc = (
-                                    f"<b>📌 Kesimpulan Jadual Korelasi Pearson (r):</b> Hubungan linear tertinggi antara kelewatan dan saiz wabak "
+                                    f"<b>📌 Kesimpulan Jadual Korelasi Pearson (r):</b> Hubungan linear tertinggi dengan saiz kes wabak "
                                     f"ialah <b>{html.escape(str(best_p['Pasangan Pembolehubah']))}</b> dengan pekali "
-                                    f"<b>r = {best_p['Pekali Korelasi (r)']} ({best_p['Kekuatan Hubungan']}, n={best_p['Bil. Episod (n)']})</b>. "
-                                    f"Ini menunjukkan saiz wabak turut dipengaruhi kuat oleh kepadatan penduduk, struktur bangunan & takungan pembiakan setempat."
+                                    f"<b>r = {best_p['Pekali Korelasi (r)']} ({best_p['Kekuatan Hubungan']}, n={best_p['Bil. Episod (n)']})</b>."
                                 )
                             else:
                                 corr_table_conc = (
@@ -5070,8 +5355,8 @@ if uploaded_file is not None or df_hist is not None:
                                 card_title="📊 Jadual Korelasi Status Wabak & Pekali Pearson (r)",
                                 body_html=sc_tbl_html + pearson_section_html,
                                 tooltip_title="🔗 Korelasi Status Wabak & Pekali Pearson (r)",
-                                relevance_html="Membandingkan purata saiz kes setiap episod serta tempoh kelengahan notifikasi dan semburan SRT merentas status wabak bagi membuktikan impak kelewatan terhadap eskalasi wabak.",
-                                formula_html="Purata Kes/Episod = ΣKes ÷ Bil. Episod<br>r = Σ(x<sub>i</sub>−x̄)(y<sub>i</sub>−ȳ) ÷ √[Σ(x<sub>i</sub>−x̄)²Σ(y<sub>i</sub>−ȳ)²]",
+                                relevance_html=corr_rel_html,
+                                formula_html=corr_form_html,
                                 current_calc_html=f"<b>Dapatan Korelasi Semasa:</b><br>{p_summary_lines}",
                                 conclusion_html=corr_table_conc,
                             )
@@ -5093,11 +5378,11 @@ if uploaded_file is not None or df_hist is not None:
                         )
                     with q_cols[1]:
                         st.button(
-                            "🔗 Korelasi Kelewatan & Eskalasi",
+                            "📋 Pencapaian KPI POA & Punca Wabak",
                             key="btn_ai_q2",
                             on_click=set_ai_prompt,
                             args=(
-                                "Apakah korelasi antara kelengahan notifikasi/kawalan vektor (PTP, SRT, ULV) dengan status wabak tidak terkawal?",
+                                "Analisis pencapaian KPI POA Denggi (Pendaftaran kes ≤24 jam, PTP & SRT kes sporadik ≤24 jam) serta korelasinya dengan eskalasi wabak.",
                             ),
                             use_container_width=True,
                         )
@@ -5107,13 +5392,13 @@ if uploaded_file is not None or df_hist is not None:
                             key="btn_ai_q3",
                             on_click=set_ai_prompt,
                             args=(
-                                f"Jana pelan tindakan operasi terperinci berdasarkan data bagi lokaliti {pilihan_lokaliti}.",
+                                f"Jana pelan tindakan operasi terperinci berdasarkan POA Denggi dan data bagi lokaliti {pilihan_lokaliti}.",
                             ),
                             use_container_width=True,
                         )
 
                     user_ai_q = st.text_input(
-                        "Tanya AI tentang data, korelasi, ramalan (95% CI) atau pelan tindakan:",
+                        "Tanya AI tentang data, pencapaian KPI POA, ramalan (95% CI) atau pelan tindakan:",
                         key="ai_custom_question",
                     )
                     if user_ai_q:
