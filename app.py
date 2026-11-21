@@ -874,7 +874,6 @@ components.html(
         function showPortalForTarget(target) {
             if (!target || !target.closest) return;
 
-            // Jika kursor berada di dalam gelembung portal sendiri, kekalkan paparan supaya pengguna boleh skrol
             if (target === portal || portal.contains(target)) {
                 clearHideTimer();
                 return;
@@ -922,7 +921,6 @@ components.html(
             }, true);
             doc.addEventListener('mouseleave', scheduleHidePortal, true);
             win.addEventListener('scroll', function(e) {
-                // Jangan tutup gelembung apabila pengguna sedang skrol di dalam gelembung portal itu sendiri
                 if (e && e.target && (e.target === portal || (portal && portal.contains(e.target)))) {
                     return;
                 }
@@ -2722,7 +2720,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             )
     else:
         st.caption(
-            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada kawasan data graf, lencana formula atau jadual di atas untuk melihat naratif & pengiraan semasa."
+            "⚙️ Sumber Analisis: **Enjin AI Statistik Terbina Dalam (100% Data-Driven, Sifar Halusinasi)** — Arahkan kursor pada mana-mana graf atau jadual untuk membuka gelembung naratif di sisi tanpa menghalang data."
         )
 
 
@@ -3286,9 +3284,9 @@ if uploaded_file is not None or df_hist is not None:
                         height=0,
                     )
 
-                # --- PETA INTERAKTIF KLUSTER & HOTSPOT GPS (SERASI PLOTLY 5 & 6) ---
+                # --- PETA INTERAKTIF KLUSTER & HOTSPOT GPS MALAYSIA (SERASI PLOTLY 5 & 6) ---
                 st.markdown("---")
-                st.subheader("🗺️ Peta Interaktif Kluster & Hotspot GPS (Spatial Surveillance)")
+                st.subheader("🗺️ Peta Interaktif Kluster & Hotspot GPS Malaysia (Spatial Surveillance)")
 
                 if "Latitud (ISO)" in df.columns and "Lngitud (ISO)" in df.columns:
                     df_map_src = df.copy()
@@ -3312,7 +3310,7 @@ if uploaded_file is not None or df_hist is not None:
                             .astype(str)
                             .str.strip()
                         )
-                        map_c1, map_c2 = st.columns([2, 1])
+                        map_c1, map_c2, map_c3 = st.columns([2.2, 1.0, 0.9])
                         with map_c1:
                             map_filter_mode = st.radio(
                                 "Tapis Lapisan Peta:",
@@ -3325,6 +3323,16 @@ if uploaded_file is not None or df_hist is not None:
                                 key="gps_map_filter_mode",
                             )
                         with map_c2:
+                            map_scope_choice = st.selectbox(
+                                "Skala Peta Malaysia:",
+                                [
+                                    "Fokus Daerah / Lokaliti (KL)",
+                                    "Seluruh Malaysia",
+                                ],
+                                index=0,
+                                key="gps_map_scope_choice",
+                            )
+                        with map_c3:
                             map_style_choice = st.selectbox(
                                 "Gaya Peta:",
                                 ["carto-positron", "open-street-map"],
@@ -3363,6 +3371,27 @@ if uploaded_file is not None or df_hist is not None:
                                     else "-",
                                 ),
                             )
+                            lok_gps["Lokaliti (Alamat Semasa)"] = lok_gps[
+                                "Lokaliti (Alamat Semasa)"
+                            ].apply(clean_locality_display)
+
+                            # Tetapkan pusat koordinat Malaysia secara eksplisit supaya peta tidak pernah terzum ke negara lain / lautan
+                            if map_scope_choice == "Seluruh Malaysia":
+                                center_lat, center_lon = 4.2105, 108.9758
+                                map_zoom = 5.4
+                            else:
+                                center_lat = (
+                                    float(lok_gps["Lat"].median())
+                                    if not lok_gps.empty
+                                    else 3.1106
+                                )
+                                center_lon = (
+                                    float(lok_gps["Lng"].median())
+                                    if not lok_gps.empty
+                                    else 101.7221
+                                )
+                                map_zoom = 11.8
+
                             map_color_discrete = {
                                 "Wabak Baru": "#00bcd4",
                                 "Hotspot": "#fe0000",
@@ -3379,7 +3408,8 @@ if uploaded_file is not None or df_hist is not None:
                                     color="Status Peta",
                                     size="Jumlah_Kes",
                                     size_max=26,
-                                    zoom=11.6,
+                                    center={"lat": center_lat, "lon": center_lon},
+                                    zoom=map_zoom,
                                     map_style=map_style_choice,
                                     hover_name="Lokaliti (Alamat Semasa)",
                                     hover_data={
@@ -3391,6 +3421,13 @@ if uploaded_file is not None or df_hist is not None:
                                     },
                                     color_discrete_map=map_color_discrete,
                                 )
+                                fig_map.update_layout(
+                                    map=dict(
+                                        center=dict(lat=center_lat, lon=center_lon),
+                                        zoom=map_zoom,
+                                        style=map_style_choice,
+                                    )
+                                )
                             else:
                                 fig_map = px.scatter_mapbox(
                                     lok_gps,
@@ -3399,7 +3436,8 @@ if uploaded_file is not None or df_hist is not None:
                                     color="Status Peta",
                                     size="Jumlah_Kes",
                                     size_max=26,
-                                    zoom=11.6,
+                                    center={"lat": center_lat, "lon": center_lon},
+                                    zoom=map_zoom,
                                     mapbox_style=map_style_choice,
                                     hover_name="Lokaliti (Alamat Semasa)",
                                     hover_data={
@@ -3411,12 +3449,19 @@ if uploaded_file is not None or df_hist is not None:
                                     },
                                     color_discrete_map=map_color_discrete,
                                 )
+                                fig_map.update_layout(
+                                    mapbox=dict(
+                                        center=dict(lat=center_lat, lon=center_lon),
+                                        zoom=map_zoom,
+                                        style=map_style_choice,
+                                    )
+                                )
 
                             fig_map.update_layout(
-                                height=440,
+                                height=450,
                                 margin=dict(l=0, r=0, t=10, b=0),
                                 legend=dict(
-                                    title="Status Lokaliti",
+                                    title="Status Lokaliti (Malaysia)",
                                     orientation="h",
                                     yanchor="bottom",
                                     y=1.01,
@@ -3424,12 +3469,14 @@ if uploaded_file is not None or df_hist is not None:
                                 ),
                             )
                             st.plotly_chart(
-                                fig_map, use_container_width=True, key="gps_hotspot_map"
+                                fig_map,
+                                use_container_width=True,
+                                key=f"gps_hotspot_map_{map_filter_mode}_{map_scope_choice}_{map_style_choice}",
                             )
                         else:
                             st.info("Tiada koordinat GPS untuk lapisan tapisan ini.")
                     else:
-                        st.info("Koordinat GPS sah tidak ditemui dalam fail yang dimuat naik.")
+                        st.info("Koordinat GPS sah Malaysia tidak ditemui dalam fail yang dimuat naik.")
 
                 # --- HIGHLIGHT 1: WABAK AKTIF SEMASA (TOP 5) ---
                 df_aktif = df[
