@@ -786,7 +786,6 @@ components.html(
             const pRect = portal.getBoundingClientRect();
             const pHeight = Math.min(pRect.height || 260, win.innerHeight * 0.76);
 
-            // Kad KPI kecil di bahagian atas: papar terus di bawah kad supaya tidak menutup kad KPI bersebelahan
             if (isKpiCard) {
                 let left = anchorRect.left;
                 if (left + pWidth > win.innerWidth - pad) {
@@ -802,19 +801,16 @@ components.html(
                 return;
             }
 
-            // Bagi Graf & Jadual: letak di kolum bertentangan supaya data graf, titik plot & jadual semasa 100% TIDAK TERHALANG
             const anchorCenterX = anchorRect.left + anchorRect.width / 2;
             const isLeftColumn = anchorCenterX < (win.innerWidth * 0.52);
 
             let left;
             if (isLeftColumn) {
-                // Hos berada di sebelah kiri -> letak gelembung di sebelah kanan hos
                 left = anchorRect.right + gap;
                 if (left + pWidth > win.innerWidth - pad) {
                     left = win.innerWidth - pWidth - pad;
                 }
             } else {
-                // Hos berada di sebelah kanan -> letak gelembung di sebelah kiri hos
                 left = anchorRect.left - pWidth - gap;
                 if (left < pad) {
                     left = pad;
@@ -937,7 +933,6 @@ components.html(
     """,
     height=0,
 )
-
 
 def get_embedded_gemini_key():
     """Membaca kunci GEMINI_API_KEY yang tertanam dalam Streamlit Secrets atau pembolehubah persekitaran."""
@@ -1312,7 +1307,6 @@ def build_status_wabak_tables(df, report_date):
 
     return df_tamat, df_aktif
 
-
 def render_status_wabak_html(df_tamat, df_aktif):
     """Membina paparan jadual HTML STATUS WABAK (DENGGI) berkejelasan tinggi dengan lokaliti boleh klik."""
     clickable_rows = []
@@ -1630,6 +1624,8 @@ def read_raw_bytes(raw_bytes, file_name):
         "Wabak Status",
         "Lokaliti (Alamat Semasa)",
         "Pihak Pentadbir Lokaliti",
+        "Kemudahan Kesihatan(Maklumat Pemberitahu)",
+        "Jenis Kemudahan Kesihatan(Maklumat Pemberitahu)",
     ]:
         if col in df.columns:
             df[col] = (
@@ -1743,12 +1739,205 @@ def parse_address(address):
 
 
 # =========================================================
-# ENJIN AI EPIDEMIOLOGI & PENCAPAIAN KPI POA DENGGI (ZERO-HALLUCINATION)
+# ENJIN AI EPIDEMIOLOGI, PENCAPAIAN KPI POA & AUDIT PESALAH NOTIFIKASI LEWAT
 # =========================================================
+def classify_facility_sector(jenis_val, fac_name):
+    """Mengelaskan fasiliti pemberitahu kepada sektor AWAM atau SWASTA mengikut piawaian POA DNTI."""
+    j = str(jenis_val).upper()
+    f = str(fac_name).upper()
+    if "SWASTA" in j or "PRIVATE" in j:
+        return "SWASTA"
+    if any(
+        k in j
+        for k in [
+            "KERAJAAN",
+            "KESIHATAN",
+            "AWAM",
+            "UNIVERSITI",
+            "DBKL",
+            "POLIKLINIK KERAJAAN",
+        ]
+    ) or any(
+        k in f
+        for k in [
+            "HOSPITAL AMPANG",
+            "CANSELOR",
+            "HUKM",
+            "HCTM",
+            "KLINIK KESIHATAN",
+            "PKD",
+            "HOSPITAL KUALA LUMPUR",
+            "HOSPITAL SETIU",
+            "DBKL",
+        ]
+    ):
+        return "AWAM"
+    return (
+        "SWASTA"
+        if ("KLINIK" in f or "MEDICAL" in f or "HOSPITAL" in f)
+        else "LAIN-LAIN"
+    )
+
+
+def compute_late_notification_offenders(df_period, df_all_history):
+    """Mengenal pasti fasiliti notifikasi lewat (>24 jam dari Tarikh Diagnosis) serta status pesalah berulang (POA A1)."""
+    empty_meta = {
+        "total_late": 0,
+        "total_facilities": 0,
+        "n_repeated_period": 0,
+        "n_repeated_hist": 0,
+        "n_public": 0,
+        "n_private": 0,
+    }
+    if (
+        df_period is None
+        or df_period.empty
+        or "Tkh Notifikasi" not in df_period.columns
+        or "Tarikh Diagnosis" not in df_period.columns
+    ):
+        return pd.DataFrame(), pd.DataFrame(), empty_meta
+
+    fac_col = "Kemudahan Kesihatan(Maklumat Pemberitahu)"
+    jenis_col = "Jenis Kemudahan Kesihatan(Maklumat Pemberitahu)"
+
+    hist_late_map = {}
+    if (
+        df_all_history is not None
+        and not df_all_history.empty
+        and "Tkh Notifikasi" in df_all_history.columns
+        and "Tarikh Diagnosis" in df_all_history.columns
+        and fac_col in df_all_history.columns
+    ):
+        d_hist = (
+            df_all_history["Tkh Notifikasi"] - df_all_history["Tarikh Diagnosis"]
+        ).dt.days
+        df_h_late = df_all_history[d_hist.notna() & (d_hist > 1)].copy()
+        if not df_h_late.empty:
+            hist_late_map = (
+                df_h_late[fac_col]
+                .fillna("TIDAK DINYATAKAN")
+                .astype(str)
+                .str.strip()
+                .value_counts()
+                .to_dict()
+            )
+
+    df_p = df_period.copy()
+    df_p["_delay_days"] = (df_p["Tkh Notifikasi"] - df_p["Tarikh Diagnosis"]).dt.days
+    df_late = df_p[df_p["_delay_days"].notna() & (df_p["_delay_days"] > 1)].copy()
+    if df_late.empty:
+        return pd.DataFrame(), pd.DataFrame(), empty_meta
+
+    df_late["_Fasiliti"] = (
+        df_late[fac_col].fillna("TIDAK DINYATAKAN").astype(str).str.strip()
+        if fac_col in df_late.columns
+        else "TIDAK DINYATAKAN"
+    )
+    df_late["_Jenis"] = (
+        df_late[jenis_col].fillna("-").astype(str).str.strip()
+        if jenis_col in df_late.columns
+        else "-"
+    )
+    df_late["_Sektor"] = [
+        classify_facility_sector(j, f)
+        for j, f in zip(df_late["_Jenis"], df_late["_Fasiliti"])
+    ]
+
+    summary_rows = []
+    for (fac, sektor), grp in df_late.groupby(["_Fasiliti", "_Sektor"]):
+        cnt_period = int(len(grp))
+        cnt_hist = int(hist_late_map.get(fac, cnt_period))
+        max_d = int(grp["_delay_days"].max())
+        last_dt = grp["Tkh Notifikasi"].max()
+
+        if cnt_period >= 2:
+            status_off = "PESALAH BERULANG"
+            cadangan = "Surat Teguran & Emel Rasmi"
+            rank = 0
+        elif cnt_hist >= 2:
+            status_off = "BERULANG (SEJARAH)"
+            cadangan = "Surat Peringatan & Pemantauan"
+            rank = 1
+        else:
+            status_off = "KESALAHAN PERTAMA"
+            cadangan = "Makluman Pematuhan DNTI"
+            rank = 2
+
+        summary_rows.append(
+            {
+                "Fasiliti Pemberitahu": fac,
+                "Sektor": sektor,
+                "Bil. Lewat": cnt_period,
+                "Sejarah (5 Thn)": cnt_hist,
+                "Maks (Hari)": max_d,
+                "Tkh Terakhir": fmt_date_short(last_dt),
+                "Status Pesalah": status_off,
+                "Cadangan Tindakan": cadangan,
+                "_rank": rank,
+            }
+        )
+
+    df_off_sum = (
+        pd.DataFrame(summary_rows)
+        .sort_values(
+            by=["_rank", "Bil. Lewat", "Sejarah (5 Thn)", "Maks (Hari)"],
+            ascending=[True, False, False, False],
+        )
+        .drop(columns=["_rank"])
+        .reset_index(drop=True)
+    )
+
+    df_detail = df_late.sort_values(
+        by=["_delay_days", "Tkh Notifikasi"], ascending=[False, False]
+    ).copy()
+    df_detail_out = pd.DataFrame(
+        {
+            "Bil": range(1, len(df_detail) + 1),
+            "Fasiliti Pemberitahu": df_detail["_Fasiliti"].values,
+            "Sektor": df_detail["_Sektor"].values,
+            "No. Notifikasi": df_detail["Notifikasi No"].astype(str).values
+            if "Notifikasi No" in df_detail.columns
+            else "-",
+            "Tkh Diagnosis": df_detail["Tarikh Diagnosis"].dt.strftime("%d/%m/%Y").values,
+            "Tkh Notifikasi": df_detail["Tkh Notifikasi"].dt.strftime("%d/%m/%Y").values,
+            "Lengah (Hari)": df_detail["_delay_days"].astype(int).values,
+            "Lokaliti": df_detail["Lokaliti (Alamat Semasa)"]
+            .fillna("-")
+            .astype(str)
+            .apply(clean_locality_display)
+            .values
+            if "Lokaliti (Alamat Semasa)" in df_detail.columns
+            else "-",
+        }
+    )
+
+    meta_off = {
+        "total_late": int(len(df_late)),
+        "total_facilities": int(len(df_off_sum)),
+        "n_repeated_period": int(
+            (df_off_sum["Status Pesalah"] == "PESALAH BERULANG").sum()
+        ),
+        "n_repeated_hist": int(
+            (df_off_sum["Status Pesalah"] == "BERULANG (SEJARAH)").sum()
+        ),
+        "n_public": int((df_late["_Sektor"] == "AWAM").sum()),
+        "n_private": int((df_late["_Sektor"] == "SWASTA").sum()),
+    }
+    return df_off_sum, df_detail_out, meta_off
+
+
 def compute_poa_kpi_summary(df_sub):
     """Mengira pencapaian KPI POA Denggi sebenar (Indikator 1/A1, Indikator 4/A2, Indikator 9/C1 & Indikator 10/C1)."""
     if df_sub is None or df_sub.empty:
-        return pd.DataFrame(), {"sporadik_total": 0, "sporadik_kkm": 0, "target_premises_med": 0}
+        return pd.DataFrame(), {
+            "sporadik_total": 0,
+            "sporadik_kkm": 0,
+            "target_premises_med": 0,
+            "daftar_24j_pct": 0.0,
+            "daftar_24j_num": 0,
+            "daftar_24j_den": 0,
+            "daftar_24j_gap": 0,
+        }
 
     # Indikator 1 (A1): Notifikasi denggi oleh fasiliti kesihatan dalam tempoh 24 jam (DNTI) — Sasaran 100%
     if "Tkh Notifikasi" in df_sub.columns and "Tarikh Diagnosis" in df_sub.columns:
@@ -1905,7 +2094,7 @@ def compute_poa_kpi_summary(df_sub):
 def compute_ai_epidemiological_analytics(
     df, df_lok, pilihan_lokaliti, today_my, poa_period_code="ALL"
 ):
-    """Mengira ramalan 4 minggu (95% CI), pencapaian KPI POA, matriks risiko eskalasi & korelasi terus daripada data."""
+    """Mengira ramalan 4 minggu (95% CI), pencapaian KPI POA, audit pesalah notifikasi lewat, matriks risiko & korelasi."""
     df_calc = df.copy()
     df_calc["_yr"] = pd.to_numeric(
         df_calc.get("Epid Tahun (Tkh Daftar)", pd.Series(dtype=float)), errors="coerce"
@@ -1980,7 +2169,11 @@ def compute_ai_epidemiological_analytics(
     df_forecast = pd.DataFrame(forecast_rows)
 
     # Tapis data tahun semasa mengikut tempoh POA dipilih (Keseluruhan / Q1 / Q2 / Q3 / Q4 / Q1-Q3)
-    target_yr = int(df_calc["_yr"].dropna().max()) if df_calc["_yr"].notna().any() else today_my.year
+    target_yr = (
+        int(df_calc["_yr"].dropna().max())
+        if df_calc["_yr"].notna().any()
+        else today_my.year
+    )
     df_poa_base = df_calc[df_calc["_yr"] == target_yr].copy()
     if poa_period_code == "Q1":
         df_poa_base = df_poa_base[df_poa_base["_me"].between(1, 13)]
@@ -1994,6 +2187,9 @@ def compute_ai_epidemiological_analytics(
         df_poa_base = df_poa_base[df_poa_base["_me"].between(1, 39)]
 
     df_poa_kpis, poa_meta = compute_poa_kpi_summary(df_poa_base)
+    df_offenders_sum, df_offenders_det, offenders_meta = (
+        compute_late_notification_offenders(df_poa_base, df_calc)
+    )
 
     # Analisis Korelasi Status Wabak vs Saiz Kes, Kepantasan Daftar 24j (POA A2) & Lengah Epidemiologi (Onset)
     status_comp_rows = []
@@ -2201,13 +2397,15 @@ def compute_ai_epidemiological_analytics(
         "n_fit_weeks": n_fit_weeks,
         "df_poa_kpis": df_poa_kpis,
         "poa_meta": poa_meta,
+        "df_offenders_sum": df_offenders_sum,
+        "df_offenders_det": df_offenders_det,
+        "offenders_meta": offenders_meta,
         "target_yr": target_yr,
         "df_status_corr": df_status_corr,
         "df_pearson": df_pearson,
         "df_active_risk": df_active_risk,
         "lok_summary": lok_summary,
     }
-
 
 def call_gemini_thinking_free_tier(key_clean, system_prompt, user_prompt):
     """Memanggil model Gemini Free Tier terkini secara automatik."""
@@ -2263,6 +2461,7 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
     df_forecast = analytics["df_forecast"]
     df_poa_kpis = analytics["df_poa_kpis"]
     poa_meta = analytics["poa_meta"]
+    df_offenders_sum = analytics.get("df_offenders_sum", pd.DataFrame())
     df_status_corr = analytics["df_status_corr"]
     df_pearson = analytics["df_pearson"]
     df_active_risk = analytics["df_active_risk"]
@@ -2290,6 +2489,11 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             "correlation",
             "punca",
             "sebab",
+            "lewat",
+            "pesalah",
+            "offender",
+            "dnti",
+            "fasiliti",
         ]
     )
 
@@ -2661,6 +2865,11 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
             else [],
             "pencapaian_kpi_poa_denggi": df_poa_kpis.to_dict(orient="records")
             if not df_poa_kpis.empty
+            else [],
+            "fasiliti_notifikasi_lewat_dan_pesalah_berulang": df_offenders_sum.head(10).to_dict(
+                orient="records"
+            )
+            if not df_offenders_sum.empty
             else [],
             "korelasi_pearson": df_pearson.to_dict(orient="records")
             if not df_pearson.empty
@@ -3186,7 +3395,8 @@ if uploaded_file is not None or df_hist is not None:
 
         st.markdown("---")
 
-        # =========================================================
+
+# =========================================================
         # PAPARAN 1: JADUAL HARIAN STATUS WABAK, PETA GPS & HIGHLIGHT
         # =========================================================
         if st.session_state.active_workspace_view == VIEW_DAILY:
@@ -3609,7 +3819,8 @@ if uploaded_file is not None or df_hist is not None:
             except Exception as tab1_err:
                 st.error(f"Ralat pada paparan Status Harian / Peta: {tab1_err}")
 
-        # =========================================================
+
+# =========================================================
         # PAPARAN 2: ANALISIS LOKALITI, STRUKTUR BERTINGKAT & KLINIKAL
         # =========================================================
         elif st.session_state.active_workspace_view == VIEW_LOCALITY:
@@ -4950,7 +5161,8 @@ if uploaded_file is not None or df_hist is not None:
             except Exception as tab2_err:
                 st.error(f"Ralat pada paparan Analisis Lokaliti: {tab2_err}")
 
-        # =========================================================
+
+# =========================================================
         # PAPARAN 3: PUSAT ANALISIS AI & RAMALAN EPIDEMIOLOGI (95% CI & POA KPI)
         # =========================================================
         elif st.session_state.active_workspace_view == VIEW_AI:
@@ -4977,13 +5189,17 @@ if uploaded_file is not None or df_hist is not None:
                 sel_poa_code = poa_period_options[sel_poa_period_lbl]
 
                 ai_analytics = compute_ai_epidemiological_analytics(
-                    df, df_lok, pilihan_lokaliti, data_ref_date, poa_period_code=sel_poa_code
+                    df,
+                    df_lok,
+                    pilihan_lokaliti,
+                    data_ref_date,
+                    poa_period_code=sel_poa_code,
                 )
 
                 ai_tab1, ai_tab2, ai_tab3 = st.tabs(
                     [
                         "📈 Ramalan Trend & 95% Confidence Interval",
-                        "📋 Pencapaian KPI POA & Korelasi Wabak",
+                        "📋 Pencapaian KPI POA & Audit Pesalah Lewat",
                         "🎯 Soal Jawab AI & Pelan Tindakan",
                     ]
                 )
@@ -5524,6 +5740,210 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             st.info("Tiada rekod wabak untuk perbandingan status.")
 
+                    # =========================================================
+                    # AUDIT NOTIFIKASI LEWAT (>24 JAM / DNTI) & PENGESANAN PESALAH BERULANG (POA A1)
+                    # =========================================================
+                    st.markdown("---")
+                    st.subheader(
+                        f"🚨 Audit Notifikasi Lewat (>24 Jam / DNTI) & Pengesanan Pesalah Berulang ({sel_poa_period_lbl})"
+                    )
+
+                    df_off_sum = ai_analytics.get("df_offenders_sum", pd.DataFrame())
+                    df_off_det = ai_analytics.get("df_offenders_det", pd.DataFrame())
+                    off_meta = ai_analytics.get("offenders_meta", {})
+
+                    ok1, ok2, ok3, ok4 = st.columns(4)
+                    with ok1:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Jumlah Notifikasi Lewat (>24j)",
+                                value_str=str(off_meta.get("total_late", 0)),
+                                sub_str=f"Melibatkan <b>{off_meta.get('total_facilities', 0)} fasiliti</b> pemberitahu",
+                                tooltip_title="🚨 Notifikasi Lewat (>24 Jam / DNTI)",
+                                relevance_html="Mengenal pasti kes denggi yang dinotifikasi melebihi 24 jam daripada Tarikh Diagnosis oleh hospital atau klinik (POA Indikator 1 / A1: Sasaran 100%).",
+                                formula_html="Lengah = Tkh Notifikasi − Tarikh Diagnosis > 1 hari",
+                                current_calc_html=f"<b>Tempoh {html.escape(sel_poa_period_lbl)}:</b> <b>{off_meta.get('total_late', 0)} kes lewat</b> daripada <b>{off_meta.get('total_facilities', 0)} fasiliti</b>.",
+                                accent_color="#e11d48"
+                                if off_meta.get("total_late", 0) > 0
+                                else "#059669",
+                            ),
+                            unsafe_allow_html=True,
+                        )
+                    with ok2:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Pecahan Sektor (Awam vs Swasta)",
+                                value_str=f"{off_meta.get('n_public', 0)} / {off_meta.get('n_private', 0)}",
+                                sub_str=f"Awam: <b>{off_meta.get('n_public', 0)}</b> • Swasta: <b>{off_meta.get('n_private', 0)}</b>",
+                                tooltip_title="🏥 Pecahan Sektor Pemberitahu (Jadual 2a POA)",
+                                relevance_html="Membezakan notifikasi lewat antara fasiliti Sektor Awam (Hospital Kerajaan/KK/Universiti) dan Sektor Swasta (Klinik/Hospital Swasta) untuk tindakan surat teguran atau emel rasmi.",
+                                formula_html="Pengelasan mengikut Jenis & Nama Kemudahan Kesihatan Pemberitahu",
+                                current_calc_html=f"<b>Angka Semasa:</b> <b>{off_meta.get('n_public', 0)} kes Awam</b> dan <b>{off_meta.get('n_private', 0)} kes Swasta</b>.",
+                            ),
+                            unsafe_allow_html=True,
+                        )
+                    with ok3:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Pesalah Berulang (Tempoh Ini)",
+                                value_str=str(off_meta.get("n_repeated_period", 0)),
+                                sub_str="Fasiliti ≥ 2 kali lewat tempoh dipilih",
+                                tooltip_title="🔁 Pesalah Berulang (Repeated Offenders)",
+                                relevance_html="Mengenal pasti fasiliti yang melakukan kesalahan notifikasi lewat sekurang-kurangnya 2 kali dalam tempoh penilaian semasa dan memerlukan Surat Teguran & Emel Rasmi segera.",
+                                formula_html="Count(Fasiliti dengan Bil. Lewat Tempoh Semasa ≥ 2)",
+                                current_calc_html=f"<b>Status Semasa:</b> <b>{off_meta.get('n_repeated_period', 0)} fasiliti</b> dikelaskan sebagai <b>PESALAH BERULANG</b>.",
+                                accent_color="#dc2626"
+                                if off_meta.get("n_repeated_period", 0) > 0
+                                else "#059669",
+                            ),
+                            unsafe_allow_html=True,
+                        )
+                    with ok4:
+                        st.markdown(
+                            build_glass_kpi_html(
+                                label="Berulang (Sejarah 5 Tahun)",
+                                value_str=str(off_meta.get("n_repeated_hist", 0)),
+                                sub_str="Pernah lewat sebelum ini (2021–2026)",
+                                tooltip_title="🗂️ Pesalah Berulang Merentas Sejarah 5 Tahun",
+                                relevance_html="Menyemak sama ada fasiliti yang baru melakukan 1 kesalahan dalam tempoh semasa pernah mempunyai rekod notifikasi lewat dalam pangkalan data sejarah 5 tahun.",
+                                formula_html="Bil. Lewat Tempoh Semasa = 1 TETAPI Sejarah 5 Tahun ≥ 2",
+                                current_calc_html=f"<b>Status Semasa:</b> <b>{off_meta.get('n_repeated_hist', 0)} fasiliti</b> dikesan pernah lewat pada tempoh terdahulu.",
+                                accent_color="#d97706"
+                                if off_meta.get("n_repeated_hist", 0) > 0
+                                else "#0f172a",
+                            ),
+                            unsafe_allow_html=True,
+                        )
+
+                    if not df_off_sum.empty:
+                        c_off1, c_off2 = st.columns([0.95, 1.35])
+                        top_off = df_off_sum.iloc[0]
+                        off_rel_html = (
+                            "Audit pematuhan <b>POA Indikator 1 (A1 — DNTI ≤24 Jam)</b> mengikut format Jadual 2a:<br>"
+                            "• <b>PESALAH BERULANG:</b> ≥2 notifikasi lewat dalam tempoh dipilih → <i>Surat Teguran & Emel Rasmi</i>.<br>"
+                            "• <b>BERULANG (SEJARAH):</b> 1 kali lewat dalam tempoh ini tetapi ≥2 kali dalam rekod 5 tahun → <i>Surat Peringatan & Pemantauan</i>.<br>"
+                            "• <b>KESALAHAN PERTAMA:</b> 1 kali lewat keseluruhan → <i>Makluman Pematuhan DNTI</i>."
+                        )
+                        off_form_html = "Notifikasi Lewat = (Tkh Notifikasi − Tarikh Diagnosis) > 1 hari (>24 jam)"
+                        off_curr_html = (
+                            f"<b>Fasiliti Keutamaan #1:</b> {html.escape(str(top_off['Fasiliti Pemberitahu']))} ({top_off['Sektor']})<br>"
+                            f"Lewat Tempoh Ini = <b>{top_off['Bil. Lewat']} kes</b> | Sejarah 5 Thn = <b>{top_off['Sejarah (5 Thn)']} kes</b> | Maks = <b>{top_off['Maks (Hari)']} hari</b><br>"
+                            f"Status: <b>{top_off['Status Pesalah']}</b> → {html.escape(str(top_off['Cadangan Tindakan']))}"
+                        )
+
+                        with c_off1:
+                            st.markdown(
+                                build_graph_info_strip_html(
+                                    strip_title="📊 Graf Fasiliti Notifikasi Lewat (>24 Jam) Mengikut Sektor",
+                                    tooltip_title="🚨 Audit Fasiliti Notifikasi Lewat (POA A1)",
+                                    relevance_html=off_rel_html,
+                                    formula_html=off_form_html,
+                                    current_calc_html=off_curr_html,
+                                ),
+                                unsafe_allow_html=True,
+                            )
+                            plot_off = df_off_sum.head(12).sort_values(
+                                by=["Bil. Lewat", "Maks (Hari)"], ascending=[True, True]
+                            )
+                            fig_off = px.bar(
+                                plot_off,
+                                x="Bil. Lewat",
+                                y="Fasiliti Pemberitahu",
+                                orientation="h",
+                                color="Sektor",
+                                text="Bil. Lewat",
+                                hover_data={
+                                    "Sejarah (5 Thn)": True,
+                                    "Maks (Hari)": True,
+                                    "Status Pesalah": True,
+                                    "Cadangan Tindakan": True,
+                                },
+                                color_discrete_map={
+                                    "AWAM": "#2563eb",
+                                    "SWASTA": "#ef4444",
+                                    "LAIN-LAIN": "#64748b",
+                                },
+                            )
+                            fig_off.update_traces(textposition="outside")
+                            fig_off.update_layout(
+                                height=340,
+                                xaxis_title="Bilangan Notifikasi Lewat (>24 Jam)",
+                                yaxis_title="",
+                                legend_title="Sektor",
+                                margin=dict(t=16, b=10, l=10, r=18),
+                                paper_bgcolor="rgba(255,255,255,0.75)",
+                                plot_bgcolor="rgba(255,255,255,0.55)",
+                            )
+                            st.plotly_chart(
+                                fig_off, use_container_width=True, key="ai_poa_offenders_bar"
+                            )
+                            st.markdown(
+                                render_ai_conclusion_box(
+                                    "Kesimpulan Audit Notifikasi Lewat (>24 Jam)",
+                                    f"Sebanyak <b>{off_meta.get('total_late', 0)} kes notifikasi lewat</b> direkodkan daripada "
+                                    f"<b>{off_meta.get('total_facilities', 0)} fasiliti</b> (<b>{off_meta.get('n_public', 0)} Awam</b>, "
+                                    f"<b>{off_meta.get('n_private', 0)} Swasta</b>). Fasiliti keutamaan audit ialah "
+                                    f"<b>{html.escape(str(top_off['Fasiliti Pemberitahu']))}</b> (<b>{top_off['Bil. Lewat']} kes lewat</b>, "
+                                    f"maksimum <b>{top_off['Maks (Hari)']} hari</b>; <b>{top_off['Status Pesalah']}</b>).",
+                                ),
+                                unsafe_allow_html=True,
+                            )
+
+                        with c_off2:
+                            off_badges = {
+                                "Status Pesalah": {
+                                    "PESALAH BERULANG": ("#fee2e2", "#991b1b"),
+                                    "BERULANG (SEJARAH)": ("#fef3c7", "#92400e"),
+                                    "KESALAHAN PERTAMA": ("#e0f2fe", "#075985"),
+                                },
+                                "Sektor": {
+                                    "AWAM": ("#dbeafe", "#1e40af"),
+                                    "SWASTA": ("#fce7f3", "#9d174d"),
+                                    "LAIN-LAIN": ("#f1f5f9", "#334155"),
+                                },
+                            }
+                            off_tbl_html = df_to_styled_html_table(
+                                df_off_sum, badge_cols=off_badges
+                            )
+                            off_conc_html = (
+                                f"<b>📌 Cadangan Tindakan Pentadbiran:</b> "
+                                f"<b>{off_meta.get('n_repeated_period', 0)} fasiliti</b> berstatus <i>PESALAH BERULANG</i> dan "
+                                f"<b>{off_meta.get('n_repeated_hist', 0)} fasiliti</b> berstatus <i>BERULANG (SEJARAH)</i> perlu diberi "
+                                f"<b>Surat Teguran / Peringatan & Emel Rasmi</b> oleh Unit Survelan PKD."
+                            )
+                            card_off_html = build_ai_hover_card_html(
+                                zone_id="ai_zone_offenders",
+                                card_title="📋 Senarai Fasiliti Notifikasi Lewat & Status Pesalah Berulang (Jadual 2a)",
+                                body_html=off_tbl_html,
+                                tooltip_title="🚨 Audit Pesalah Notifikasi Lewat (POA A1 / DNTI)",
+                                relevance_html=off_rel_html,
+                                formula_html=off_form_html,
+                                current_calc_html=off_curr_html,
+                                conclusion_html=off_conc_html,
+                            )
+                            st.markdown(card_off_html, unsafe_allow_html=True)
+
+                        with st.expander(
+                            f"📑 Log Terperinci Kes Notifikasi Lewat (>24 Jam) untuk Tindakan Surat/Emel ({len(df_off_det)} Kes)"
+                        ):
+                            st.dataframe(
+                                df_off_det, use_container_width=True, hide_index=True
+                            )
+                            csv_off_bytes = df_off_det.to_csv(index=False).encode(
+                                "utf-8-sig"
+                            )
+                            st.download_button(
+                                label="📥 Muat Turun Log Audit Notifikasi Lewat (.CSV)",
+                                data=csv_off_bytes,
+                                file_name=f"Audit_Notifikasi_Lewat_POA_{sel_poa_code}_{target_yr_disp}.csv",
+                                mime="text/csv",
+                                key=f"dl_offenders_csv_{sel_poa_code}",
+                            )
+                    else:
+                        st.success(
+                            f"✅ Tiada notifikasi lewat (>24 jam dari Tarikh Diagnosis) direkodkan bagi tempoh **{sel_poa_period_lbl}** — Pematuhan DNTI 100%!"
+                        )
+
                 with ai_tab3:
                     q_cols = st.columns(3)
                     with q_cols[0]:
@@ -5538,11 +5958,11 @@ if uploaded_file is not None or df_hist is not None:
                         )
                     with q_cols[1]:
                         st.button(
-                            "📋 Pencapaian KPI POA & Punca Wabak",
+                            "📋 Pencapaian KPI POA & Pesalah Lewat",
                             key="btn_ai_q2",
                             on_click=set_ai_prompt,
                             args=(
-                                "Analisis pencapaian KPI POA Denggi (Pendaftaran kes ≤24 jam, PTP & SRT kes sporadik ≤24 jam) serta korelasinya dengan eskalasi wabak.",
+                                "Analisis pencapaian KPI POA Denggi (Pendaftaran kes ≤24 jam, PTP & SRT kes sporadik ≤24 jam) serta senarai fasiliti notifikasi lewat (>24 jam) dan pesalah berulang.",
                             ),
                             use_container_width=True,
                         )
@@ -5558,7 +5978,7 @@ if uploaded_file is not None or df_hist is not None:
                         )
 
                     user_ai_q = st.text_input(
-                        "Tanya AI tentang data, pencapaian KPI POA, ramalan (95% CI) atau pelan tindakan:",
+                        "Tanya AI tentang data, pencapaian KPI POA, pesalah notifikasi lewat, ramalan (95% CI) atau pelan tindakan:",
                         key="ai_custom_question",
                     )
                     if user_ai_q:
