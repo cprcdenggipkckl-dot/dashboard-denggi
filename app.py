@@ -3905,27 +3905,38 @@ if uploaded_file is not None or df_hist is not None:
                                     if "Tkh Notifikasi" in group.columns
                                     else group["Tarikh Daftar"]
                                 )
-                                t_kes = t_ser_g.dropna().sort_values().tolist()
+                                group_sorted = group.assign(_t_ref=t_ser_g).sort_values(
+                                    by="_t_ref"
+                                )
+                                t_kes = group_sorted["_t_ref"].dropna().tolist()
 
                                 if len(t_kes) >= 2:
                                     t_m = t_kes[1]
+                                    mula_row = group_sorted.dropna(
+                                        subset=["_t_ref"]
+                                    ).iloc[1]
                                 elif len(t_kes) == 1:
                                     t_m = t_kes[0]
+                                    mula_row = group_sorted.dropna(
+                                        subset=["_t_ref"]
+                                    ).iloc[0]
                                 else:
                                     t_m = data_ref_date
+                                    mula_row = group_sorted.iloc[0]
 
                                 status_w = str(group["Wabak Status"].iloc[0])
                                 t_last = max(t_kes) if t_kes else t_m
+                                t_last_str = t_last.strftime("%d-%m-%Y")
+                                t_tamat_rasmi = t_last + pd.Timedelta(days=14)
 
                                 if "Tamat" in status_w:
-                                    t_a = t_last
+                                    t_a = t_tamat_rasmi
                                     t_a_str = t_a.strftime("%d-%m-%Y")
                                     tempoh = max((t_a - t_m).days, 1)
-                                    lbl_tarikh = "Tarikh Notif Terakhir"
+                                    lbl_tarikh = "Tarikh Tamat Rasmi (+14h)"
                                     lbl_tempoh = "Tempoh Wabak"
                                 else:
-                                    t_anggaran_tamat = t_last + pd.Timedelta(days=14)
-                                    t_a_str = t_anggaran_tamat.strftime("%d-%m-%Y")
+                                    t_a_str = t_tamat_rasmi.strftime("%d-%m-%Y")
                                     tempoh = max((data_ref_date - t_m).days, 1)
                                     lbl_tarikh = "Anggaran Tarikh Tamat"
                                     lbl_tempoh = "Tempoh (Sehingga Kini)"
@@ -3936,12 +3947,16 @@ if uploaded_file is not None or df_hist is not None:
                                 )
                                 end_dt_visual = t_m + pd.Timedelta(days=tempoh)
 
-                                m_val = group["Epid Minggu (Tkh Daftar)"].iloc[0]
+                                m_val = (
+                                    mula_row["Epid Minggu (Tkh Daftar)"]
+                                    if pd.notnull(mula_row["Epid Minggu (Tkh Daftar)"])
+                                    else t_m.isocalendar().week
+                                )
                                 y_val = (
-                                    int(group["Epid Tahun (Tkh Daftar)"].iloc[0])
+                                    int(mula_row["Epid Tahun (Tkh Daftar)"])
                                     if "Epid Tahun (Tkh Daftar)" in group.columns
                                     and pd.notnull(
-                                        group["Epid Tahun (Tkh Daftar)"].iloc[0]
+                                        mula_row["Epid Tahun (Tkh Daftar)"]
                                     )
                                     else t_m.year
                                 )
@@ -3957,6 +3972,7 @@ if uploaded_file is not None or df_hist is not None:
                                         "Center_Dt": center_dt,
                                         "Width_Ms": width_ms,
                                         "Tarikh Mula Str": t_m.strftime("%d-%m-%Y"),
+                                        "Tarikh Notif Akhir Str": t_last_str,
                                         "Tarikh Akhir Str": t_a_str,
                                         "Tempoh (Hari)": tempoh,
                                         "Status": status_w,
@@ -4597,35 +4613,30 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             tarikh_mula = data_ref_date
 
-                        tarikh_mula_str = tarikh_mula.strftime("%d-%m-%Y")
-
-                        if "Tamat" in status_wabak_semasa:
-                            tarikh_akhir = tarikh_kes[-1] + pd.Timedelta(days=14)
-                        else:
-                            tarikh_akhir = data_ref_date
-
-                        tempoh_wabak_hari = max((tarikh_akhir - tarikh_mula).days, 1)
-
-                    jumlah_kes = len(df_filter)
-                    pentadbir_lokaliti = (
-                        df_filter["Pihak Pentadbir Lokaliti"].mode()[0]
-                        if not df_filter["Pihak Pentadbir Lokaliti"].empty
-                        else "Tidak Dinyatakan"
+                        tarikh_akhir_str = (
+                        tarikh_akhir.strftime("%d-%m-%Y")
+                        if pilihan_kategori_aktif != "Satu Kes (Kes Terpencil)"
+                        else "N/A"
                     )
-
-                    st.header(f"📍 Analisis Lokaliti: {pilihan_lokaliti}")
-                    st.subheader(
-                        f"Wabak: {pilihan_kategori_aktif} | Status: {status_wabak_semasa} | Pentadbir: {pentadbir_lokaliti}"
+                    lbl_tamat_banner = (
+                        "Tamat" if "Tamat" in status_wabak_semasa else "Anggaran Tamat"
                     )
-                    st.markdown(
-                        f"*(**Rekod Sejarah:** Lokaliti ini telah mencatatkan **{rekod_episode_lokaliti} episode penularan wabak** secara keseluruhan)*"
+                    t_tamat_banner_str = (
+                        tarikh_akhir_str
+                        if "Tamat" in status_wabak_semasa
+                        else (
+                            (tarikh_kes[-1] + pd.Timedelta(days=14)).strftime("%d-%m-%Y")
+                            if pilihan_kategori_aktif != "Satu Kes (Kes Terpencil)"
+                            and tarikh_kes
+                            else "N/A"
+                        )
                     )
 
                     # --- SEPANDUK JELAS MENUNJUKKAN EPISOD YANG SEDANG DIPAPARKAN DI BAWAH GRAF ---
                     st.markdown(
                         f'<div class="ep-active-banner">'
                         f'<span>🔎 <b>Sedang Memaparkan Butiran Episod:</b> <span style="color:#0369a1; font-weight:800;">{html.escape(str(pilihan_kategori_aktif))}</span> • <b>{html.escape(str(pilihan_lokaliti))}</b></span>'
-                        f'<span>Status: <b>{html.escape(str(status_wabak_semasa))}</b> • Mula: <b>{html.escape(str(tarikh_mula_str))}</b> • <b>{jumlah_kes} Kes</b></span>'
+                        f'<span>Status: <b>{html.escape(str(status_wabak_semasa))}</b> • Mula: <b>{html.escape(str(tarikh_mula_str))}</b> • {lbl_tamat_banner}: <b>{html.escape(str(t_tamat_banner_str))}</b> • <b>{jumlah_kes} Kes</b></span>'
                         f"</div>",
                         unsafe_allow_html=True,
                     )
