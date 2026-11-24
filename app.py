@@ -2798,15 +2798,37 @@ def render_ai_qa_visuals_and_response(question, analytics, today_my, embedded_ap
         with c_qa2:
             if not df_active_risk.empty:
                 top1 = df_active_risk.iloc[0]
+                t1_vel = float(top1["Jumlah Kes"]) / max(
+                    float(top1["Tempoh (Hari)"]), 1.0
+                )
+                p1_vel = min(t1_vel * 35.0, 35.0)
+                p1_c7 = min(float(top1["Kes 7 Hari Terkini"]) * 8.0, 30.0)
+                p1_dur = min(float(top1["Tempoh (Hari)"]) * 0.6, 20.0)
+                st1_up = str(top1["Status Semasa"]).upper()
+                p1_bon = (
+                    15
+                    if "HOTSPOT" in st1_up
+                    else (10 if "TAK TERKAWAL" in st1_up else 0)
+                )
                 st.markdown(
                     build_graph_info_strip_html(
                         strip_title="📊 Graf Kedudukan Skor Risiko Eskalasi Wabak Aktif (0–100)",
                         tooltip_title="🚨 Indeks Skor Risiko Eskalasi (0–100)",
-                        relevance_html="Menggabungkan kelajuan kes harian (Velocity), kes 7 hari terakhir, tempoh wabak, dan status semasa untuk mengenal pasti lokaliti paling kritikal.",
-                        formula_html="Skor = min(Vel×35,35) + min(Kes<sub>7h</sub>×8,30) + min(Tempoh×0.6,20) + Bonus Status",
+                        relevance_html=(
+                            "Indeks triaj berwajaran deterministik (<b>0–100 mata</b>) daripada 4 komponen:<br>"
+                            "• <b>Velocity (Maks 35):</b> Kelajuan penularan (maks pada ≥1.0 kes/hari).<br>"
+                            "• <b>Kes 7 Hari Terkini (Maks 30):</b> Lonjakan semasa (maks pada ≥4 kes/7h).<br>"
+                            "• <b>Tempoh Wabak (Maks 20):</b> Ketahanan sarang pembiakan (maks pada ≥34 hari).<br>"
+                            "• <b>Bonus Status KKM (Maks 15):</b> Hotspot +15, Tak Terkawal +10, Terkawal/Baru +0.<br>"
+                            "<b>Julat Tahap:</b> <span style='color:#fca5a5;'>KRITIKAL (70–100)</span> | "
+                            "<span style='color:#fde68a;'>TINGGI (45–69)</span> | "
+                            "<span style='color:#7dd3fc;'>SEDERHANA (0–44)</span>."
+                        ),
+                        formula_html="Skor = min(100, round(min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status))",
                         current_calc_html=(
-                            f"<b>Keutamaan #1 Semasa:</b> {html.escape(top1['Lokaliti'])}<br>"
-                            f"Skor = <b>{top1['Skor Risiko']}/100 ({top1['Tahap Risiko']})</b> | Velocity = <b>{top1['Velocity (Kes/Hari)']} kes/hari</b>"
+                            f"<b>Keutamaan #1 Semasa — {html.escape(str(top1['Lokaliti']))}:</b><br>"
+                            f"Velocity ({p1_vel:.1f}/35) + Kes 7h ({p1_c7:.1f}/30) + Tempoh ({p1_dur:.1f}/20) + Bonus (+{p1_bon}/15) = "
+                            f"<b>{top1['Skor Risiko']}/100 ({top1['Tahap Risiko']})</b>"
                         ),
                     ),
                     unsafe_allow_html=True,
@@ -5355,17 +5377,52 @@ if uploaded_file is not None or df_hist is not None:
                         df_ar = ai_analytics["df_active_risk"]
                         if not df_ar.empty:
                             top_r = df_ar.iloc[0]
+                            top_vel_exact = float(top_r["Jumlah Kes"]) / max(
+                                float(top_r["Tempoh (Hari)"]), 1.0
+                            )
+                            p_vel_top = min(top_vel_exact * 35.0, 35.0)
+                            p_c7_top = min(float(top_r["Kes 7 Hari Terkini"]) * 8.0, 30.0)
+                            p_dur_top = min(float(top_r["Tempoh (Hari)"]) * 0.6, 20.0)
+                            st_top_up = str(top_r["Status Semasa"]).upper()
+                            p_bon_top = (
+                                15
+                                if "HOTSPOT" in st_top_up
+                                else (10 if "TAK TERKAWAL" in st_top_up else 0)
+                            )
+
+                            risk_tooltip_rel = (
+                                "Indeks triaj berwajaran deterministik (<b>0–100 mata</b>) bagi menyusun keutamaan mobilisasi lapangan untuk wabak aktif:<br>"
+                                "• <b>1. Halaju / Velocity (Maks 35 mata):</b> Mengukur kelajuan penularan (<code>Kes ÷ Tempoh</code>; maks pada ≥1.0 kes/hari).<br>"
+                                "• <b>2. Lonjakan 7 Hari Terkini (Maks 30 mata):</b> Mengukur momentum semasa (maks pada ≥4 kes dalam 7 hari terakhir).<br>"
+                                "• <b>3. Tempoh Wabak (Maks 20 mata):</b> Mengukur ketahanan wabak & sarang pembiakan tersembunyi (maks pada ≥34 hari).<br>"
+                                "• <b>4. Bonus Status Rasmi KKM (Maks 15 mata):</b> Hotspot <b>+15</b>, Wabak Tak Terkawal <b>+10</b>, Terkawal/Baru <b>+0</b>.<br>"
+                                "<b>Klasifikasi Tahap Risiko & Julat Skor:</b><br>"
+                                "• <span style='color:#fca5a5;font-weight:700;'>KRITIKAL (70–100):</span> Mobilisasi kecemasan segera (PTP/S&D intensif, ulangan SRT/ULV & ACD Blok/Tingkat).<br>"
+                                "• <span style='color:#fde68a;font-weight:700;'>TINGGI (45–69):</span> Risiko tinggi eskalasi dalam 14 hari; kawalan susulan pantas diperlukan.<br>"
+                                "• <span style='color:#7dd3fc;font-weight:700;'>SEDERHANA (0–44):</span> Terkawal / fasa awal; kekalkan jadual kawalan piawai KKM/POA."
+                            )
+                            risk_tooltip_form = (
+                                "Skor = min(100, round(min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status))<br>"
+                                "λ<sub>harian</sub> = max(Kes<sub>7h</sub>/7, 0.5×Vel)<br>"
+                                "Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)"
+                            )
+                            risk_tooltip_curr = (
+                                f"<b>Contoh Kiraan Semasa #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
+                                f"• Velocity ({top_r['Velocity (Kes/Hari)']} kes/hari): <b>{p_vel_top:.1f} / 35</b><br>"
+                                f"• Kes 7 Hari Terkini ({int(top_r['Kes 7 Hari Terkini'])} kes): <b>{p_c7_top:.1f} / 30</b><br>"
+                                f"• Tempoh ({int(top_r['Tempoh (Hari)'])} hari): <b>{p_dur_top:.1f} / 20</b><br>"
+                                f"• Bonus Status ({html.escape(str(top_r['Status Semasa']))}): <b>+{p_bon_top} / 15</b><br>"
+                                f"<b>Jumlah Skor: {top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | "
+                                f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
+                            )
+
                             st.markdown(
                                 build_graph_info_strip_html(
                                     strip_title="🎯 Matriks Risiko Eskalasi Wabak Aktif",
-                                    tooltip_title="🎯 Matriks Risiko Eskalasi & Unjuran Poisson +14 Hari",
-                                    relevance_html="Mengenal pasti wabak aktif yang berisiko tinggi meningkat kepada Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari akan datang berdasarkan halaju kes semasa dan kes baharu 7 hari terkini.",
-                                    formula_html="Skor = min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status<br>Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)",
-                                    current_calc_html=(
-                                        f"<b>Lokaliti Risiko #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
-                                        f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
-                                        f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
-                                    ),
+                                    tooltip_title="🎯 Matriks Risiko Eskalasi (0–100) & Unjuran Poisson +14 Hari",
+                                    relevance_html=risk_tooltip_rel,
+                                    formula_html=risk_tooltip_form,
+                                    current_calc_html=risk_tooltip_curr,
                                 ),
                                 unsafe_allow_html=True,
                             )
@@ -5464,14 +5521,10 @@ if uploaded_file is not None or df_hist is not None:
                                 zone_id="ai_zone_risk",
                                 card_title="🚨 Jadual Skor Risiko Eskalasi & Unjuran +14 Hari",
                                 body_html=risk_tbl_html,
-                                tooltip_title="🎯 Matriks Risiko Eskalasi & Unjuran Poisson +14 Hari",
-                                relevance_html="Mengenal pasti wabak aktif yang berisiko tinggi meningkat kepada Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari akan datang berdasarkan halaju kes semasa dan kes baharu 7 hari terkini.",
-                                formula_html="Skor = min(Vel×35, 35) + min(Kes<sub>7h</sub>×8, 30) + min(Tempoh×0.6, 20) + Bonus Status<br>Unjuran<sub>14h</sub> = 14λ  |  95% CI = 14λ ± 1.96√(14λ)",
-                                current_calc_html=(
-                                    f"<b>Lokaliti Risiko #1 — {html.escape(str(top_r['Lokaliti']))}:</b><br>"
-                                    f"Skor = <b>{top_r['Skor Risiko']}/100 ({top_r['Tahap Risiko']})</b> | Velocity = <b>{top_r['Velocity (Kes/Hari)']} kes/hari</b> | Kes 7h = <b>{top_r['Kes 7 Hari Terkini']}</b><br>"
-                                    f"Unjuran +14 Hari = <b>{top_r['Unjuran +14 Hari']} kes</b> (95% CI: <b>{top_r['95% CI (+14 Hari)']}</b>)"
-                                ),
+                                tooltip_title="🎯 Matriks Risiko Eskalasi (0–100) & Unjuran Poisson +14 Hari",
+                                relevance_html=risk_tooltip_rel,
+                                formula_html=risk_tooltip_form,
+                                current_calc_html=risk_tooltip_curr,
                                 conclusion_html=risk_table_conc,
                             )
                             st.markdown(card_risk_html, unsafe_allow_html=True)
