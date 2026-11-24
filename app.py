@@ -5076,22 +5076,199 @@ if uploaded_file is not None or df_hist is not None:
                             tingkat_sorted + ["JUMLAH"], blok_sorted + ["JUMLAH"]
                         ]
 
-                        idx_slice = pd.IndexSlice[
-                            crosstab_bt.index[:-1], crosstab_bt.columns[:-1]
-                        ]
-                        styled_ct = crosstab_bt.style.background_gradient(
-                            cmap="Reds", subset=idx_slice
+                        # Skala warna global (bukan mengikut lajur) supaya keamatan warna tepat merentas semua blok
+                        data_matrix = crosstab_bt.iloc[:-1, :-1]
+                        global_max_cell = (
+                            int(data_matrix.values.max())
+                            if not data_matrix.empty
+                            else 1
                         )
-                        st.markdown(styled_ct.to_html(), unsafe_allow_html=True)
+                        global_max_cell = max(global_max_cell, 1)
+
+                        def get_heat_colors(val, g_max):
+                            if val <= 0:
+                                return "#ffffff", "#64748b"
+                            ratio = val / g_max
+                            if ratio >= 0.85:
+                                return "#7f1d1d", "#ffffff"
+                            if ratio >= 0.65:
+                                return "#b91c1c", "#ffffff"
+                            if ratio >= 0.45:
+                                return "#ef4444", "#ffffff"
+                            if ratio >= 0.25:
+                                return "#fca5a5", "#0f172a"
+                            return "#fee2e2", "#0f172a"
+
+                        def build_cell_patient_bubble(sub_p, blok_lbl, tingkat_lbl):
+                            sub_s = sub_p.sort_values(
+                                by="Tarikh Daftar", ascending=False
+                            )
+                            cards = []
+                            for idx_p, (_, rp) in enumerate(sub_s.iterrows(), start=1):
+                                no_rmh = html.escape(
+                                    str(rp.get("No Rumah", "-")).strip()
+                                )
+                                umur_v = rp.get("Umur (Tahun)", "-")
+                                umur_str = (
+                                    f"{int(float(umur_v))} thn"
+                                    if pd.notna(umur_v)
+                                    and str(umur_v).replace(".", "", 1).isdigit()
+                                    else "-"
+                                )
+                                jantina = (
+                                    html.escape(str(rp.get("Jantina", "")).strip())
+                                    if "Jantina" in sub_s.columns
+                                    and pd.notna(rp.get("Jantina"))
+                                    else ""
+                                )
+                                demo_age = (
+                                    f"{umur_str} ({jantina})" if jantina else umur_str
+                                )
+                                warga = (
+                                    html.escape(
+                                        str(
+                                            rp.get("Status Kewarganegaraan", "-")
+                                        ).strip()
+                                    )
+                                    if "Status Kewarganegaraan" in sub_s.columns
+                                    and pd.notna(rp.get("Status Kewarganegaraan"))
+                                    else "-"
+                                )
+                                kerja = (
+                                    html.escape(str(rp.get("Pekerjaan", "-")).strip())
+                                    if "Pekerjaan" in sub_s.columns
+                                    and pd.notna(rp.get("Pekerjaan"))
+                                    else "-"
+                                )
+                                d_ons = (
+                                    rp["Tarikh Onset"].strftime("%d/%m/%Y")
+                                    if "Tarikh Onset" in sub_s.columns
+                                    and pd.notna(rp.get("Tarikh Onset"))
+                                    else "-"
+                                )
+                                d_not = (
+                                    rp["Tkh Notifikasi"].strftime("%d/%m/%Y")
+                                    if "Tkh Notifikasi" in sub_s.columns
+                                    and pd.notna(rp.get("Tkh Notifikasi"))
+                                    else "-"
+                                )
+                                d_daf = (
+                                    rp["Tarikh Daftar"].strftime("%d/%m/%Y")
+                                    if "Tarikh Daftar" in sub_s.columns
+                                    and pd.notna(rp.get("Tarikh Daftar"))
+                                    else "-"
+                                )
+                                rawat = (
+                                    html.escape(
+                                        str(
+                                            rp.get(
+                                                "Tempat Rawatan(Maklumat Pemberitahu)",
+                                                "-",
+                                            )
+                                        ).strip()
+                                    )
+                                    if "Tempat Rawatan(Maklumat Pemberitahu)"
+                                    in sub_s.columns
+                                    and pd.notna(
+                                        rp.get("Tempat Rawatan(Maklumat Pemberitahu)")
+                                    )
+                                    else "-"
+                                )
+                                u_rapid = (
+                                    str(rp.get("Ujian Rapid", ""))
+                                    if "Ujian Rapid" in sub_s.columns
+                                    else ""
+                                )
+                                u_elisa = (
+                                    str(rp.get("Ujian ELISA", ""))
+                                    if "Ujian ELISA" in sub_s.columns
+                                    else ""
+                                )
+                                ns1_tag = (
+                                    " <span style='background:#ef4444;color:#fff;padding:1px 5px;border-radius:4px;font-size:0.7rem;'>NS1+</span>"
+                                    if (
+                                        "NS1 POSITIF" in u_rapid.upper()
+                                        or "NS1 POSITIF" in u_elisa.upper()
+                                    )
+                                    else ""
+                                )
+                                cards.append(
+                                    f"<div style='background:rgba(255,255,255,0.07);border-left:3px solid #38bdf8;border-radius:6px;padding:6px 8px;margin-bottom:6px;'>"
+                                    f"<div style='font-weight:700;color:#fde68a;margin-bottom:2px;'>#{idx_p} • Unit: {no_rmh}{ns1_tag}</div>"
+                                    f"<div><b>Umur:</b> {demo_age} • <b>Warganegara:</b> {warga}</div>"
+                                    f"<div><b>Pekerjaan:</b> {kerja}</div>"
+                                    f"<div><b>Onset:</b> {d_ons} • <b>Notif:</b> {d_not} • <b>Daftar:</b> {d_daf}</div>"
+                                    f"<div style='color:#cbd5e1;font-size:0.76rem;'><b>Rawatan:</b> {rawat}</div>"
+                                    f"</div>"
+                                )
+                            return (
+                                f'<div class="ai-tooltip-bubble">'
+                                f'<div class="tooltip-title">🏢 Blok {html.escape(str(blok_lbl))}, Tingkat {html.escape(str(tingkat_lbl))} ({len(sub_s)} Kes)</div>'
+                                f'<div class="tooltip-section">{"".join(cards)}</div>'
+                                f"</div>"
+                            )
+
+                        hdr_cols = "".join(
+                            f'<th style="background:#f1f5f9;color:#0f172a;font-weight:700;padding:7px 10px;border:1px solid #cbd5e1;">{html.escape(str(c))}</th>'
+                            for c in crosstab_bt.columns
+                        )
+                        body_rows = []
+                        for t_lbl in crosstab_bt.index:
+                            is_total_row = t_lbl == "JUMLAH"
+                            row_bg = "#f8fafc" if is_total_row else "#ffffff"
+                            fw_row = "700" if is_total_row else "600"
+                            tds = [
+                                f'<td style="background:{row_bg};color:#0f172a;font-weight:{fw_row};text-align:left;padding:6px 10px;border:1px solid #e2e8f0;">{html.escape(str(t_lbl))}</td>'
+                            ]
+                            for b_lbl in crosstab_bt.columns:
+                                val = int(crosstab_bt.loc[t_lbl, b_lbl])
+                                is_total_col = b_lbl == "JUMLAH"
+                                if is_total_row or is_total_col:
+                                    tds.append(
+                                        f'<td style="background:#f8fafc;color:#0f172a;font-weight:700;text-align:center;padding:6px 10px;border:1px solid #e2e8f0;">{val}</td>'
+                                    )
+                                elif val > 0:
+                                    bg_c, fg_c = get_heat_colors(val, global_max_cell)
+                                    sub_p = df_filter[
+                                        (df_filter["Blok"] == b_lbl)
+                                        & (df_filter["Tingkat"] == t_lbl)
+                                    ]
+                                    bubble_html = build_cell_patient_bubble(
+                                        sub_p, b_lbl, t_lbl
+                                    )
+                                    tds.append(
+                                        f'<td class="ai-hover-card" style="background:{bg_c};color:{fg_c};font-weight:700;text-align:center;padding:6px 10px;border:1px solid #e2e8f0;border-radius:0;margin:0;box-shadow:none;cursor:pointer;">'
+                                        f"{val}{bubble_html}</td>"
+                                    )
+                                else:
+                                    tds.append(
+                                        f'<td style="background:#ffffff;color:#94a3b8;text-align:center;padding:6px 10px;border:1px solid #e2e8f0;">0</td>'
+                                    )
+                            body_rows.append(f"<tr>{''.join(tds)}</tr>")
+
+                        bt_table_html = (
+                            '<div style="overflow-x:auto;background:rgba(255,255,255,0.92);border-radius:14px;padding:8px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(15,23,42,0.05);">'
+                            '<div style="font-size:0.78rem;color:#475569;margin-bottom:6px;">💡 <i>Arahkan kursor pada mana-mana sel berwarna (>0 kes) untuk melihat senarai penuh profil pesakit (boleh skrol di dalam gelembung).</i></div>'
+                            '<table style="width:100%;border-collapse:collapse;font-size:0.86rem;">'
+                            f'<thead><tr><th style="background:#f1f5f9;color:#0f172a;font-weight:700;padding:7px 10px;border:1px solid #cbd5e1;text-align:left;">Tingkat \\ Blok</th>{hdr_cols}</tr></thead>'
+                            f'<tbody>{"".join(body_rows)}</tbody>'
+                            "</table></div>"
+                        )
+                        st.markdown(bt_table_html, unsafe_allow_html=True)
 
                         st.markdown("<br>", unsafe_allow_html=True)
 
+                        tied_hotspots = []
                         for t in crosstab_bt.index[:-1]:
                             for b in crosstab_bt.columns[:-1]:
-                                if crosstab_bt.loc[t, b] > max_val_specific:
-                                    max_val_specific = crosstab_bt.loc[t, b]
+                                v_cell = int(crosstab_bt.loc[t, b])
+                                if v_cell > max_val_specific:
+                                    max_val_specific = v_cell
                                     max_b_specific = str(b)
                                     max_t_specific = str(t)
+                                    tied_hotspots = [(str(b), str(t))]
+                                elif v_cell == max_val_specific and v_cell > 0:
+                                    tied_hotspots.append((str(b), str(t)))
 
                         blok_totals = crosstab_bt.loc["JUMLAH"][:-1]
                         if not blok_totals.empty and blok_totals.max() > 0:
@@ -5102,8 +5279,11 @@ if uploaded_file is not None or df_hist is not None:
                             tingkat_masalah_txt = str(tingkat_totals.idxmax())
 
                         if max_val_specific > 0:
+                            hotspot_lbls = " & ".join(
+                                f"**Blok {b}, Tingkat {t}**" for b, t in tied_hotspots
+                            )
                             st.warning(
-                                f"⚠️ **Sarang Penularan Spesifik:** Takungan vektor berjangkit (hotspot selular) dipercayai tertumpu secara spesifik di kediaman **Blok {max_b_specific}, Tingkat {max_t_specific}** yang menyumbang **{max_val_specific} kes**. Operasi pemusnahan sumber (S&D) dan semburan ruang disarankan untuk difokuskan bermula dari struktur radius ini terlebih dahulu sebelum diperluas ke tempat lain."
+                                f"⚠️ **Sarang Penularan Spesifik:** Takungan vektor berjangkit (hotspot selular) dipercayai tertumpu secara spesifik di kediaman {hotspot_lbls} yang menyumbang **{max_val_specific} kes**{' setiap satu' if len(tied_hotspots) > 1 else ''}. Operasi pemusnahan sumber (S&D) dan semburan ruang disarankan untuk difokuskan bermula dari struktur radius ini terlebih dahulu sebelum diperluas ke tempat lain."
                             )
 
                         st.markdown(
