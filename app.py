@@ -4874,7 +4874,7 @@ if uploaded_file is not None or df_hist is not None:
                                 else "Tarikh Onset"
                             )
                             sub_s = sub_df.sort_values(by=sort_col, ascending=True)
-                            lines = []
+                            grouped_counts = {}
                             for _, r in sub_s.iterrows():
                                 d_daf = (
                                     r["Tarikh Daftar"].strftime("%d/%m/%Y")
@@ -4894,18 +4894,15 @@ if uploaded_file is not None or df_hist is not None:
                                     else "-"
                                 )
                                 if mode == "daftar":
-                                    lines.append(
-                                        f"• Daftar: <b>{d_daf}</b> | Notif: {d_not}"
-                                    )
+                                    key = f"• Daftar: <b>{d_daf}</b> | Notif: {d_not}"
                                 else:
-                                    lines.append(
-                                        f"• Onset: <b>{d_ons}</b> | Notif: {d_not} | Daftar: {d_daf}"
-                                    )
-                            if len(lines) > 12:
-                                extra = len(lines) - 12
-                                lines = lines[:12] + [
-                                    f"<i>... dan {extra} lagi kes pada minggu ini</i>"
-                                ]
+                                    key = f"• Onset: <b>{d_ons}</b> | Notif: {d_not} | Daftar: {d_daf}"
+                                grouped_counts[key] = grouped_counts.get(key, 0) + 1
+
+                            lines = [
+                                f"{k} <b>({cnt} kes)</b>" if cnt > 1 else k
+                                for k, cnt in grouped_counts.items()
+                            ]
                             return "<br>".join(lines)
 
                         daftar_hover_list = []
