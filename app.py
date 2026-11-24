@@ -4841,12 +4841,15 @@ if uploaded_file is not None or df_hist is not None:
                     )
                     kes_epid = (
                         df_filter["Epid Minggu (Tkh Daftar)"]
+                        .dropna()
+                        .astype(int)
                         .value_counts()
                         .sort_index()
                     )
                     kes_onset_epid = (
                         df_filter["Epid Minggu (Tkh Onset)"]
                         .dropna()
+                        .astype(int)
                         .value_counts()
                         .sort_index()
                         if "Epid Minggu (Tkh Onset)" in df_filter.columns
@@ -4856,11 +4859,79 @@ if uploaded_file is not None or df_hist is not None:
                     if not kes_epid.empty:
                         all_wks = sorted(
                             list(
-                                set(kes_epid.index.dropna().astype(int)).union(
-                                    set(kes_onset_epid.index.dropna().astype(int))
+                                set(kes_epid.index.tolist()).union(
+                                    set(kes_onset_epid.index.tolist())
                                 )
                             )
                         )
+
+                        def build_week_case_hover(sub_df, mode="daftar"):
+                            if sub_df.empty:
+                                return "Tiada kes pada minggu ini"
+                            sort_col = (
+                                "Tarikh Daftar"
+                                if mode == "daftar"
+                                else "Tarikh Onset"
+                            )
+                            sub_s = sub_df.sort_values(by=sort_col, ascending=True)
+                            lines = []
+                            for _, r in sub_s.iterrows():
+                                d_daf = (
+                                    r["Tarikh Daftar"].strftime("%d/%m/%Y")
+                                    if pd.notna(r.get("Tarikh Daftar"))
+                                    else "-"
+                                )
+                                d_not = (
+                                    r["Tkh Notifikasi"].strftime("%d/%m/%Y")
+                                    if "Tkh Notifikasi" in sub_s.columns
+                                    and pd.notna(r.get("Tkh Notifikasi"))
+                                    else "-"
+                                )
+                                d_ons = (
+                                    r["Tarikh Onset"].strftime("%d/%m/%Y")
+                                    if "Tarikh Onset" in sub_s.columns
+                                    and pd.notna(r.get("Tarikh Onset"))
+                                    else "-"
+                                )
+                                if mode == "daftar":
+                                    lines.append(
+                                        f"• Daftar: <b>{d_daf}</b> | Notif: {d_not}"
+                                    )
+                                else:
+                                    lines.append(
+                                        f"• Onset: <b>{d_ons}</b> | Notif: {d_not} | Daftar: {d_daf}"
+                                    )
+                            if len(lines) > 12:
+                                extra = len(lines) - 12
+                                lines = lines[:12] + [
+                                    f"<i>... dan {extra} lagi kes pada minggu ini</i>"
+                                ]
+                            return "<br>".join(lines)
+
+                        daftar_hover_list = []
+                        onset_hover_list = []
+                        df_tmp_ep = df_filter.copy()
+                        df_tmp_ep["_wk_daf"] = pd.to_numeric(
+                            df_tmp_ep["Epid Minggu (Tkh Daftar)"], errors="coerce"
+                        )
+                        df_tmp_ep["_wk_ons"] = (
+                            pd.to_numeric(
+                                df_tmp_ep["Epid Minggu (Tkh Onset)"], errors="coerce"
+                            )
+                            if "Epid Minggu (Tkh Onset)" in df_tmp_ep.columns
+                            else np.nan
+                        )
+
+                        for w in all_wks:
+                            sub_d = df_tmp_ep[df_tmp_ep["_wk_daf"] == w]
+                            sub_o = df_tmp_ep[df_tmp_ep["_wk_ons"] == w]
+                            daftar_hover_list.append(
+                                build_week_case_hover(sub_d, mode="daftar")
+                            )
+                            onset_hover_list.append(
+                                build_week_case_hover(sub_o, mode="onset")
+                            )
+
                         df_dual_ep = pd.DataFrame(
                             {
                                 "Minggu Epid": [f"ME {int(w):02d}" for w in all_wks],
@@ -4870,6 +4941,8 @@ if uploaded_file is not None or df_hist is not None:
                                 "Kes Mengikut Minggu Onset (Gejala)": [
                                     int(kes_onset_epid.get(w, 0)) for w in all_wks
                                 ],
+                                "Hover_Daftar": daftar_hover_list,
+                                "Hover_Onset": onset_hover_list,
                             }
                         )
 
@@ -4882,6 +4955,11 @@ if uploaded_file is not None or df_hist is not None:
                                 marker_color="rgba(244, 63, 94, 0.78)",
                                 text=df_dual_ep["Kes Mengikut Minggu Daftar"],
                                 textposition="outside",
+                                customdata=df_dual_ep["Hover_Daftar"],
+                                hovertemplate=(
+                                    "<b>%{x} — Minggu Daftar: %{y} Kes</b><br>"
+                                    "%{customdata}<extra></extra>"
+                                ),
                             )
                         )
                         fig_epid.add_trace(
@@ -4892,11 +4970,16 @@ if uploaded_file is not None or df_hist is not None:
                                 mode="lines+markers",
                                 line=dict(color="#0284c7", width=3),
                                 marker=dict(size=8, symbol="circle"),
+                                customdata=df_dual_ep["Hover_Onset"],
+                                hovertemplate=(
+                                    "<b>%{x} — Minggu Onset: %{y} Kes</b><br>"
+                                    "%{customdata}<extra></extra>"
+                                ),
                             )
                         )
                         fig_epid.update_xaxes(type="category")
                         fig_epid.update_layout(
-                            xaxis_title="Minggu Epid",
+                            xaxis_title="Minggu Epid (Arah kursor pada bar/titik untuk tarikh tepat setiap kes)",
                             yaxis_title="Jumlah Kes",
                             height=360,
                             paper_bgcolor="rgba(255,255,255,0.75)",
@@ -4913,8 +4996,24 @@ if uploaded_file is not None or df_hist is not None:
                         purata_mingguan = kes_epid.mean()
 
                         ulasan_epid = "**Analisis Terperinci Keluk Epidemik:**\n"
-                        ulasan_epid += f"- Secara purata, terdapat **{purata_mingguan:.1f} kes** didaftarkan setiap minggu.\n"
-                        ulasan_epid += f"- Minggu puncak pendaftaran adalah pada **Minggu Epid {minggu_puncak_txt}** (**{kes_puncak} kes**).\n"
+                        ulasan_epid += f"- **Beban & Puncak Pendaftaran:** Purata **{purata_mingguan:.1f} kes/minggu aktif**, dengan puncak pendaftaran pada **Minggu Epid {minggu_puncak_txt}** (**{kes_puncak} kes**).\n"
+
+                        if not kes_onset_epid.empty:
+                            puncak_onset_wk = int(kes_onset_epid.idxmax())
+                            puncak_onset_cnt = int(kes_onset_epid.max())
+                            last_onset_wk = int(kes_onset_epid.index.max())
+                            last_onset_cnt = int(kes_onset_epid.iloc[-1])
+                            last_onset_dt = (
+                                df_filter["Tarikh Onset"].dropna().max()
+                                if "Tarikh Onset" in df_filter.columns
+                                else pd.NaT
+                            )
+                            last_onset_dt_str = (
+                                last_onset_dt.strftime("%d/%m/%Y")
+                                if pd.notna(last_onset_dt)
+                                else "-"
+                            )
+                            ulasan_epid += f"- **Penularan Sebenar (Onset Gejala):** Kemuncak jangkitan sebenar berlaku pada **Minggu Epid {puncak_onset_wk}** (**{puncak_onset_cnt} kes**), dengan gejala terbaharu dikesan pada **Minggu Epid {last_onset_wk}** (**{last_onset_cnt} kes**, tarikh onset terakhir: **{last_onset_dt_str}**).\n"
 
                         if len(kes_epid) >= 2:
                             m_kini = kes_epid.iloc[-1]
@@ -4927,11 +5026,23 @@ if uploaded_file is not None or df_hist is not None:
                                 if perbezaan < 0
                                 else "mendatar"
                             )
-                            ulasan_epid += f"- Perbandingan minggu daftar terkini menunjukkan trend **{status_arah_txt}** ({m_kini} kes vs {m_lalu} kes minggu sebelumnya)."
-                        if not kes_onset_epid.empty:
-                            last_onset_wk = int(kes_onset_epid.index.max())
-                            last_onset_cnt = int(kes_onset_epid.iloc[-1])
-                            ulasan_epid += f"\n- **Petunjuk Penularan Sebenar (Onset):** Episod gejala (onset) terbaharu dikesan pada **Minggu Epid {last_onset_wk}** ({last_onset_cnt} kes)."
+                            ulasan_epid += f"- **Arah Trend Mingguan:** Pendaftaran minggu terakhir menunjukkan trend **{status_arah_txt}** (**{m_kini} kes** vs **{m_lalu} kes** minggu sebelumnya).\n"
+
+                        if (
+                            "Tarikh Onset" in df_filter.columns
+                            and "Tkh Notifikasi" in df_filter.columns
+                        ):
+                            lag_on_not = (
+                                df_filter["Tkh Notifikasi"] - df_filter["Tarikh Onset"]
+                            ).dt.days
+                            lag_valid = lag_on_not[
+                                (lag_on_not >= 0) & (lag_on_not <= 45)
+                            ].dropna()
+                            if not lag_valid.empty:
+                                med_lag = lag_valid.median()
+                                max_lag = int(lag_valid.max())
+                                ulasan_epid += f"- **Jurang Lengah Epidemiologi (Onset → Notifikasi):** Median **{med_lag:.1f} hari** (maksimum **{max_lag} hari**). Jurang ini menjelaskan perbezaan fasa antara garisan biru (*Onset*) dan bar merah (*Daftar*)."
+
                         st.info(ulasan_epid)
 
                     st.markdown("---")
