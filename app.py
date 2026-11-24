@@ -5330,9 +5330,345 @@ if uploaded_file is not None or df_hist is not None:
                         else:
                             st.write("Maklumat blok tidak cukup berstruktur.")
                     else:
-                        st.info(
-                            "Tiada struktur blok/tingkat yang jelas ditemui pada 'No Rumah'."
+                        st.markdown(
+                            "#### 🏡 Peta Jalan / Lorong & Kluster Kediaman Bertanah (Landed Locality)"
                         )
+                        st.caption(
+                            "Lokaliti ini dikesan sebagai kawasan kediaman bertanah (tiada struktur Blok/Tingkat). Paparan automatik beralih kepada pemetaan GPS aras jalan (Zoom 17–18, radius 50m & 200m KKM) serta pecahan mengikut Jalan/Lorong."
+                        )
+
+                        def extract_street_name(row):
+                            addr_parts = []
+                            for col_a in [
+                                "No Rumah",
+                                "Alamat Semasa",
+                                "Nama Jalan",
+                                "Alamat",
+                            ]:
+                                if col_a in row.index and pd.notna(row[col_a]):
+                                    addr_parts.append(str(row[col_a]).strip())
+                            full_txt = " ".join(addr_parts).upper()
+                            m_st = re.search(
+                                r"\b((?:JALAN|JLN|LORONG|LRG|PERSIARAN|PSRN|LEBUH|LENGKOK|TAMAN|TMN)\s+[A-Z0-9/\-\s]{2,40})",
+                                full_txt,
+                            )
+                            if m_st:
+                                st_clean = re.split(
+                                    r",|\b(?:CHERAS|KUALA LUMPUR|AMPANG|SELANGOR|\d{5})\b",
+                                    m_st.group(1),
+                                )[0].strip(" ,.-")
+                                if st_clean:
+                                    return st_clean
+                            no_r = str(row.get("No Rumah", "-")).strip()
+                            return (
+                                no_r
+                                if no_r and no_r.upper() != "NAN"
+                                else "ALAMAT TIDAK DINYATAKAN"
+                            )
+
+                        df_land = df_filter.copy()
+                        df_land["_Jalan"] = df_land.apply(extract_street_name, axis=1)
+
+                        # Semak koordinat GPS sah Malaysia
+                        has_gps = (
+                            "Latitud (ISO)" in df_land.columns
+                            and "Lngitud (ISO)" in df_land.columns
+                        )
+                        if has_gps:
+                            df_land["_lat"] = pd.to_numeric(
+                                df_land["Latitud (ISO)"], errors="coerce"
+                            )
+                            df_land["_lng"] = pd.to_numeric(
+                                df_land["Lngitud (ISO)"], errors="coerce"
+                            )
+                            df_gps_land = df_land[
+                                (df_land["_lat"] > 1.0)
+                                & (df_land["_lat"] < 8.0)
+                                & (df_land["_lng"] > 99.0)
+                                & (df_land["_lng"] < 120.0)
+                            ].copy()
+                        else:
+                            df_gps_land = pd.DataFrame()
+
+                        col_l_map, col_l_tbl = st.columns([1.35, 1.0])
+
+                        with col_l_map:
+                            if not df_gps_land.empty:
+                                c_lat = float(df_gps_land["_lat"].median())
+                                c_lng = float(df_gps_land["_lng"].median())
+
+                                t_ref_l = (
+                                    df_gps_land["Tkh Notifikasi"].fillna(
+                                        df_gps_land["Tarikh Daftar"]
+                                    )
+                                    if "Tkh Notifikasi" in df_gps_land.columns
+                                    else df_gps_land["Tarikh Daftar"]
+                                )
+                                max_dt_l = (
+                                    t_ref_l.max()
+                                    if t_ref_l.notna().any()
+                                    else data_ref_date
+                                )
+
+                                markers_payload = []
+                                for _, r_g in df_gps_land.iterrows():
+                                    dt_case = (
+                                        r_g["Tkh Notifikasi"]
+                                        if "Tkh Notifikasi" in df_gps_land.columns
+                                        and pd.notna(r_g.get("Tkh Notifikasi"))
+                                        else r_g.get("Tarikh Daftar")
+                                    )
+                                    age_days = (
+                                        int((max_dt_l - dt_case).days)
+                                        if pd.notna(dt_case)
+                                        else 99
+                                    )
+                                    if age_days <= 7:
+                                        pin_col = "#dc2626"
+                                        rec_lbl = "Terkini (≤7 hari)"
+                                    elif age_days <= 14:
+                                        pin_col = "#f97316"
+                                        rec_lbl = "Aktif (8–14 hari)"
+                                    else:
+                                        pin_col = "#2563eb"
+                                        rec_lbl = "Terdahulu (>14 hari)"
+
+                                    no_rmh = html.escape(
+                                        str(r_g.get("No Rumah", "-")).strip()
+                                    )
+                                    umur_v = r_g.get("Umur (Tahun)", "-")
+                                    umur_s = (
+                                        f"{int(float(umur_v))} thn"
+                                        if pd.notna(umur_v)
+                                        and str(umur_v).replace(".", "", 1).isdigit()
+                                        else "-"
+                                    )
+                                    warga_s = html.escape(
+                                        str(
+                                            r_g.get("Status Kewarganegaraan", "-")
+                                        ).strip()
+                                    )
+                                    kerja_s = html.escape(
+                                        str(r_g.get("Pekerjaan", "-")).strip()
+                                    )
+                                    d_ons = (
+                                        r_g["Tarikh Onset"].strftime("%d/%m/%Y")
+                                        if "Tarikh Onset" in df_gps_land.columns
+                                        and pd.notna(r_g.get("Tarikh Onset"))
+                                        else "-"
+                                    )
+                                    d_daf = (
+                                        r_g["Tarikh Daftar"].strftime("%d/%m/%Y")
+                                        if pd.notna(r_g.get("Tarikh Daftar"))
+                                        else "-"
+                                    )
+                                    u_r = str(r_g.get("Ujian Rapid", ""))
+                                    u_e = str(r_g.get("Ujian ELISA", ""))
+                                    ns1_b = (
+                                        " <span style='background:#ef4444;color:#fff;padding:1px 5px;border-radius:4px;font-size:10px;'>NS1+</span>"
+                                        if (
+                                            "NS1 POSITIF" in u_r.upper()
+                                            or "NS1 POSITIF" in u_e.upper()
+                                        )
+                                        else ""
+                                    )
+                                    popup_html = (
+                                        f"<div style='font-family:Inter,sans-serif;font-size:12px;line-height:1.45;'>"
+                                        f"<div style='font-weight:700;color:#0f172a;margin-bottom:3px;'>🏡 {no_rmh}{ns1_b}</div>"
+                                        f"<div><b>Status Masa:</b> <span style='color:{pin_col};font-weight:700;'>{rec_lbl}</span></div>"
+                                        f"<div><b>Umur:</b> {umur_s} • <b>Warganegara:</b> {warga_s}</div>"
+                                        f"<div><b>Pekerjaan:</b> {kerja_s}</div>"
+                                        f"<div><b>Onset:</b> {d_ons} • <b>Daftar:</b> {d_daf}</div>"
+                                        f"</div>"
+                                    )
+                                    markers_payload.append(
+                                        {
+                                            "lat": float(r_g["_lat"]),
+                                            "lng": float(r_g["_lng"]),
+                                            "color": pin_col,
+                                            "popup": popup_html,
+                                        }
+                                    )
+
+                                markers_json = json.dumps(markers_payload)
+                                leaflet_html = f"""
+                                <!DOCTYPE html>
+                                <html>
+                                <head>
+                                    <meta charset="utf-8" />
+                                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                                    <style>
+                                        html, body, #landed-map {{
+                                            margin: 0; padding: 0; width: 100%; height: 420px;
+                                            border-radius: 14px; font-family: Inter, sans-serif;
+                                        }}
+                                        .legend-box {{
+                                            background: rgba(255,255,255,0.92);
+                                            padding: 6px 10px; border-radius: 8px;
+                                            font-size: 11px; line-height: 1.5;
+                                            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+                                        }}
+                                    </style>
+                                </head>
+                                <body>
+                                    <div id="landed-map"></div>
+                                    <script>
+                                        const map = L.map('landed-map', {{ zoomControl: true }}).setView([{c_lat}, {c_lng}], 17);
+                                        const osm = L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                                            maxZoom: 19,
+                                            attribution: '© OpenStreetMap'
+                                        }}).addTo(map);
+                                        const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}', {{
+                                            maxZoom: 19,
+                                            attribution: 'Tiles © Esri'
+                                        }});
+                                        L.control.layers({{ "🗺️ Peta Jalan (OSM)": osm, "🛰️ Satelit (Esri)": sat }}).addTo(map);
+
+                                        // Radius Operasi KKM: 200m (Fogging/PTP) & 50m (Teras)
+                                        L.circle([{c_lat}, {c_lng}], {{
+                                            radius: 200, color: '#dc2626', weight: 1.8, dashArray: '6,6',
+                                            fillColor: '#ef4444', fillOpacity: 0.06
+                                        }}).addTo(map).bindTooltip('Radius Kawalan KKM 200m');
+                                        L.circle([{c_lat}, {c_lng}], {{
+                                            radius: 50, color: '#f97316', weight: 1.5, dashArray: '3,4',
+                                            fillColor: '#fb923c', fillOpacity: 0.10
+                                        }}).addTo(map).bindTooltip('Zon Teras 50m');
+
+                                        const pts = {markers_json};
+                                        const bounds = [];
+                                        pts.forEach(p => {{
+                                            const m = L.circleMarker([p.lat, p.lng], {{
+                                                radius: 8, fillColor: p.color, color: '#ffffff',
+                                                weight: 2, opacity: 1, fillOpacity: 0.92
+                                            }}).addTo(map);
+                                            m.bindPopup(p.popup, {{ maxWidth: 280 }});
+                                            m.bindTooltip(p.popup, {{ direction: 'top', opacity: 0.96 }});
+                                            bounds.push([p.lat, p.lng]);
+                                        }});
+                                        if (bounds.length > 1) {{
+                                            map.fitBounds(bounds, {{ padding: [36, 36], maxZoom: 18 }});
+                                        }}
+
+                                        const legend = L.control({{ position: 'bottomleft' }});
+                                        legend.onAdd = function() {{
+                                            const div = L.DomUtil.create('div', 'legend-box');
+                                            div.innerHTML =
+                                                '<b>Petunjuk Kes (GPS):</b><br>' +
+                                                '<span style="color:#dc2626;">●</span> Terkini (≤7 hari)<br>' +
+                                                '<span style="color:#f97316;">●</span> Aktif (8–14 hari)<br>' +
+                                                '<span style="color:#2563eb;">●</span> Terdahulu (>14 hari)<br>' +
+                                                '<span style="color:#dc2626;">---</span> Radius 200m / 50m KKM';
+                                            return div;
+                                        }};
+                                        legend.addTo(map);
+                                    </script>
+                                </body>
+                                </html>
+                                """
+                                components.html(leaflet_html, height=430)
+                                gmaps_url = (
+                                    f"https://www.google.com/maps?q={c_lat:.6f},{c_lng:.6f}"
+                                )
+                                st.link_button(
+                                    "📍 Buka Lokasi Kluster di Google Maps (Navigasi Lapangan)",
+                                    url=gmaps_url,
+                                    use_container_width=True,
+                                )
+                            else:
+                                st.info(
+                                    "Koordinat GPS sah tidak ditemui bagi episod ini untuk memaparkan peta jalan."
+                                )
+
+                        with col_l_tbl:
+                            st_counts = (
+                                df_land.groupby("_Jalan")
+                                .size()
+                                .sort_values(ascending=False)
+                            )
+                            st_rows_html = []
+                            for st_name, cnt_st in st_counts.items():
+                                sub_st = df_land[
+                                    df_land["_Jalan"] == st_name
+                                ].sort_values(by="Tarikh Daftar", ascending=False)
+                                p_cards = []
+                                for idx_s, (_, rs) in enumerate(
+                                    sub_st.iterrows(), start=1
+                                ):
+                                    no_r_s = html.escape(
+                                        str(rs.get("No Rumah", "-")).strip()
+                                    )
+                                    um_v = rs.get("Umur (Tahun)", "-")
+                                    um_s = (
+                                        f"{int(float(um_v))} thn"
+                                        if pd.notna(um_v)
+                                        and str(um_v).replace(".", "", 1).isdigit()
+                                        else "-"
+                                    )
+                                    wg_s = html.escape(
+                                        str(
+                                            rs.get("Status Kewarganegaraan", "-")
+                                        ).strip()
+                                    )
+                                    kj_s = html.escape(
+                                        str(rs.get("Pekerjaan", "-")).strip()
+                                    )
+                                    d_o = (
+                                        rs["Tarikh Onset"].strftime("%d/%m/%Y")
+                                        if "Tarikh Onset" in sub_st.columns
+                                        and pd.notna(rs.get("Tarikh Onset"))
+                                        else "-"
+                                    )
+                                    d_d = (
+                                        rs["Tarikh Daftar"].strftime("%d/%m/%Y")
+                                        if pd.notna(rs.get("Tarikh Daftar"))
+                                        else "-"
+                                    )
+                                    p_cards.append(
+                                        f"<div style='background:rgba(255,255,255,0.07);border-left:3px solid #38bdf8;border-radius:6px;padding:6px 8px;margin-bottom:6px;'>"
+                                        f"<div style='font-weight:700;color:#fde68a;'>#{idx_s} • {no_r_s}</div>"
+                                        f"<div><b>Umur:</b> {um_s} • <b>Warganegara:</b> {wg_s}</div>"
+                                        f"<div><b>Pekerjaan:</b> {kj_s}</div>"
+                                        f"<div><b>Onset:</b> {d_o} • <b>Daftar:</b> {d_d}</div>"
+                                        f"</div>"
+                                    )
+                                st_bubble = (
+                                    f'<div class="ai-tooltip-bubble">'
+                                    f'<div class="tooltip-title">🛣️ {html.escape(str(st_name))} ({int(cnt_st)} Kes)</div>'
+                                    f'<div class="tooltip-section">{"".join(p_cards)}</div>'
+                                    f"</div>"
+                                )
+                                pct_st = (cnt_st / max(len(df_land), 1)) * 100
+                                st_rows_html.append(
+                                    f"<tr>"
+                                    f'<td class="ai-hover-card" style="text-align:left;padding:6px 8px;border:1px solid #e2e8f0;border-radius:0;margin:0;box-shadow:none;background:#fff;cursor:pointer;font-weight:600;">'
+                                    f"{html.escape(str(st_name))}{st_bubble}</td>"
+                                    f'<td style="text-align:center;padding:6px 8px;border:1px solid #e2e8f0;font-weight:700;color:#b91c1c;">{int(cnt_st)}</td>'
+                                    f'<td style="text-align:right;padding:6px 8px;border:1px solid #e2e8f0;">{pct_st:.1f}%</td>'
+                                    f"</tr>"
+                                )
+
+                            land_tbl_html = (
+                                '<div style="background:rgba(255,255,255,0.92);border-radius:14px;padding:10px;border:1px solid #e2e8f0;box-shadow:0 6px 20px rgba(15,23,42,0.05);">'
+                                '<div style="font-weight:700;font-size:0.9rem;margin-bottom:4px;">🛣️ Pecahan Kes Mengikut Jalan / Lorong</div>'
+                                '<div style="font-size:0.76rem;color:#475569;margin-bottom:6px;">💡 <i>Arahkan kursor pada nama jalan untuk senarai penuh pesakit (boleh skrol).</i></div>'
+                                '<table style="width:100%;border-collapse:collapse;font-size:0.83rem;">'
+                                "<thead><tr>"
+                                '<th style="background:#f1f5f9;padding:6px 8px;border:1px solid #cbd5e1;text-align:left;">Jalan / Lorong / No. Rumah</th>'
+                                '<th style="background:#f1f5f9;padding:6px 8px;border:1px solid #cbd5e1;width:54px;">Kes</th>'
+                                '<th style="background:#f1f5f9;padding:6px 8px;border:1px solid #cbd5e1;width:62px;">%</th>'
+                                "</tr></thead>"
+                                f'<tbody>{"".join(st_rows_html)}</tbody>'
+                                "</table></div>"
+                            )
+                            st.markdown(land_tbl_html, unsafe_allow_html=True)
+
+                            if not st_counts.empty:
+                                top_st_name = str(st_counts.index[0])
+                                top_st_cnt = int(st_counts.iloc[0])
+                                st.warning(
+                                    f"⚠️ **Tumpuan Jalan Utama:** Kes paling banyak tertumpu di **{top_st_name}** (**{top_st_cnt} kes**). Fokuskan operasi PTP/S&D (longkang, lorong belakang, premis kosong) serta SRT dalam radius 200m dari jalan ini."
+                                )
 
                     st.markdown("---")
 
