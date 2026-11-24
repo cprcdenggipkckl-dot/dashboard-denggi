@@ -5066,7 +5066,6 @@ if uploaded_file is not None or df_hist is not None:
                         )
 
                     st.markdown("---")
-
 minggu_puncak_txt = "Tiada"
                     kes_puncak = 0
                     status_arah_txt = "tidak dapat dipastikan"
