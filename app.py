@@ -627,6 +627,108 @@ st.markdown(
         font-size: 0.8rem;
         font-weight: 700;
     }
+    /* Artistic Live Risk Radar Strip (Shimmer & Pulse Loop) */
+    @keyframes riskSheenSweep {
+        0% { transform: translateX(-140%) skewX(-22deg); }
+        45%, 100% { transform: translateX(260%) skewX(-22deg); }
+    }
+    @keyframes critHaloPulse {
+        0%, 100% { box-shadow: 0 4px 14px rgba(220, 38, 38, 0.30), 0 0 0 0 rgba(239, 68, 68, 0.45); }
+        50% { box-shadow: 0 6px 20px rgba(220, 38, 38, 0.50), 0 0 0 5px rgba(239, 68, 68, 0); }
+    }
+    @keyframes gentleFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-2px); }
+    }
+    .risk-radar-strip {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.84), rgba(240, 249, 255, 0.78));
+        backdrop-filter: blur(22px) saturate(185%);
+        -webkit-backdrop-filter: blur(22px) saturate(185%);
+        border: 1px solid rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        padding: 10px 14px 12px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+    .risk-radar-header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.79rem;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+    .risk-radar-pills-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .risk-radar-pill {
+        position: relative !important;
+        overflow: hidden !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 7px !important;
+        padding: 6px 12px !important;
+        margin: 0 !important;
+        border-radius: 999px !important;
+        color: #ffffff !important;
+        font-size: 0.77rem !important;
+        font-weight: 600 !important;
+        cursor: help !important;
+        border: 1px solid rgba(255, 255, 255, 0.42) !important;
+        animation: gentleFloat 4.2s ease-in-out infinite;
+        transition: transform 0.2s ease, filter 0.2s ease !important;
+    }
+    .risk-radar-pill:hover {
+        transform: translateY(-2px) scale(1.03) !important;
+        filter: brightness(1.08);
+    }
+    .risk-pill-shine {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 45%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0) 100%);
+        animation: riskSheenSweep 3.6s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .risk-pill-kritikal {
+        background: linear-gradient(135deg, #991b1b 0%, #dc2626 55%, #ef4444 100%) !important;
+        animation: critHaloPulse 2.4s ease-in-out infinite, gentleFloat 4s ease-in-out infinite !important;
+    }
+    .risk-pill-tinggi {
+        background: linear-gradient(135deg, #b45309 0%, #d97706 55%, #f59e0b 100%) !important;
+        box-shadow: 0 4px 12px rgba(217, 119, 6, 0.26) !important;
+    }
+    .risk-pill-sederhana {
+        background: linear-gradient(135deg, #0369a1 0%, #0284c7 55%, #0ea5e9 100%) !important;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.24) !important;
+    }
+    .risk-pill-tier {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        background: rgba(0, 0, 0, 0.24);
+        padding: 2px 6px;
+        border-radius: 999px;
+    }
+    .risk-pill-score {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 800;
+        font-size: 0.82rem;
+        color: #fef08a;
+    }
+    .risk-pill-lok {
+        max-width: 210px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1307,6 +1409,149 @@ def build_status_wabak_tables(df, report_date):
         df_aktif["BIL"] = df_aktif.groupby("STATUS WABAK").cumcount() + 1
 
     return df_tamat, df_aktif
+
+
+def render_front_risk_radar_html(df, report_date):
+    """Membina jalur artistik 'Radar Tahap Risiko Eskalasi' bercahaya (shimmer loop) di bahagian atas STATUS WABAK."""
+    report_date = pd.Timestamp(report_date).normalize()
+    df_act = df[
+        (df["Jenis Kes"] == "Wabak")
+        & (df["Wabak Status"].notna())
+        & (~df["Wabak Status"].astype(str).str.contains("Tamat", case=False, na=False))
+    ].dropna(subset=["Wabak No"]).copy()
+
+    if df_act.empty:
+        return ""
+
+    pills_html = []
+    risk_items = []
+
+    for (w_no, lok), grp in df_act.groupby(["Wabak No", "Lokaliti (Alamat Semasa)"]):
+        st_w = str(grp["Wabak Status"].iloc[0]).strip()
+        st_up = st_w.upper()
+        t_ser = (
+            grp["Tkh Notifikasi"].fillna(grp["Tarikh Daftar"])
+            if "Tkh Notifikasi" in grp.columns
+            else grp["Tarikh Daftar"]
+        )
+        t_list = t_ser.dropna().sort_values().tolist()
+        if not t_list:
+            continue
+        t_mula = t_list[1] if len(t_list) >= 2 else t_list[0]
+        tempoh = max((report_date - t_mula).days, 1)
+        kes = len(grp)
+        vel = kes / tempoh
+
+        c_7d = int(((t_ser >= (report_date - pd.Timedelta(days=6))) & (t_ser <= report_date)).sum())
+        c_prev7d = int(((t_ser >= (report_date - pd.Timedelta(days=13))) & (t_ser <= (report_date - pd.Timedelta(days=7)))).sum())
+        mom_pct = ((c_7d - c_prev7d) / max(c_prev7d, 1)) * 100.0
+        mom_str = f"+{c_7d} kes baharu" if (c_prev7d == 0 and c_7d > 0) else f"{mom_pct:+.1f}%"
+
+        p_vel = min(vel * 35.0, 35.0)
+        p_c7 = min(c_7d * 8.0, 30.0)
+        p_dur = min(tempoh * 0.6, 20.0)
+        p_bon = 15 if "HOTSPOT" in st_up else (10 if "TAK TERKAWAL" in st_up else 0)
+        score = min(100, int(round(p_vel + p_c7 + p_dur + p_bon)))
+
+        rate_daily = max(c_7d / 7.0, vel * 0.5)
+        proj_14d = rate_daily * 14.0
+        ci_l = max(0.0, proj_14d - 1.96 * np.sqrt(max(proj_14d, 0.5)))
+        ci_u = proj_14d + 1.96 * np.sqrt(max(proj_14d, 0.5))
+
+        if score >= 70:
+            tier = "KRITIKAL"
+            tier_cls = "risk-pill-kritikal"
+            tier_icon = "🔴"
+            tier_reason = "Skor ≥70 (Julat 70–100): Penularan berkelajuan tinggi, lonjakan kes 7 hari terkini, atau tempoh wabak berpanjangan. Memerlukan mobilisasi kecemasan segera (PTP/S&D intensif, ulangan SRT/ULV & ACD)."
+        elif score >= 45:
+            tier = "TINGGI"
+            tier_cls = "risk-pill-tinggi"
+            tier_icon = "🟠"
+            tier_reason = "Skor 45–69: Berisiko tinggi untuk meningkat ke Wabak Tak Terkawal atau Hotspot dalam tempoh 14 hari jika kawalan susulan tidak dipercepatkan."
+        else:
+            tier = "SEDERHANA"
+            tier_cls = "risk-pill-sederhana"
+            tier_icon = "🔵"
+            tier_reason = "Skor 0–44: Wabak fasa awal atau terkawal dengan halaju rendah. Kekalkan jadual kawalan vektor piawai KKM/POA dan pantau sebarang lonjakan 7 hari."
+
+        risk_items.append({
+            "score": score,
+            "vel": vel,
+            "lok_disp": clean_locality_display(lok),
+            "w_no": format_wabak_no(w_no),
+            "st_w": st_w,
+            "tier": tier,
+            "tier_cls": tier_cls,
+            "tier_icon": tier_icon,
+            "tier_reason": tier_reason,
+            "kes": kes,
+            "tempoh": tempoh,
+            "c_7d": c_7d,
+            "c_prev7d": c_prev7d,
+            "mom_str": mom_str,
+            "p_vel": p_vel,
+            "p_c7": p_c7,
+            "p_dur": p_dur,
+            "p_bon": p_bon,
+            "rate_daily": rate_daily,
+            "proj_14d": proj_14d,
+            "ci_l": ci_l,
+            "ci_u": ci_u,
+            "t_mula_str": fmt_date_short(t_mula),
+        })
+
+    risk_items.sort(key=lambda x: (x["score"], x["vel"]), reverse=True)
+
+    for it in risk_items:
+        lok_esc = html.escape(it["lok_disp"])
+        short_lok = it["lok_disp"][:28] + ("…" if len(it["lok_disp"]) > 28 else "")
+        bubble_html = (
+            f'<div class="ai-tooltip-bubble">'
+            f'<div class="tooltip-title">{it["tier_icon"]} {lok_esc} — {it["tier"]} ({it["score"]}/100)</div>'
+            f'<div class="tooltip-section"><b>Mengapa Tahap {it["tier"]}?</b><br>{it["tier_reason"]}</div>'
+            f'<div class="tooltip-section"><b>Pecahan Kiraan Skor Risiko (0–100):</b>'
+            f'<div class="tooltip-formula">'
+            f'• Halaju / Velocity ({it["vel"]:.2f} kes/hari): <b>{it["p_vel"]:.1f} / 35</b><br>'
+            f'• Lonjakan 7 Hari Terkini ({it["c_7d"]} kes): <b>{it["p_c7"]:.1f} / 30</b><br>'
+            f'• Tempoh Wabak ({it["tempoh"]} hari): <b>{it["p_dur"]:.1f} / 20</b><br>'
+            f'• Bonus Status KKM ({html.escape(it["st_w"])}): <b>+{it["p_bon"]} / 15</b><br>'
+            f'<b>Jumlah Skor = {it["score"]} / 100 ({it["tier"]})</b>'
+            f'</div></div>'
+            f'<div class="tooltip-current">'
+            f'<b>📈 Unjuran Poisson (+14 Hari) & Statistik Lokaliti:</b><br>'
+            f'• <b>Unjuran Kes Baharu (+14h):</b> <b>{it["proj_14d"]:.1f} kes</b> (95% CI: <b>{it["ci_l"]:.1f} – {it["ci_u"]:.1f} kes</b>)<br>'
+            f'• <b>Kadar Harian (λ):</b> {it["rate_daily"]:.2f} kes/hari | <b>Momentum 7H:</b> {it["mom_str"]} ({it["c_7d"]} vs {it["c_prev7d"]})<br>'
+            f'• <b>Rekod Episod #{it["w_no"]}:</b> {it["kes"]} kes terkumpul sejak {it["t_mula_str"]} ({it["tempoh"]} hari)'
+            f'</div>'
+            f'</div>'
+        )
+        pills_html.append(
+            f'<div class="ai-hover-card risk-radar-pill {it["tier_cls"]}">'
+            f'<span class="risk-pill-shine"></span>'
+            f'<span class="risk-pill-tier">{it["tier"]}</span>'
+            f'<span class="risk-pill-score">{it["score"]}</span>'
+            f'<span class="risk-pill-lok">{html.escape(short_lok)}</span>'
+            f'{bubble_html}'
+            f'</div>'
+        )
+
+    n_k = sum(1 for x in risk_items if x["tier"] == "KRITIKAL")
+    n_t = sum(1 for x in risk_items if x["tier"] == "TINGGI")
+    n_s = sum(1 for x in risk_items if x["tier"] == "SEDERHANA")
+
+    return (
+        '<div class="risk-radar-strip">'
+        '<div class="risk-radar-header">'
+        '<span>✨ <b>RADAR TAHAP RISIKO ESKALASI (LIVE)</b> — <i>Arahkan kursor pada lencana untuk butiran skor & unjuran +14 hari</i></span>'
+        f'<span class="risk-radar-counts">'
+        f'<span style="color:#dc2626;font-weight:700;">● {n_k} Kritikal</span>  |  '
+        f'<span style="color:#d97706;font-weight:700;">● {n_t} Tinggi</span>  |  '
+        f'<span style="color:#0284c7;font-weight:700;">● {n_s} Sederhana</span>'
+        f'</span>'
+        '</div>'
+        f'<div class="risk-radar-pills-wrap">{"".join(pills_html)}</div>'
+        '</div>'
+    )
 
 
 def render_status_wabak_html(df_tamat, df_aktif):
@@ -3458,7 +3703,10 @@ if uploaded_file is not None or df_hist is not None:
                             "Klik kanan pada gambar di bawah dan pilih **Copy Image** atau **Save Image As** untuk terus tampal ke WhatsApp."
                         )
                         st.image(sw_png_bytes, use_container_width=True)
-
+                    front_risk_radar_html = render_front_risk_radar_html(df, active_rep_ts)
+                if front_risk_radar_html:
+                    st.markdown(front_risk_radar_html, unsafe_allow_html=True)            
+                    
                 st.markdown(sw_html, unsafe_allow_html=True)
 
                 if sw_clickable_rows:
