@@ -4699,16 +4699,21 @@ if uploaded_file is not None or df_hist is not None:
                         if "Tkh Notifikasi" in df_filter.columns
                         else df_filter["Tarikh Daftar"]
                     )
+                    mom_anchor_dt = (
+                        t_ref_lok.max()
+                        if ("Tamat" in status_wabak_semasa and t_ref_lok.notna().any())
+                        else data_ref_date
+                    )
                     lok_c7 = int(
                         (
-                            (t_ref_lok >= (data_ref_date - pd.Timedelta(days=6)))
-                            & (t_ref_lok <= data_ref_date)
+                            (t_ref_lok >= (mom_anchor_dt - pd.Timedelta(days=6)))
+                            & (t_ref_lok <= mom_anchor_dt)
                         ).sum()
                     )
                     lok_prev7 = int(
                         (
-                            (t_ref_lok >= (data_ref_date - pd.Timedelta(days=13)))
-                            & (t_ref_lok <= (data_ref_date - pd.Timedelta(days=7)))
+                            (t_ref_lok >= (mom_anchor_dt - pd.Timedelta(days=13)))
+                            & (t_ref_lok <= (mom_anchor_dt - pd.Timedelta(days=7)))
                         ).sum()
                     )
                     lok_mom_pct = ((lok_c7 - lok_prev7) / max(lok_prev7, 1)) * 100
@@ -4716,6 +4721,11 @@ if uploaded_file is not None or df_hist is not None:
                         f"+{lok_c7} kes baharu"
                         if (lok_prev7 == 0 and lok_c7 > 0)
                         else f"{lok_mom_pct:+.1f}%"
+                    )
+                    mom_sub_txt = (
+                        f"7H Akhir: <b>{lok_c7}</b> vs 7H Sblm: <b>{lok_prev7}</b> (Episod Tamat)"
+                        if "Tamat" in status_wabak_semasa
+                        else f"7H Kini: <b>{lok_c7}</b> vs 7H Lalu: <b>{lok_prev7}</b>"
                     )
 
                     safe_lokaliti = html.escape(str(pilihan_lokaliti))
