@@ -3422,7 +3422,7 @@ if df_hist is None:
         f"""
         <div class="lg-landing-stage">
             <div class="lg-eyebrow"><span class="lg-live-dot"></span> KKM / PKD VECTOR SURVEILLANCE INTELLIGENCE • {fmt_date_short(today_my)}</div>
-            <h1 class="lg-hero-title">🦟 DengueWatch</h1>
+            <h1 class="lg-hero-title">🦟 DengueWatch Executive Intelligence</h1>
             <p class="lg-hero-sub">Platform Pemantauan Wabak Denggi Masa Nyata, Pemetaan Hotspot GPS, Analisis Struktur Bertingkat & Ramalan AI (95% CI).</p>
             <div class="lg-pill-row">
                 <span class="lg-feature-pill">📋 Jadual Harian STATUS WABAK & Eksport WhatsApp</span>
